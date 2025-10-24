@@ -13,7 +13,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # -----------------------
-# Typing header effect di biru atas (pure Streamlit)
+# Typing header effect di biru atas
 # -----------------------
 if "typing_idx" not in st.session_state:
     st.session_state.typing_idx = 0
@@ -35,7 +35,7 @@ header_placeholder.markdown(f"""
 ">{display_text}</div>
 """, unsafe_allow_html=True)
 
-# update index untuk typing effect
+# update typing index
 st.session_state.typing_idx += 1
 if st.session_state.typing_idx > len(st.session_state.header_text):
     st.session_state.typing_idx = 0
@@ -59,7 +59,7 @@ if not st.session_state.login:
         box-shadow: 0 8px 30px rgba(0,0,0,0.5);
         color: #e6eef8;
         max-width: 420px;
-        margin: 40px auto;
+        margin: 20px auto;
         text-align: center;
     }
     .stTextInput>div>div>input { background: rgba(255,255,255,0.03); color: #e6eef8; }
@@ -199,10 +199,34 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
     return t
 
 # -----------------------
-# Pages (home, pesan, bayar, struk, laporan, tentang)
+# Pages
 # -----------------------
-# gunakan kode halaman persis seperti versi sebelumnya
-# Laporan tetap membaca DATA_FILE
+page = st.session_state.page
+with main_col:
+    if page=="home":
+        st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
+        st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
+        st.image("https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop", use_container_width=True)
+        st.markdown("---")
+        c1,c2=st.columns(2)
+        with c1:
+            if st.button("➡️ Pesan Menu (langsung)"):
+                st.session_state.page="pesan"
+                st.experimental_rerun()
+        with c2:
+            if st.button("➡️ Pembayaran (langsung)"):
+                st.session_state.page="bayar"
+                st.experimental_rerun()
+
+    # Halaman pesan, bayar, struk, laporan, tentang
+    # Gunakan kode sama persis versi kamu sebelumnya
+    # Laporan tetap membaca DATA_FILE untuk chart & history
 
 st.markdown("---")
 st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
+
+# -----------------------
+# Rerun untuk typing effect
+# -----------------------
+time.sleep(0.2)
+st.experimental_rerun()
