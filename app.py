@@ -12,7 +12,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # -----------------------
-# Admin Login (Modern & Berwarna)
+# Admin Login (Modern & Elegan)
 # -----------------------
 if "login" not in st.session_state:
     st.session_state.login = False
@@ -28,7 +28,7 @@ if not st.session_state.login:
         justify-content: center;
         align-items: center;
         height: 100vh;
-        background: linear-gradient(135deg,#ff5858,#f857a6);
+        background: linear-gradient(135deg,#0b1440,#071026);
     }
     .login-card {
         background: linear-gradient(135deg,#1f1f1f,#121212);
@@ -38,24 +38,26 @@ if not st.session_state.login:
         box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         color: #e6eef8;
         text-align: center;
+        font-family: "Segoe UI", sans-serif;
     }
     .stTextInput>div>div>input { 
         background: rgba(255,255,255,0.05); 
         color: #e6eef8; 
         border-radius:5px; 
-        padding:8px;
+        padding:10px;
         font-weight:bold;
     }
     .stButton>button { 
-        background: linear-gradient(90deg,#ff512f,#dd2476); 
+        background: linear-gradient(90deg,#c62828,#9c1f1f);
         color:white; 
         font-weight:bold; 
         width:100%; 
         margin-top:15px; 
-        padding:10px; 
+        padding:12px; 
         border-radius:8px;
+        font-size:16px;
     }
-    .login-title { font-size:24px; font-weight:bold; margin-bottom:20px; }
+    .login-title { font-size:26px; font-weight:bold; margin-bottom:25px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -95,7 +97,7 @@ for k,v in defaults.items():
 # -----------------------
 st.markdown("""
 <style>
-.stApp { background: linear-gradient(180deg,#071026,#0b1440); color: #e6eef8; }
+.stApp { background: linear-gradient(180deg,#071026,#0b1440); color: #e6eef8; font-family: "Segoe UI", sans-serif; }
 .topbar { display:flex; align-items:center; gap:12px; padding:10px 18px; background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; border-radius:8px;}
 .right-panel { background: linear-gradient(180deg, rgba(8,10,16,0.94), rgba(12,14,22,0.90)); padding: 14px; border-radius: 10px; box-shadow: -6px 6px 30px rgba(0,0,0,0.5); color: #fff; }
 .menu-item { display:block; width:100%; text-align:left; padding:10px 12px; margin:8px 0; border-radius:8px; background: rgba(255,255,255,0.03); color: #fff; font-weight:600; border: none; }
@@ -202,6 +204,66 @@ with main_col:
                 if st.button("+", key=f"{item}-plus"): 
                     st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
         st.write("Pesanan Saat Ini:", {k:v for k,v in st.session_state.pesanan.items() if v>0})
+    elif page=="bayar":
+        st.header("💳 Pembayaran")
+        if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
+            st.warning("Belum ada pesanan. Silakan pilih menu terlebih dahulu.")
+        else:
+            subtotal = sum(menu_makanan.get(k,0)*v + menu_minuman.get(k,0)*v for k,v in st.session_state.pesanan.items())
+            diskon = int(subtotal*0.05) if subtotal>=100000 else 0
+            total_bayar = subtotal - diskon
+            st.write(f"Sub Total: Rp {subtotal:,}")
+            st.write(f"Diskon: Rp {diskon:,}")
+            st.write(f"Total Bayar: Rp {total_bayar:,}")
+            uang = st.number_input("Uang Diterima", min_value=0, value=0)
+            if st.button("Bayar"):
+                if uang >= total_bayar:
+                    kembalian = uang - total_bayar
+                    st.success(f"Pembayaran berhasil. Kembalian: Rp {kembalian:,}")
+                    struk = build_struk(
+                        st.session_state.nama_pelanggan,
+                        {k: v*(menu_makanan.get(k, menu_minuman.get(k,0))) for k,v in st.session_state.pesanan.items() if v>0},
+                        subtotal,
+                        diskon,
+                        total_bayar,
+                        uang,
+                        kembalian
+                    )
+                    st.session_state.struk = struk
+                    save_transaction(
+                        datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        st.session_state.nama_pelanggan,
+                        {k:v for k,v in st.session_state.pesanan.items() if v>0},
+                        subtotal,
+                        diskon,
+                        total_bayar,
+                        uang,
+                        kembalian
+                    )
+                    st.session_state.pesanan = {}
+                else:
+                    st.error("Uang diterima kurang!")
+    elif page=="struk":
+        st.header("📄 Struk")
+        if st.session_state.struk:
+            st.text(st.session_state.struk)
+        else:
+            st.warning("Belum ada struk. Silakan lakukan pembayaran terlebih dahulu.")
+    elif page=="laporan":
+        st.header("📈 Laporan Penjualan")
+        if os.path.exists(DATA_FILE):
+            df = pd.read_csv(DATA_FILE)
+            st.dataframe(df)
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            summary = df.groupby(df['timestamp'].dt.date)['total'].sum()
+            st.subheader("Total Penjualan per Hari")
+            st.bar_chart(summary)
+        else:
+            st.info("Belum ada transaksi.")
+    elif page=="tentang":
+        st.header("ℹ️ Tentang Aplikasi")
+        st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil versi Streamlit.")
+        st.write("Membantu mencatat pesanan, pembayaran, dan laporan penjualan dengan mudah.")
 
 st.markdown("---")
 st.caption("© 2025 Mas Ragil — Aplikasi Kasir")
