@@ -13,7 +13,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"  # file penyimpanan riwayat
 
 # -----------------------
-# Simple Admin Login
+# Simple Admin Login + Marquee
 # -----------------------
 if "login" not in st.session_state:
     st.session_state.login = False
@@ -34,31 +34,31 @@ if not st.session_state.login:
         margin: 80px auto;
         text-align: center;
     }
-    .stTextInput>div>div>input { background: rgba(255,255,255,0.03); color: #e6eef8; }
-    .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color: white; }
     .marquee {
         font-size: 20px;
         font-weight: bold;
         color: #00eaff;
-        text-shadow: 0 0 8px #00eaff, 0 0 15px #00eaff;
-        margin-bottom: 15px;
+        text-shadow: 0 0 10px #00eaff, 0 0 25px #00eaff;
+        margin-bottom: 10px;
     }
+    .stTextInput>div>div>input { background: rgba(255,255,255,0.03); color: #e6eef8; }
+    .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color: white; }
     </style>
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='login-box'>", unsafe_allow_html=True)
 
-    # 🔥 Tambahan teks berjalan
+    # 🔥 Teks berjalan
     st.markdown("""
-    <marquee behavior="alternate" direction="right" scrollamount="6" class="marquee">
+    <marquee behavior="alternate" direction="left" scrollamount="5" class="marquee">
         🌟 Kelompok 5 🌟
     </marquee>
     """, unsafe_allow_html=True)
 
     st.markdown("## 🔐 Login Admin — Kasir Mas Ragil", unsafe_allow_html=True)
-
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
+
     col1, col2 = st.columns([1, 1])
     with col1:
         if st.button("Masuk"):
@@ -105,7 +105,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Topbar
+# Topbar (hamburger + brand + logout)
 # -----------------------
 col_tb1, col_tb2, col_tb3 = st.columns([1,10,2])
 with col_tb1:
@@ -121,7 +121,7 @@ with col_tb3:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -----------------------
-# Layout
+# Layout: main + optional right panel
 # -----------------------
 if st.session_state.menu_open:
     main_col, side_col = st.columns([7, 3])
@@ -130,7 +130,7 @@ else:
     side_col = None
 
 # -----------------------
-# Right panel navigation
+# Right panel navigation (includes Laporan)
 # -----------------------
 if side_col is not None:
     with side_col:
@@ -156,7 +156,7 @@ if side_col is not None:
             st.session_state.sudah_dihitung = False
             st.session_state.struk = ""
             st.success("Pesanan direset.")
-        st.markdown("<div style='font-size:12px;opacity:0.9;margin-top:8px'>Mas Ragil • Aplikasi Kasir</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:12px;opacity:0.9;margin-top:8px'>Mas Ragil • Aplikasi Kasir • Kelompok 5</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
@@ -166,7 +166,7 @@ menu_makanan = {"Mie Ayam": 15000, "Bakso Urat": 18000, "Mie Ayam Bakso": 20000,
 menu_minuman = {"Es Teh Manis": 5000, "Es Jeruk": 7000, "Teh Hangat": 5000, "Jeruk Hangat": 6000}
 
 # -----------------------
-# Helper functions
+# Helper: save transaction to CSV
 # -----------------------
 def save_transaction(timestamp, nama, items_dict, subtotal, diskon, total, bayar=None, kembalian=None):
     record = {
@@ -185,6 +185,9 @@ def save_transaction(timestamp, nama, items_dict, subtotal, diskon, total, bayar
     else:
         df.to_csv(DATA_FILE, index=False)
 
+# -----------------------
+# Helper: build struk
+# -----------------------
 def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_bayar=None, kembalian=None):
     t = "===== STRUK PEMBAYARAN =====\n"
     t += f"Tanggal : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -204,14 +207,13 @@ def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_baya
     return t
 
 # -----------------------
-# Pages
+# Pages (home, pesan, bayar, struk, laporan, tentang)
 # -----------------------
 page = st.session_state.page
-
 with main_col:
     if page == "home":
         st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Warung rumahan dengan cita rasa otentik.")
+        st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
         st.image("https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop", use_container_width=True)
         st.markdown("---")
         st.subheader("Mulai Transaksi Cepat")
@@ -247,7 +249,7 @@ with main_col:
                     del st.session_state.pesanan[item]
 
         st.markdown("---")
-        c3, c4 = st.columns([2,1])
+        c3, c4 = st.columns([2, 1])
         with c3:
             if st.button("💵 Hitung Total"):
                 if not st.session_state.nama_pelanggan:
@@ -330,9 +332,10 @@ with main_col:
 
     elif page == "laporan":
         st.header("📈 Laporan Penjualan")
+        st.write("Ringkasan transaksi yang tersimpan di riwayat_penjualan.csv")
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
-            df['items_parsed'] = df['items'].apply(lambda x: json.loads(x) if pd.notna(x) and x!='' else {})
+            df['items_parsed'] = df['items'].apply(lambda x: json.loads(x) if pd.notna(x) and x != '' else {})
             df['date'] = pd.to_datetime(df['timestamp']).dt.date
             rev = df.groupby('date')['total'].sum().reset_index()
             rev.columns = ['Tanggal', 'Total Pendapatan']
@@ -340,20 +343,29 @@ with main_col:
             st.bar_chart(rev.set_index('Tanggal'))
             st.subheader("Riwayat Transaksi (terbaru)")
             st.dataframe(df.sort_values('timestamp', ascending=False).head(50))
+            all_items = {}
+            for d in df['items_parsed']:
+                for k, v in d.items():
+                    all_items[k] = all_items.get(k, 0) + v // (menu_makanan.get(k, 1) if menu_makanan.get(k) else 1)
+            if all_items:
+                top = pd.DataFrame(list(all_items.items()), columns=['Menu', 'Jumlah (estimasi)']).sort_values('Jumlah (estimasi)', ascending=False)
+                st.subheader("Menu Paling Sering Dipesan (estimasi)")
+                st.bar_chart(top.set_index('Menu'))
+            else:
+                st.info("Belum ada data menu untuk dihitung.")
         else:
-            st.info("Belum ada riwayat transaksi.")
+            st.info("Belum ada riwayat transaksi. Lakukan pembayaran untuk mulai menyimpan riwayat.")
 
     elif page == "tentang":
         st.header("ℹ️ Tentang")
         st.write("""
         Aplikasi kasir Mas Ragil — versi lengkap:
         - Login Admin (admin / 1234)
-        - UI dark mode
+        - UI indigo-dark, panel kanan navigasi
         - Fitur Pesan → Hitung → Bayar → Cetak Struk
-        - Laporan transaksi otomatis
-        - Dikembangkan oleh Kelompok 5
+        - Riwayat transaksi otomatis tersimpan (riwayat_penjualan.csv)
+        - Halaman Laporan: pendapatan per hari, riwayat, top menu (estimasi)
         """)
 
-# Footer
 st.markdown("---")
 st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
