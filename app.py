@@ -4,39 +4,12 @@ import pandas as pd
 import os
 import json
 from datetime import datetime
-import time
 
 # -----------------------
 # Config
 # -----------------------
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
-
-# -----------------------
-# Typing header effect
-# -----------------------
-if "typing_idx" not in st.session_state:
-    st.session_state.typing_idx = 0
-if "header_text" not in st.session_state:
-    st.session_state.header_text = "🌟 Kasir Mas Ragil 🌟   "
-
-header_placeholder = st.empty()
-display_text = st.session_state.header_text[:st.session_state.typing_idx]
-header_placeholder.markdown(f"""
-<div style="
-    background-color:#0e3ca5;
-    color:white;
-    font-weight:bold;
-    font-size:22px;
-    padding:8px;
-    text-align:center;
-    font-family:monospace;
-">{display_text}</div>
-""", unsafe_allow_html=True)
-
-st.session_state.typing_idx += 1
-if st.session_state.typing_idx > len(st.session_state.header_text):
-    st.session_state.typing_idx = 0
 
 # -----------------------
 # Admin Login
@@ -51,13 +24,12 @@ if not st.session_state.login:
     st.markdown("""
     <style>
     .login-box {
-        background: linear-gradient(180deg, #101226, #0b1330);
+        background-color: #1c1c1c;
         padding: 40px;
         border-radius: 12px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
         color: #e6eef8;
         max-width: 420px;
-        margin: 20px auto;
+        margin: 50px auto;
         text-align: center;
     }
     .stTextInput>div>div>input { background: rgba(255,255,255,0.03); color: #e6eef8; }
@@ -128,10 +100,8 @@ with col_tb3:
         st.session_state.login = False
         st.experimental_rerun()
 
-st.markdown("<br>", unsafe_allow_html=True)
-
 # -----------------------
-# Layout & Right Panel
+# Layout & Sidebar
 # -----------------------
 if st.session_state.menu_open:
     main_col, side_col = st.columns([7,3])
@@ -161,14 +131,11 @@ if side_col is not None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
-# Menu Data
+# Menu & Helpers
 # -----------------------
-menu_makanan={"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
-menu_minuman={"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
+menu_makanan = {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
+menu_minuman = {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
 
-# -----------------------
-# Helpers
-# -----------------------
 def save_transaction(timestamp,nama,items_dict,subtotal,diskon,total,bayar=None,kembalian=None):
     record={"timestamp":timestamp,"nama":nama,"items":json.dumps(items_dict,ensure_ascii=False),
             "subtotal":subtotal,"diskon":diskon,"total":total,"bayar":bayar if bayar else "","kembalian":kembalian if kembalian else ""}
@@ -204,26 +171,15 @@ with main_col:
     if page=="home":
         st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
-        st.image("https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop", use_container_width=True)
-        st.markdown("---")
-        c1,c2=st.columns(2)
-        with c1:
-            if st.button("➡️ Pesan Menu (langsung)"):
-                st.session_state.page="pesan"
-                st.experimental_rerun()
-        with c2:
-            if st.button("➡️ Pembayaran (langsung)"):
-                st.session_state.page="bayar"
-                st.experimental_rerun()
     elif page=="pesan":
         st.header("🍜 Pesan Menu")
         nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan)
         st.session_state.nama_pelanggan = nama
-        st.markdown("#### Menu Makanan")
+        st.subheader("Menu Makanan")
         for item, harga in menu_makanan.items():
             jumlah = st.number_input(f"{item} (Rp {harga:,})", min_value=0, value=st.session_state.pesanan.get(item,0))
             st.session_state.pesanan[item] = jumlah
-        st.markdown("#### Menu Minuman")
+        st.subheader("Menu Minuman")
         for item, harga in menu_minuman.items():
             jumlah = st.number_input(f"{item} (Rp {harga:,})", min_value=0, value=st.session_state.pesanan.get(item,0))
             st.session_state.pesanan[item] = jumlah
@@ -268,7 +224,6 @@ with main_col:
         st.header("📈 Laporan Penjualan")
         if os.path.exists(DATA_FILE):
             df=pd.read_csv(DATA_FILE)
-            st.write("Data Penjualan:")
             st.dataframe(df)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             summary = df.groupby(df['timestamp'].dt.date)['total'].sum()
@@ -279,10 +234,7 @@ with main_col:
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil versi Streamlit.")
-        st.write("Dibuat untuk mempermudah pencatatan dan pembayaran pesanan.")
+        st.write("Membantu mencatat pesanan, pembayaran, dan laporan penjualan dengan mudah.")
 
 st.markdown("---")
 st.caption("© 2025 Mas Ragil — Aplikasi Kasir")
-
-time.sleep(0.2)
-st.experimental_rerun()
