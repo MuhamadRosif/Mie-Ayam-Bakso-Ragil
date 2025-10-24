@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 
 # ===============================
 # 🧾 Konfigurasi Halaman
@@ -57,12 +57,12 @@ with tab2:
         if qty > 0:
             pesanan[item] = harga * qty
 
+st.divider()
+
 # ===============================
 # 💰 Hitung Total & Pembayaran
 # ===============================
-st.divider()
-
-if st.button("💵 Hitung Total Pembayaran"):
+if st.button("💵 Hitung Total Pesanan"):
     if not pesanan:
         st.warning("Belum ada pesanan yang dipilih.")
     else:
@@ -84,17 +84,37 @@ if st.button("💵 Hitung Total Pembayaran"):
         total_bayar = total - diskon
         st.info(f"💵 Total yang harus dibayar: **Rp {total_bayar:,}**")
 
-        # ===============================
-        # 💳 Input uang bayar
-        # ===============================
-        uang_bayar = st.number_input("Masukkan jumlah uang bayar:", min_value=0, step=1000)
+        # Simpan total ke session_state biar bisa dipakai tombol bayar
+        st.session_state["total_bayar"] = total_bayar
+        st.session_state["pesanan"] = pesanan
 
-        if uang_bayar > 0:
-            if uang_bayar < total_bayar:
-                st.error("❌ Uang tidak cukup untuk membayar pesanan.")
-            else:
-                kembalian = uang_bayar - total_bayar
-                st.success(f"✅ Pembayaran berhasil!\nKembalian Anda: **Rp {kembalian:,}**")
+# ===============================
+# 💳 Proses Pembayaran (dipisah tombolnya)
+# ===============================
+if "total_bayar" in st.session_state:
+    st.divider()
+    st.subheader("💳 Proses Pembayaran")
 
-        st.write("---")
-        st.caption("Terima kasih telah makan di Mie Ayam & Bakso Mas Ragil 🍜🙏")
+    uang_bayar = st.number_input("Masukkan jumlah uang bayar:", min_value=0, step=1000)
+
+    if st.button("✅ Proses Pembayaran"):
+        total_bayar = st.session_state["total_bayar"]
+        pesanan = st.session_state["pesanan"]
+
+        if uang_bayar <= 0:
+            st.warning("Masukkan nominal uang terlebih dahulu.")
+        elif uang_bayar < total_bayar:
+            st.error("❌ Uang tidak cukup untuk membayar pesanan.")
+        else:
+            kembalian = uang_bayar - total_bayar
+            st.success(f"✅ Pembayaran berhasil!\nKembalian Anda: **Rp {kembalian:,}**")
+
+            # Struk Pembayaran
+            st.write("---")
+            st.subheader("🧾 Struk Pembayaran")
+            for item, subtotal in pesanan.items():
+                st.write(f"- {item}: Rp {subtotal:,}")
+            st.write(f"**Total Bayar:** Rp {total_bayar:,}")
+            st.write(f"**Uang Diterima:** Rp {uang_bayar:,}")
+            st.write(f"**Kembalian:** Rp {kembalian:,}")
+            st.caption("Terima kasih telah makan di Mie Ayam & Bakso Mas Ragil 🍜🙏")
