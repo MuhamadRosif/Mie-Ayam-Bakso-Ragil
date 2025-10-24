@@ -26,59 +26,62 @@ if "nama_pelanggan" not in st.session_state:
     st.session_state.nama_pelanggan = ""
 
 # ===============================
-# 🌐 NAVBAR
+# 🎨 NAVBAR ATAS (dengan ikon ≡)
 # ===============================
 st.markdown("""
     <style>
     .navbar {
         background-color: #c62828;
-        padding: 10px;
+        padding: 12px;
         border-radius: 8px;
-        text-align: center;
-        margin-bottom: 15px;
-    }
-    .navbar button {
-        background-color: white !important;
-        color: #c62828 !important;
-        border: none;
-        border-radius: 5px;
-        padding: 6px 14px;
-        margin: 0 4px;
-        font-weight: 600;
-        cursor: pointer;
-    }
-    .navbar button:hover {
-        background-color: #ffebee !important;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
     }
     .judul {
-        font-size: 22px;
         color: white;
         font-weight: bold;
-        margin-bottom: 8px;
+        font-size: 20px;
+        text-align: center;
+        width: 100%;
+    }
+    .menu-btn {
+        font-size: 26px;
+        color: white;
+        cursor: pointer;
+        margin-right: 15px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="navbar judul">🍜 Kasir Mie Ayam & Bakso Mas Ragil</div>', unsafe_allow_html=True)
-
-col1, col2, col3, col4, col5 = st.columns(5)
+# header bar dengan tombol garis 3
+col1, col2, col3 = st.columns([1, 6, 1])
 with col1:
-    if st.button("🏠 Beranda"):
-        st.session_state.page = "home"
+    menu_open = st.button("≡")
 with col2:
-    if st.button("🍜 Pesan Menu"):
-        st.session_state.page = "pesan"
-with col3:
-    if st.button("💳 Pembayaran"):
-        st.session_state.page = "bayar"
-with col4:
-    if st.button("📄 Struk"):
-        st.session_state.page = "struk"
-with col5:
-    if st.button("ℹ️ Tentang"):
-        st.session_state.page = "tentang"
+    st.markdown('<div class="judul">🍜 Kasir Mie Ayam & Bakso Mas Ragil</div>', unsafe_allow_html=True)
 
 st.markdown("---")
+
+# ===============================
+# 🌐 SIDEBAR (navigasi)
+# ===============================
+if menu_open:
+    st.sidebar.title("📂 Menu Navigasi")
+    halaman = st.sidebar.radio(
+        "Pilih Halaman:",
+        ["🏠 Beranda", "🍜 Pesan Menu", "💳 Pembayaran", "📄 Struk", "ℹ️ Tentang"]
+    )
+    if halaman == "🏠 Beranda":
+        st.session_state.page = "home"
+    elif halaman == "🍜 Pesan Menu":
+        st.session_state.page = "pesan"
+    elif halaman == "💳 Pembayaran":
+        st.session_state.page = "bayar"
+    elif halaman == "📄 Struk":
+        st.session_state.page = "struk"
+    elif halaman == "ℹ️ Tentang":
+        st.session_state.page = "tentang"
 
 # ===============================
 # 📋 Daftar Menu
@@ -102,7 +105,7 @@ menu_minuman = {
 # ===============================
 if st.session_state.page == "home":
     st.title("Selamat Datang di 🍜 Mas Ragil")
-    st.info("Gunakan menu di atas untuk mulai memesan makanan, membayar, dan mencetak struk.")
+    st.info("Gunakan tombol ≡ di kiri atas untuk membuka menu navigasi.")
     st.image("https://upload.wikimedia.org/wikipedia/commons/f/f6/Mie_ayam_jamur.jpg",
              caption="Mie Ayam & Bakso Mas Ragil - Lezat & Nikmat", use_container_width=True)
 
@@ -111,8 +114,6 @@ if st.session_state.page == "home":
 # ===============================
 elif st.session_state.page == "pesan":
     st.header("🧾 Pilih Pesanan Anda")
-
-    # Input nama pelanggan
     st.session_state.nama_pelanggan = st.text_input("🧍 Nama Pelanggan", st.session_state.nama_pelanggan)
 
     tab1, tab2 = st.tabs(["🍜 Makanan", "🥤 Minuman"])
@@ -147,7 +148,6 @@ elif st.session_state.page == "pesan":
             st.session_state.total_bayar = total_bayar
             st.session_state.sudah_dihitung = True
 
-            # Buat struk awal
             struk = "===== STRUK PEMBAYARAN =====\n"
             struk += f"Nama Pelanggan : {st.session_state.nama_pelanggan}\n"
             struk += "-----------------------------\n"
@@ -159,7 +159,7 @@ elif st.session_state.page == "pesan":
             struk += f"Total Bayar          : Rp {total_bayar:,}\n"
             struk += "=============================\n"
             st.session_state.struk = struk
-            st.success("✅ Total sudah dihitung! Silakan lanjut ke menu 💳 Pembayaran.")
+            st.success("✅ Total sudah dihitung! Silakan lanjut ke 💳 Pembayaran.")
 
 # ===============================
 # 💳 HALAMAN PEMBAYARAN
@@ -219,11 +219,12 @@ elif st.session_state.page == "tentang":
     Dibangun dengan framework **Streamlit**, ringan, cepat, dan bisa dijalankan langsung di browser.
 
     **Fitur:**
+    - Navigasi dengan tombol garis tiga (≡)
     - Input nama pelanggan  
     - Pemesanan makanan & minuman  
     - Diskon otomatis 10% di atas Rp 50.000  
     - Pembayaran & hitung kembalian  
     - Cetak & unduh struk digital  
 
-    _Dibuat dengan ❤️ oleh Kelompok 5__©Rosif__
+    _Dibuat dengan ❤️ oleh Tim Kasir Mas Ragil_
     """)
