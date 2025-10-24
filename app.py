@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import json
 from datetime import datetime
-from streamlit_autorefresh import st_autorefresh
+import time
 
 # -----------------------
 # Config
@@ -13,7 +13,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # -----------------------
-# Typing header effect di biru atas
+# Typing header effect di biru atas (pure Streamlit)
 # -----------------------
 if "typing_idx" not in st.session_state:
     st.session_state.typing_idx = 0
@@ -21,7 +21,6 @@ if "header_text" not in st.session_state:
     st.session_state.header_text = "🌟 Kelompok 5 🌟   "
 
 header_placeholder = st.empty()
-st_autorefresh(interval=300, key="header_refresh")  # refresh setiap 0.3 detik
 
 display_text = st.session_state.header_text[:st.session_state.typing_idx]
 header_placeholder.markdown(f"""
@@ -36,6 +35,7 @@ header_placeholder.markdown(f"""
 ">{display_text}</div>
 """, unsafe_allow_html=True)
 
+# update index untuk typing effect
 st.session_state.typing_idx += 1
 if st.session_state.typing_idx > len(st.session_state.header_text):
     st.session_state.typing_idx = 0
@@ -199,11 +199,10 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
     return t
 
 # -----------------------
-# Pages (Home, Pesan, Bayar, Struk, Laporan, Tentang)
+# Pages (home, pesan, bayar, struk, laporan, tentang)
 # -----------------------
-# --- sama persis seperti versi sebelumnya ---
-# Untuk ringkas, tetap gunakan kode yang sudah dikirim sebelumnya untuk tiap halaman
-# Laporan membaca DATA_FILE agar tetap muncul chart & history
+# gunakan kode halaman persis seperti versi sebelumnya
+# Laporan tetap membaca DATA_FILE
 
 st.markdown("---")
 st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
