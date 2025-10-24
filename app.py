@@ -9,207 +9,230 @@ from datetime import datetime
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 
 # ===============================
-# Session state defaults
+# Session state defaults (preserve original kasir logic)
 # ===============================
 defaults = {
+    "menu_open": False,
     "page": "home",
     "pesanan": {},
     "nama_pelanggan": "",
     "total_bayar": 0,
     "sudah_dihitung": False,
-    "struk": "",
+    "struk": ""
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
 # ===============================
-# NAVBAR + PANEL (INTERACTIVE) via components.html
-# - Panel dark transparent (sesuai request #2)
+# App-level CSS (indigo dark theme + spacing so content starts below navbar)
 # ===============================
-components.html(
-"""
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  :root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
-  body { margin:0; padding:0; }
+st.markdown(
+    """
+    <style>
+    /* body background / main theme */
+    .stApp {
+        background: linear-gradient(180deg,#0b1020,#0e1430);
+        color: #e6eef8;
+        min-height: 100vh;
+    }
+    /* make sure top content sits below the navbar iframe */
+    .app-top-padding {
+        padding-top: 140px;  /* leave space for the navbar component area */
+    }
 
-/* TOPBAR (fixed) */
-.topbar {
-  position: fixed;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
-  background: linear-gradient(90deg,#c62828,#b71c1c);
-  color: white;
-  border-radius: 10px;
-  z-index: 9999;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
-}
+    /* Nota / struk style (same as original but tuned for dark bg) */
+    .nota {
+        background-color:#1f2330;
+        padding:18px;
+        border-radius:10px;
+        border:1px solid #2f3340;
+        font-family: "Courier New", monospace;
+        white-space: pre;
+        color:#e6eef8;
+    }
 
-/* hamburger */
-.hambutton {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 22px;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 8px;
-}
-.brand {
-  font-weight: 800;
-  font-size: 16px;
-  flex: 1;
-  text-align: center;
-}
-
-/* overlay dark (covers page when panel open) */
-.overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: none;
-  z-index: 9990;
-  transition: opacity 0.25s ease;
-}
-.overlay.show { display:block; opacity:1; }
-
-/* side panel (dark transparent theme) */
-.side-panel {
-  position: fixed;
-  top: 0;
-  right: -360px; /* hidden by default */
-  width: 340px;
-  max-width: 85%;
-  height: 100%;
-  z-index: 9991;
-  transition: right 0.32s cubic-bezier(.2,.9,.2,1);
-  padding: 18px;
-  box-sizing: border-box;
-  border-radius: 12px 0 0 12px;
-  backdrop-filter: blur(6px);
-  /* dark transparent */
-  background: linear-gradient(180deg, rgba(10,10,12,0.86), rgba(6,6,8,0.82));
-  color: #fff;
-  box-shadow: -8px 0 24px rgba(0,0,0,0.5);
-  overflow-y: auto;
-}
-.side-panel.open {
-  right: 0;
-}
-
-/* menu items */
-.menu-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 12px 14px;
-  margin: 8px 0;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.04);
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-}
-.menu-item:hover {
-  background: rgba(255,255,255,0.06);
-}
-.menu-item.active {
-  background: rgba(255,255,255,0.10);
-  color: #fff;
-}
-
-/* small responsive tweak */
-@media (max-width: 600px) {
-  .topbar { left: 6px; right: 6px; top: 6px; }
-  .brand { font-size: 15px; }
-  .side-panel { width: 86%; }
-}
-</style>
-</head>
-<body>
-  <div class="topbar" role="banner">
-    <button class="hambutton" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
-    <div class="brand">🍜 Mie Ayam & Bakso — Mas Ragil</div>
-  </div>
-
-  <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-
-  <nav id="sidepanel" class="side-panel" aria-hidden="true">
-    <div style="margin-bottom:6px; font-weight:700; font-size:14px;">Menu Navigasi</div>
-    <button class="menu-item" onclick="navigateTop('home')">🏠 Beranda</button>
-    <button class="menu-item" onclick="navigateTop('pesan')">🍜 Pesan Menu</button>
-    <button class="menu-item" onclick="navigateTop('bayar')">💳 Pembayaran</button>
-    <button class="menu-item" onclick="navigateTop('struk')">📄 Struk</button>
-    <button class="menu-item" onclick="navigateTop('tentang')">ℹ️ Tentang</button>
-    <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:12px 0;">
-    <div style="font-size:13px;opacity:0.9">Mas Ragil • Aplikasi Kasir</div>
-  </nav>
-
-<script>
-function toggleMenu() {
-  const panel = document.getElementById('sidepanel');
-  const overlay = document.getElementById('overlay');
-  if (panel.classList.contains('open')) {
-    panel.classList.remove('open');
-    overlay.classList.remove('show');
-    panel.setAttribute('aria-hidden','true');
-  } else {
-    panel.classList.add('open');
-    overlay.classList.add('show');
-    panel.setAttribute('aria-hidden','false');
-  }
-}
-function closeMenu(){
-  const panel = document.getElementById('sidepanel');
-  const overlay = document.getElementById('overlay');
-  panel.classList.remove('open');
-  overlay.classList.remove('show');
-  panel.setAttribute('aria-hidden','true');
-}
-
-/* navigate parent/top window to new page param and close panel */
-function navigateTop(pageKey){
-  try {
-    const topUrl = new URL(window.top.location.href);
-    topUrl.searchParams.set('page', pageKey);
-    window.top.location.href = topUrl.toString();
-  } catch(e) {
-    // fallback: change current location (should still work in many deploy setups)
-    const cur = new URL(window.location.href);
-    cur.searchParams.set('page', pageKey);
-    window.location.href = cur.toString();
-  }
-  // close panel right away
-  closeMenu();
-}
-</script>
-</body>
-</html>
-""",
-height=680, scrolling=True
+    /* Tweak Streamlit default container widths to look nicer */
+    .css-1d391kg {  /* container style class may differ by Streamlit version */
+        max-width: 1100px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 # ===============================
-# Handle page parameter (no experimental_get_query_params)
+# NAVBAR + SIDE PANEL (dark indigo) INSIDE COMPONENT
+# - placed at top area (iframe) so main content is below it
+# - uses navigateTop(page) to add ?page=... and reload
+# ===============================
+components.html(
+    """
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      :root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+      body { margin:0; padding:0; background:transparent; color:inherit; }
+
+      /* TOPBAR (fixed within this iframe area) */
+      .topbar {
+        height: 64px;
+        display:flex;
+        align-items:center;
+        gap:16px;
+        padding:12px 18px;
+        background: linear-gradient(90deg,#9c27b0,#3f51b5); /* indigo-ish header behind red bar */
+        border-radius:12px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        color:white;
+      }
+      .hambutton {
+        background: transparent;
+        border:none;
+        color: white;
+        font-size:22px;
+        cursor:pointer;
+        padding:6px 10px;
+        border-radius:8px;
+      }
+      .brand {
+        font-weight:800;
+        font-size:16px;
+        color: #fff;
+        text-align:center;
+        flex:1;
+      }
+
+      /* overlay inside this iframe (not covering entire parent page, but covers iframe area) */
+      .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        display: none;
+        z-index: 60;
+      }
+      .overlay.show { display:block; }
+
+      /* side-panel (dark transparent theme) */
+      .side-panel {
+        position: fixed;
+        top: 10px;
+        right: -360px;
+        width: 320px;
+        max-width: 85%;
+        height: calc(100% - 20px);
+        z-index: 70;
+        transition: right 0.32s cubic-bezier(.2,.9,.2,1);
+        padding: 18px;
+        box-sizing: border-box;
+        border-radius: 12px;
+        backdrop-filter: blur(6px);
+        background: linear-gradient(180deg, rgba(6,8,20,0.92), rgba(12,14,30,0.88));
+        color: #fff;
+        box-shadow: -8px 0 32px rgba(0,0,0,0.6);
+        overflow-y: auto;
+      }
+      .side-panel.open { right: 10px; } /* slightly inset so it looks like panel on edge */
+
+      /* menu items */
+      .menu-item {
+        display:block;
+        width:100%;
+        text-align:left;
+        padding:11px 14px;
+        margin:8px 0;
+        border-radius:10px;
+        background: rgba(255,255,255,0.03);
+        color: #fff;
+        font-weight:600;
+        border:none;
+        cursor:pointer;
+      }
+      .menu-item:hover { background: rgba(255,255,255,0.06); }
+      .menu-item.active { background: rgba(255,255,255,0.09); }
+
+      @media (max-width:600px) {
+        .side-panel { width:86%; right: -90%; }
+        .side-panel.open { right: 6%; }
+      }
+    </style>
+    </head>
+    <body>
+      <div style="padding:12px;">
+        <div class="topbar" role="banner">
+          <button class="hambutton" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
+          <div class="brand">🍜 Mie Ayam & Bakso — Mas Ragil</div>
+        </div>
+      </div>
+
+      <div id="overlay" class="overlay" onclick="closeMenu()"></div>
+
+      <nav id="sidepanel" class="side-panel" aria-hidden="true">
+        <div style="font-weight:700;margin-bottom:8px;color:#f1f1f1">Menu Navigasi</div>
+        <button class="menu-item" onclick="navigateTop('home')">🏠 Beranda</button>
+        <button class="menu-item" onclick="navigateTop('pesan')">🍜 Pesan Menu</button>
+        <button class="menu-item" onclick="navigateTop('bayar')">💳 Pembayaran</button>
+        <button class="menu-item" onclick="navigateTop('struk')">📄 Struk</button>
+        <button class="menu-item" onclick="navigateTop('tentang')">ℹ️ Tentang</button>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:12px 0;">
+        <div style="font-size:13px;opacity:0.9">Mas Ragil • Aplikasi Kasir</div>
+      </nav>
+
+    <script>
+    function toggleMenu(){
+      const panel = document.getElementById('sidepanel');
+      const overlay = document.getElementById('overlay');
+      if(panel.classList.contains('open')) {
+        panel.classList.remove('open');
+        overlay.classList.remove('show');
+        panel.setAttribute('aria-hidden','true');
+      } else {
+        panel.classList.add('open');
+        overlay.classList.add('show');
+        panel.setAttribute('aria-hidden','false');
+      }
+    }
+    function closeMenu(){
+      const panel = document.getElementById('sidepanel');
+      const overlay = document.getElementById('overlay');
+      panel.classList.remove('open');
+      overlay.classList.remove('show');
+      panel.setAttribute('aria-hidden','true');
+    }
+
+    /* navigateTop: set ?page=... on the top (or fallback to current) */
+    function navigateTop(pageKey){
+      try {
+        const topUrl = new URL(window.top.location.href);
+        topUrl.searchParams.set('page', pageKey);
+        window.top.location.href = topUrl.toString();
+      } catch(e) {
+        const cur = new URL(window.location.href);
+        cur.searchParams.set('page', pageKey);
+        window.location.href = cur.toString();
+      }
+      // close panel
+      closeMenu();
+    }
+    </script>
+    </body>
+    </html>
+    """,
+    height=220,  # keep header+panel control visible but leave space for main content below
+    scrolling=True,
+)
+
+# ===============================
+# Read page param
 # ===============================
 q = st.query_params
 if "page" in q:
     st.session_state.page = q["page"][0]
 
 # ===============================
-# DATA MENU
+# DATA MENU (original)
 # ===============================
 menu_makanan = {
     "Mie Ayam": 15000,
@@ -225,7 +248,7 @@ menu_minuman = {
 }
 
 # ===============================
-# HELPER STRUK
+# Helper struk (original)
 # ===============================
 def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_bayar=None, kembalian=None):
     t = "===== STRUK PEMBAYARAN =====\n"
@@ -246,8 +269,11 @@ def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_baya
     return t
 
 # ===============================
-# HALAMAN (original kasir logic preserved)
+# PAGE / KASIR CONTENT
+# - We put an extra top padding container so content appears below the navbar iframe
 # ===============================
+st.markdown('<div class="app-top-padding"></div>', unsafe_allow_html=True)
+
 page = st.session_state.page
 
 if page == "home":
@@ -349,4 +375,3 @@ elif page == "tentang":
 
 st.markdown("---")
 st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
- 
