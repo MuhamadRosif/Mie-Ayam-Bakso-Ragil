@@ -98,7 +98,7 @@ with col_tb2:
 with col_tb3:
     if st.button("🚪 Logout"):
         st.session_state.login = False
-        st.experimental_rerun()
+        st.rerun()
 
 st.markdown("<br>", unsafe_allow_html=True)
 
