@@ -1,342 +1,207 @@
 import streamlit as st
-from datetime import datetime
+from streamlit_extras.switch_page_button import switch_page
 
-# ===============================
-# Page config
-# ===============================
-st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
+# ========== KONFIGURASI DASAR ==========
+st.set_page_config(page_title="Mie Ayam & Bakso — Mas Ragil", layout="wide")
 
-# ===============================
-# Session state defaults
-# ===============================
-defaults = {
-    "menu_open": False,
-    "page": "home",
-    "pesanan": {},
-    "nama_pelanggan": "",
-    "total_bayar": 0,
-    "sudah_dihitung": False,
-    "struk": ""
-}
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
-
-# ===============================
-# CSS + Topbar + Sidebar
-# ===============================
+# ========== CSS STYLING ==========
 st.markdown("""
 <style>
-/* Topbar */
-.topbar {
-    background: linear-gradient(90deg,#c62828,#b71c1c);
+/* ====== NAVBAR ====== */
+.navbar {
+    background-color: #b71c1c;
     color: white;
-    padding:10px 16px;
-    border-radius:8px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-}
-.hamburger{
-    font-size:22px;
-    font-weight:bold;
-    background:transparent;
-    color:white;
-    border:none;
-    cursor:pointer;
-    padding:6px 10px;
-    border-radius:6px;
-}
-.brand {
-    font-weight:800;
-    font-size:18px;
-    text-align:center;
-    color:white;
-    flex:1;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
 }
 
-/* Overlay gelap belakang panel */
-.overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 999;
-}
-.overlay.show { display: block; }
-
-/* Panel putih kanan */
+/* ====== PANEL PUTIH SLIDE ====== */
 .side-panel {
     position: fixed;
     top: 0;
-    right: 0;
-    width: 300px;
-    max-width: 90%;
+    right: -80%;
+    width: 70%;
     height: 100%;
-    background: rgba(255,255,255,0.98);
-    border-radius: 12px 0 0 12px;
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(8px);
+    box-shadow: -3px 0 12px rgba(0,0,0,0.2);
+    z-index: 999;
+    transition: right 0.3s ease;
     padding: 20px;
-    transform: translateX(100%);
-    transition: transform 0.3s ease;
-    z-index: 1000;
-    overflow-y: auto;
-    box-shadow: -2px 0 8px rgba(0,0,0,0.2);
 }
 .side-panel.open {
-    transform: translateX(0);
+    right: 0;
 }
 
-/* Tombol menu di panel putih */
+/* Overlay (klik luar menutup) */
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+    z-index: 998;
+    display: none;
+    transition: 0.3s;
+}
+.overlay.show {
+    display: block;
+}
+
+/* ====== TOMBOL MENU ====== */
 .menu-item {
-    display:block;
-    width:100%;
-    text-align:left;
-    border:none;
-    padding:14px 18px;
-    border-radius:10px;
-    margin:6px 0;
-    background:#f5f5f5;
-    color:#b71c1c;
-    font-weight:600;
-    font-size:16px;
-    cursor:pointer;
-    transition:0.2s;
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin: 6px 0;
+    background: #f5f5f5;
+    color: #b71c1c;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
 }
 .menu-item:hover {
-    background:#ffe5e5;
+    background: #ffe5e5;
 }
 .menu-item.active {
-    background:#ffcccc;
-    color:#7f0000;
+    background: #ffcccc;
+    color: #7f0000;
 }
 
-/* Struk style */
-.nota {
-    background-color:#fffbea;
-    padding:18px;
-    border-radius:10px;
-    border:1px solid #e6d9a7;
-    font-family: "Courier New", monospace;
-    white-space: pre;
-    color:#222;
+/* ====== ANIMASI MASUK KONTEN ====== */
+.fadein {
+    animation: fadeIn 0.6s ease;
+}
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(10px);}
+  to {opacity: 1; transform: translateY(0);}
 }
 
-/* Responsif di HP */
-@media (max-width: 600px) {
-  .topbar { flex-direction: row; }
-  .brand { font-size:16px; }
-  .side-panel { width:85%; }
+/* ====== DARK MODE OTOMATIS ====== */
+@media (prefers-color-scheme: dark) {
+    body, .stApp {
+        background-color: #0e0e0e !important;
+        color: white !important;
+    }
+    .side-panel {
+        background: rgba(32,32,32,0.95);
+        color: white;
+    }
+    .menu-item {
+        background: #1f1f1f;
+        color: #ffecec;
+    }
+    .menu-item:hover {
+        background: #333;
+    }
+    .menu-item.active {
+        background: #800000;
+        color: white;
+    }
 }
 </style>
-
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-  const overlay = document.querySelector(".overlay");
-  const panel = document.querySelector(".side-panel");
-  if(overlay){
-    overlay.addEventListener("click", ()=>{
-      panel.classList.remove("open");
-      overlay.classList.remove("show");
-      window.parent.postMessage({type: "close_menu"}, "*");
-    });
-  }
-});
-</script>
 """, unsafe_allow_html=True)
 
-# ===============================
-# TOPBAR
-# ===============================
+# ========== STATE ==========
+if "menu_open" not in st.session_state:
+    st.session_state.menu_open = False
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+
+# ========== NAVBAR ==========
 st.markdown("""
-<div class="topbar">
-  <button class="hamburger" onclick="window.parent.postMessage({type: 'toggle_menu'}, '*')">≡</button>
-  <div class="brand">🍜 Mie Ayam & Bakso — Mas Ragil</div>
+<div class="navbar">
+    <button onclick="togglePanel()" style="background:none;border:none;color:white;font-size:20px;cursor:pointer;">☰</button>
+    🍜 Mie Ayam & Bakso — Mas Ragil
 </div>
 """, unsafe_allow_html=True)
 
-# Script untuk buka/tutup panel dari tombol Streamlit
-st.markdown("""
-<script>
-window.addEventListener("message", (event) => {
-    if (event.data.type === "toggle_menu") {
-        window.parent.postMessage({type: "streamlit_toggle_menu"}, "*");
-    } else if (event.data.type === "close_menu") {
-        window.parent.postMessage({type: "streamlit_close_menu"}, "*");
-    }
-});
-</script>
-""", unsafe_allow_html=True)
-
-# ===============================
-# SIDEBAR PUTIH KANAN
-# ===============================
+# ========== PANEL & OVERLAY ==========
 panel_open = "open" if st.session_state.menu_open else ""
-st.markdown(f'<div class="overlay {"show" if st.session_state.menu_open else ""}"></div>', unsafe_allow_html=True)
 st.markdown(f"""
-<div class="side-panel {panel_open}">
+<div id="overlay" class="overlay" onclick="closePanel()"></div>
+<div id="panel" class="side-panel {panel_open}">
   <button class="menu-item {'active' if st.session_state.page=='home' else ''}" onclick="window.location.href='?page=home'">🏠 Beranda</button>
   <button class="menu-item {'active' if st.session_state.page=='pesan' else ''}" onclick="window.location.href='?page=pesan'">🍜 Pesan Menu</button>
   <button class="menu-item {'active' if st.session_state.page=='bayar' else ''}" onclick="window.location.href='?page=bayar'">💳 Pembayaran</button>
   <button class="menu-item {'active' if st.session_state.page=='struk' else ''}" onclick="window.location.href='?page=struk'">📄 Struk</button>
   <button class="menu-item {'active' if st.session_state.page=='tentang' else ''}" onclick="window.location.href='?page=tentang'">ℹ️ Tentang</button>
 </div>
+
+<script>
+function togglePanel() {{
+  const panel = document.getElementById('panel');
+  const overlay = document.getElementById('overlay');
+  if (panel.classList.contains('open')) {{
+    panel.classList.remove('open');
+    overlay.classList.remove('show');
+  }} else {{
+    panel.classList.add('open');
+    overlay.classList.add('show');
+  }}
+}}
+function closePanel() {{
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}}
+</script>
 """, unsafe_allow_html=True)
 
-# Query parameter untuk ganti halaman
-query_params = st.experimental_get_query_params()
+# ========== HANDLE PAGE PARAMETER ==========
+query_params = st.query_params
 if "page" in query_params:
     st.session_state.page = query_params["page"][0]
-    st.session_state.menu_open = False
 
-# Tombol hamburger logic
-if "streamlit_toggle_menu" in st.session_state:
-    st.session_state.menu_open = not st.session_state.menu_open
-if "streamlit_close_menu" in st.session_state:
-    st.session_state.menu_open = False
-
-# ===============================
-# DATA MENU
-# ===============================
-menu_makanan = {
-    "Mie Ayam": 15000,
-    "Bakso Urat": 18000,
-    "Mie Ayam Bakso": 20000,
-    "Bakso Telur": 19000,
-}
-menu_minuman = {
-    "Es Teh Manis": 5000,
-    "Es Jeruk": 7000,
-    "Teh Hangat": 5000,
-    "Jeruk Hangat": 6000,
-}
-
-# ===============================
-# HELPER STRUK
-# ===============================
-def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_bayar=None, kembalian=None):
-    t = "===== STRUK PEMBAYARAN =====\\n"
-    t += f"Tanggal : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\\n"
-    t += f"Nama    : {nama}\\n"
-    t += "-----------------------------\\n"
-    for it, subtotal in pesanan_dict.items():
-        t += f"{it:<20} Rp {subtotal:,}\\n"
-    t += "-----------------------------\\n"
-    t += f"Sub Total           : Rp {total_before:,}\\n"
-    t += f"Diskon              : Rp {diskon:,}\\n"
-    t += f"Total Bayar         : Rp {total_bayar:,}\\n"
-    if uang_bayar is not None:
-        t += f"Uang Diterima       : Rp {uang_bayar:,}\\n"
-        t += f"Kembalian           : Rp {kembalian:,}\\n"
-    t += "=============================\\n"
-    t += "Terima kasih! Salam, Mas Ragil\\n"
-    return t
-
-# ===============================
-# HALAMAN
-# ===============================
+# ========== ISI HALAMAN ==========
 page = st.session_state.page
 
 if page == "home":
-    st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
-    st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
-    st.image(
-        "https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop",
-        caption="Mie Ayam & Bakso — nikmati hangatnya!",
-        use_container_width=True,
-    )
+    st.markdown("""
+    <div class="fadein">
+        <h2>Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜</h2>
+        <p>Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 elif page == "pesan":
-    st.header("🍜 Pesan Menu")
-    st.session_state.nama_pelanggan = st.text_input("Nama Pelanggan", st.session_state.nama_pelanggan)
-    c1, c2 = st.columns(2)
-    with c1:
-        st.subheader("Makanan")
-        for item, price in menu_makanan.items():
-            qty = st.number_input(f"{item} (Rp {price:,})", min_value=0, max_value=20, step=1, key=f"m_{item}")
-            if qty > 0:
-                st.session_state.pesanan[item] = price * qty
-            elif item in st.session_state.pesanan:
-                del st.session_state.pesanan[item]
-    with c2:
-        st.subheader("Minuman")
-        for item, price in menu_minuman.items():
-            qty = st.number_input(f"{item} (Rp {price:,})", min_value=0, max_value=20, step=1, key=f"d_{item}")
-            if qty > 0:
-                st.session_state.pesanan[item] = price * qty
-            elif item in st.session_state.pesanan:
-                del st.session_state.pesanan[item]
-
-    st.markdown("---")
-    if st.button("💵 Hitung Total"):
-        if not st.session_state.nama_pelanggan:
-            st.warning("Masukkan nama pelanggan dulu.")
-        elif not st.session_state.pesanan:
-            st.warning("Belum ada pesanan.")
-        else:
-            sub_total = sum(st.session_state.pesanan.values())
-            diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
-            total_bayar = sub_total - diskon
-            st.session_state.total_bayar = total_bayar
-            st.session_state.sudah_dihitung = True
-            st.session_state.struk = build_struk(
-                st.session_state.nama_pelanggan,
-                st.session_state.pesanan,
-                sub_total,
-                diskon,
-                total_bayar,
-            )
-            st.success("Total dihitung. Lanjut ke Pembayaran.")
+    st.markdown("""
+    <div class="fadein">
+        <h2>🍜 Pesan Menu</h2>
+        <p>Silakan pilih menu yang ingin dipesan.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 elif page == "bayar":
-    st.header("💳 Pembayaran")
-    if not st.session_state.sudah_dihitung:
-        st.warning("Silakan hitung total di menu Pesan terlebih dahulu.")
-    else:
-        st.info(f"Total yang harus dibayar: Rp {st.session_state.total_bayar:,}")
-        uang = st.number_input("Masukkan uang bayar:", min_value=0, step=1000, key="pay_input")
-        if st.button("✅ Bayar Sekarang"):
-            if uang < st.session_state.total_bayar:
-                st.error("Uang tidak cukup.")
-            else:
-                kembalian = uang - st.session_state.total_bayar
-                sub_total = sum(st.session_state.pesanan.values())
-                diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
-                st.session_state.struk = build_struk(
-                    st.session_state.nama_pelanggan,
-                    st.session_state.pesanan,
-                    sub_total,
-                    diskon,
-                    st.session_state.total_bayar,
-                    uang_bayar=uang,
-                    kembalian=kembalian,
-                )
-                st.success(f"Pembayaran berhasil — Kembalian: Rp {kembalian:,}")
-                st.balloons()
-                st.markdown(f'<div class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>', unsafe_allow_html=True)
-                st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
+    st.markdown("""
+    <div class="fadein">
+        <h2>💳 Pembayaran</h2>
+        <p>Silakan hitung total di menu Pesan terlebih dahulu.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 elif page == "struk":
-    st.header("📄 Struk Pembayaran")
-    if st.session_state.struk:
-        st.markdown(f'<div class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>', unsafe_allow_html=True)
-        st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
-    else:
-        st.info("Belum ada struk. Lakukan transaksi dulu.")
+    st.markdown("""
+    <div class="fadein">
+        <h2>📄 Struk</h2>
+        <p>Struk pembelian Anda akan muncul di sini.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 elif page == "tentang":
-    st.header("ℹ️ Tentang")
-    st.write("""
-    Aplikasi kasir sederhana untuk usaha Mie Ayam & Bakso Mas Ragil.
-    - Responsive UI (mobile-friendly)
-    - Sidebar kanan dengan overlay
-    - Tutup otomatis saat klik luar panel
-    - Struk bisa ditampilkan & diunduh
-    """)
-
-st.markdown("---")
-st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
+    st.markdown("""
+    <div class="fadein">
+        <h2>ℹ️ Tentang</h2>
+        <p>Aplikasi pemesanan Mie Ayam & Bakso — dibuat oleh Mas Ragil menggunakan Streamlit.</p>
+    </div>
+    """, unsafe_allow_html=True)
