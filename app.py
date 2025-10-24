@@ -5,7 +5,7 @@ import os
 import json
 from datetime import datetime
 import time
-import threading
+from streamlit_autorefresh import st_autorefresh
 
 # -----------------------
 # Config
@@ -14,30 +14,23 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # -----------------------
-# Typing header effect di biru atas
+# Typing header effect di biru atas (non-blocking)
 # -----------------------
 header_placeholder = st.empty()
 teks_header = "🌟 Kelompok 5 🌟   "
-
-def typing_header():
-    while True:
-        display_text = ""
-        for char in teks_header:
-            display_text += char
-            header_placeholder.markdown(f"""
-            <div style="
-                background-color:#0e3ca5;
-                color:white;
-                font-weight:bold;
-                font-size:22px;
-                padding:8px;
-                text-align:center;
-                font-family:monospace;
-            ">{display_text}</div>
-            """, unsafe_allow_html=True)
-            time.sleep(0.1)
-
-threading.Thread(target=typing_header, daemon=True).start()
+counter = st_autorefresh(interval=150, limit=None, key="header_refresh")
+display_text = teks_header[:counter % (len(teks_header)+1)]
+header_placeholder.markdown(f"""
+<div style="
+    background-color:#0e3ca5;
+    color:white;
+    font-weight:bold;
+    font-size:22px;
+    padding:8px;
+    text-align:center;
+    font-family:monospace;
+">{display_text}</div>
+""", unsafe_allow_html=True)
 
 # -----------------------
 # Admin Login
@@ -60,7 +53,6 @@ if not st.session_state.login:
         max-width: 420px;
         margin: 40px auto;
         text-align: center;
-        position: relative;
     }
     .stTextInput>div>div>input { background: rgba(255,255,255,0.03); color: #e6eef8; }
     .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color: white; }
@@ -203,6 +195,8 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
 # -----------------------
 page=st.session_state.page
 with main_col:
+
+    # -------- HOME --------
     if page=="home":
         st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
@@ -219,27 +213,27 @@ with main_col:
                 st.session_state.page="bayar"
                 st.experimental_rerun()
 
+    # -------- PESAN --------
     elif page=="pesan":
         st.header("🍜 Pesan Menu")
         st.session_state.nama_pelanggan = st.text_input("Nama Pelanggan", st.session_state.nama_pelanggan)
         c1,c2=st.columns(2)
         with c1:
             st.subheader("Makanan")
-            for item,price in menu_makanan.items():
-                qty=st.number_input(f"{item} (Rp {price:,})", min_value=0,max_value=20,step=1,key=f"m_{item}")
-                if qty>0:
-                    st.session_state.pesanan[item]=price*qty
+            for item, price in menu_makanan.items():
+                qty = st.number_input(f"{item} (Rp {price:,})", min_value=0, max_value=20, step=1, key=f"m_{item}")
+                if qty > 0:
+                    st.session_state.pesanan[item] = price * qty
                 elif item in st.session_state.pesanan:
                     del st.session_state.pesanan[item]
         with c2:
             st.subheader("Minuman")
-            for item,price in menu_minuman.items():
-                qty=st.number_input(f"{item} (Rp {price:,})", min_value=0,max_value=20,step=1,key=f"d_{item}")
-                if qty>0:
-                    st.session_state.pesanan[item]=price*qty
+            for item, price in menu_minuman.items():
+                qty = st.number_input(f"{item} (Rp {price:,})", min_value=0, max_value=20, step=1, key=f"d_{item}")
+                if qty > 0:
+                    st.session_state.pesanan[item] = price * qty
                 elif item in st.session_state.pesanan:
                     del st.session_state.pesanan[item]
-
         st.markdown("---")
         c3,c4=st.columns([2,1])
         with c3:
@@ -249,17 +243,17 @@ with main_col:
                 elif not st.session_state.pesanan:
                     st.warning("Belum ada pesanan.")
                 else:
-                    sub_total=sum(st.session_state.pesanan.values())
-                    diskon=int(0.1*sub_total) if sub_total>=50000 else 0
-                    total_bayar=sub_total-diskon
-                    st.session_state.total_bayar=total_bayar
-                    st.session_state.sudah_dihitung=True
-                    st.session_state.struk=build_struk(
+                    sub_total = sum(st.session_state.pesanan.values())
+                    diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
+                    total_bayar = sub_total - diskon
+                    st.session_state.total_bayar = total_bayar
+                    st.session_state.sudah_dihitung = True
+                    st.session_state.struk = build_struk(
                         st.session_state.nama_pelanggan,
                         st.session_state.pesanan,
                         sub_total,
                         diskon,
-                        total_bayar
+                        total_bayar,
                     )
                     st.success("Total dihitung. Lanjut ke Pembayaran.")
         with c4:
@@ -270,6 +264,7 @@ with main_col:
                 st.session_state.struk=""
                 st.success("Pesanan direset.")
 
+    # -------- BAYAR --------
     elif page=="bayar":
         st.header("💳 Pembayaran")
         if not st.session_state.sudah_dihitung:
@@ -279,15 +274,15 @@ with main_col:
                 st.experimental_rerun()
         else:
             st.info(f"Total yang harus dibayar: Rp {st.session_state.total_bayar:,}")
-            uang=st.number_input("Masukkan uang bayar:", min_value=0, step=1000, key="pay_input")
+            uang = st.number_input("Masukkan uang bayar:", min_value=0, step=1000, key="pay_input")
             if st.button("✅ Bayar Sekarang"):
-                if uang<st.session_state.total_bayar:
+                if uang < st.session_state.total_bayar:
                     st.error("Uang tidak cukup.")
                 else:
-                    kembalian=uang-st.session_state.total_bayar
-                    sub_total=sum(st.session_state.pesanan.values()) if st.session_state.pesanan else 0
-                    diskon=int(0.1*sub_total) if sub_total>=50000 else 0
-                    st.session_state.struk=build_struk(
+                    kembalian = uang - st.session_state.total_bayar
+                    sub_total = sum(st.session_state.pesanan.values()) if st.session_state.pesanan else 0
+                    diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
+                    st.session_state.struk = build_struk(
                         st.session_state.nama_pelanggan,
                         st.session_state.pesanan,
                         sub_total,
@@ -314,6 +309,7 @@ with main_col:
                     st.session_state.total_bayar=0
                     st.session_state.sudah_dihitung=False
 
+    # -------- STRUK --------
     elif page=="struk":
         st.header("📄 Struk Pembayaran")
         if st.session_state.struk:
@@ -322,40 +318,34 @@ with main_col:
         else:
             st.info("Belum ada struk. Lakukan transaksi dulu.")
 
+    # -------- LAPORAN --------
     elif page=="laporan":
         st.header("📈 Laporan Penjualan")
         if os.path.exists(DATA_FILE):
             df=pd.read_csv(DATA_FILE)
-            df['items_parsed']=df['items'].apply(lambda x: json.loads(x) if pd.notna(x) and x!='' else {})
-            df['date']=pd.to_datetime(df['timestamp']).dt.date
-            rev=df.groupby('date')['total'].sum().reset_index()
-            rev.columns=['Tanggal','Total Pendapatan']
+            df['items_parsed'] = df['items'].apply(lambda x: json.loads(x) if pd.notna(x) and x != '' else {})
+            df['date'] = pd.to_datetime(df['timestamp']).dt.date
+            rev = df.groupby('date')['total'].sum().reset_index()
+            rev.columns = ['Tanggal','Total Pendapatan']
             st.subheader("Pendapatan per Hari")
             st.bar_chart(rev.set_index('Tanggal'))
-            st.subheader("Riwayat Transaksi (terbaru)")
-            st.dataframe(df.sort_values('timestamp',ascending=False).head(50))
-            all_items={}
-            for d in df['items_parsed']:
-                for k,v in d.items():
-                    all_items[k]=all_items.get(k,0)+v//(menu_makanan.get(k,1) if menu_makanan.get(k) else 1)
-            if all_items:
-                top=pd.DataFrame(list(all_items.items()),columns=['Menu','Jumlah (estimasi)']).sort_values('Jumlah (estimasi)',ascending=False)
-                st.subheader("Menu Paling Sering Dipesan (estimasi)")
-                st.bar_chart(top.set_index('Menu'))
-            else:
-                st.info("Belum ada data menu untuk dihitung.")
+            st.subheader("Riwayat Transaksi")
+            st.dataframe(df[['timestamp','nama','total']])
         else:
-            st.info("Belum ada riwayat transaksi. Lakukan pembayaran untuk mulai menyimpan riwayat.")
+            st.info("Belum ada transaksi.")
 
+    # -------- TENTANG --------
     elif page=="tentang":
-        st.header("ℹ️ Tentang")
+        st.header("ℹ️ Tentang Aplikasi")
         st.write("""
-        Aplikasi kasir Mas Ragil — versi lengkap:
-        - Login Admin (admin / 1234)
-        - UI indigo-dark, panel kanan navigasi
-        - Fitur Pesan → Hitung → Bayar → Cetak Struk
-        - Riwayat transaksi otomatis tersimpan (riwayat_penjualan.csv)
-        - Halaman Laporan: pendapatan per hari, riwayat, top menu (estimasi)
+        **Kasir Mas Ragil**  
+        Aplikasi kasir sederhana untuk warung Mie Ayam & Bakso.  
+        Dibuat oleh **Kelompok 5**.  
+        Fitur:
+        - Hitung pesanan makanan & minuman
+        - Diskon otomatis
+        - Struk digital & unduh
+        - Laporan penjualan harian
         """)
 
 st.markdown("---")
