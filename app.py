@@ -63,7 +63,7 @@ st.markdown(
         flex:1;
     }
 
-    /* slide panel */
+    /* slide panel (transparent) */
     .side-panel {
         position: fixed;
         top: 60px;
@@ -71,10 +71,9 @@ st.markdown(
         width: 280px;
         max-width: 80%;
         height: calc(100% - 80px);
-        background: #fff;
-        border-radius: 10px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-        padding: 14px;
+        background: rgba(255, 255, 255, 0); /* transparan */
+        border-radius: 0; /* hilangkan kotak */
+        padding: 0px;
         transform: translateX(-340px);
         transition: transform 0.3s ease;
         z-index: 9999;
@@ -85,15 +84,19 @@ st.markdown(
     }
     .menu-item {
         display:block;
-        padding:10px 12px;
+        padding:12px 16px;
         margin:6px 0;
         border-radius:8px;
         color:#c62828;
         font-weight:600;
         text-decoration:none;
+        transition: background 0.2s ease;
     }
     .menu-item:hover{
-        background:#fff0f0;
+        background: rgba(198, 40, 40, 0.1);
+    }
+    .menu-item.active{
+        background: rgba(198, 40, 40, 0.2);
     }
 
     /* responsive adjustments */
@@ -131,31 +134,35 @@ with col2:
     )
 
 # -------------------------------
-# Slide-out sidebar (Streamlit buttons + auto-close)
+# Slide-out sidebar (transparent + clickable + auto-close + highlight active)
 # -------------------------------
 panel_class = "side-panel open" if st.session_state.menu_open else "side-panel"
 with st.container():
     st.markdown(f'<div class="{panel_class}">', unsafe_allow_html=True)
-    st.markdown('<h3 style="color:#c62828; margin-top:0">Menu Navigasi</h3>', unsafe_allow_html=True)
     
     # Fungsi bantu klik menu + auto close
     def klik_menu(page_name):
         st.session_state.page = page_name
-        st.session_state.menu_open = False  # auto close sidebar
+        st.session_state.menu_open = False
     
-    if st.button("🏠 Beranda"):
-        klik_menu("home")
-    if st.button("🍜 Pesan Menu"):
-        klik_menu("pesan")
-    if st.button("💳 Pembayaran"):
-        klik_menu("bayar")
-    if st.button("📄 Struk"):
-        klik_menu("struk")
-    if st.button("ℹ️ Tentang"):
-        klik_menu("tentang")
+    # Render menu items dengan highlight aktif
+    menu_list = [
+        ("🏠 Beranda", "home"),
+        ("🍜 Pesan Menu", "pesan"),
+        ("💳 Pembayaran", "bayar"),
+        ("📄 Struk", "struk"),
+        ("ℹ️ Tentang", "tentang"),
+    ]
     
-    st.markdown('<hr/>', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:12px;color:#666">Tip: klik ikon ≡ lagi untuk tutup.</div>', unsafe_allow_html=True)
+    for label, key in menu_list:
+        classes = "menu-item"
+        if st.session_state.page == key:
+            classes += " active"
+        if st.button(label, key=f"btn_{key}"):
+            klik_menu(key)
+        # Tambahkan styling manual untuk menu aktif
+        st.markdown(f'<div class="{classes}"></div>', unsafe_allow_html=True)
+    
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ===============================
@@ -312,6 +319,7 @@ elif page == "tentang":
         Aplikasi kasir sederhana untuk usaha Mie Ayam & Bakso Mas Ragil.
         - Responsive UI (mobile-friendly)
         - Navbar + hamburger (≡) yang membuka sidebar
+        - Sidebar transparan & menu aktif highlight
         - Struk pembayaran bisa ditampilkan & diunduh
         """
     )
