@@ -17,9 +17,8 @@ DATA_FILE = "riwayat_penjualan.csv"
 # -----------------------
 header_placeholder = st.empty()
 teks_header = "🌟 Kelompok 5 🌟   "
-# hanya dijalankan saat login belum dilakukan
 if "login" not in st.session_state or not st.session_state.login:
-    for i in range(1000):  # cukup panjang untuk loop terus
+    for i in range(1000):
         display_text = teks_header[:i % (len(teks_header)+1)]
         header_placeholder.markdown(f"""
         <div style="
@@ -197,7 +196,7 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
 # -----------------------
 page=st.session_state.page
 with main_col:
-    # HOME
+    # -------- HOME --------
     if page=="home":
         st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
@@ -214,6 +213,117 @@ with main_col:
                 st.session_state.page="bayar"
                 st.experimental_rerun()
 
-    # halaman lainnya (Pesan, Bayar, Struk, Laporan, Tentang)
-    # sama seperti versi sebelumnya, lengkap, menggunakan st.session_state untuk data
-    # untuk laporan, tetap baca DATA_FILE jika ada
+    # -------- PESAN --------
+    elif page=="pesan":
+        st.header("🍜 Pesan Menu")
+        st.session_state.nama_pelanggan = st.text_input("Nama Pelanggan", st.session_state.nama_pelanggan)
+        c1,c2=st.columns(2)
+        with c1:
+            st.subheader("Makanan")
+            for item,price in menu_makanan.items():
+                qty=st.number_input(f"{item} (Rp {price:,})",0,20,0,key=f"m_{item}")
+                if qty>0:
+                    st.session_state.pesanan[item]=price*qty
+                elif item in st.session_state.pesanan:
+                    del st.session_state.pesanan[item]
+        with c2:
+            st.subheader("Minuman")
+            for item,price in menu_minuman.items():
+                qty=st.number_input(f"{item} (Rp {price:,})",0,20,0,key=f"d_{item}")
+                if qty>0:
+                    st.session_state.pesanan[item]=price*qty
+                elif item in st.session_state.pesanan:
+                    del st.session_state.pesanan[item]
+        st.markdown("---")
+        c3,c4=st.columns([2,1])
+        with c3:
+            if st.button("💵 Hitung Total"):
+                if not st.session_state.nama_pelanggan:
+                    st.warning("Masukkan nama pelanggan dulu.")
+                elif not st.session_state.pesanan:
+                    st.warning("Belum ada pesanan.")
+                else:
+                    sub_total=sum(st.session_state.pesanan.values())
+                    diskon=int(0.1*sub_total) if sub_total>=50000 else 0
+                    total_bayar=sub_total-diskon
+                    st.session_state.total_bayar=total_bayar
+                    st.session_state.sudah_dihitung=True
+                    st.session_state.struk=build_struk(st.session_state.nama_pelanggan,st.session_state.pesanan,sub_total,diskon,total_bayar)
+                    st.success("Total dihitung. Lanjut ke Pembayaran.")
+        with c4:
+            if st.button("🔄 Reset Pesanan"):
+                st.session_state.pesanan={}
+                st.session_state.total_bayar=0
+                st.session_state.sudah_dihitung=False
+                st.session_state.struk=""
+                st.success("Pesanan direset.")
+
+    # -------- BAYAR --------
+    elif page=="bayar":
+        st.header("💳 Pembayaran")
+        if not st.session_state.sudah_dihitung:
+            st.warning("Hitung total di menu Pesan dulu.")
+            if st.button("➡️ Pergi ke Pesan"):
+                st.session_state.page="pesan"
+                st.experimental_rerun()
+        else:
+            st.info(f"Total yang harus dibayar: Rp {st.session_state.total_bayar:,}")
+            uang=st.number_input("Masukkan uang bayar:",0,1000000,0,key="pay_input")
+            if st.button("✅ Bayar Sekarang"):
+                if uang<st.session_state.total_bayar:
+                    st.error("Uang tidak cukup.")
+                else:
+                    kembalian=uang-st.session_state.total_bayar
+                    sub_total=sum(st.session_state.pesanan.values()) if st.session_state.pesanan else 0
+                    diskon=int(0.1*sub_total) if sub_total>=50000 else 0
+                    st.session_state.struk=build_struk(st.session_state.nama_pelanggan,st.session_state.pesanan,sub_total,diskon,st.session_state.total_bayar,uang,kembalian)
+                    save_transaction(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),st.session_state.nama_pelanggan,st.session_state.pesanan,sub_total,diskon,st.session_state.total_bayar,uang,kembalian)
+                    st.success(f"Pembayaran berhasil — Kembalian: Rp {kembalian:,}")
+                    st.balloons()
+                    st.markdown(f'<div class="nota">{st.session_state.struk.replace(" ","&nbsp;")}</div>', unsafe_allow_html=True)
+                    st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
+                    st.session_state.pesanan={}
+                    st.session_state.sudah_dihitung=False
+                    st.session_state.total_bayar=0
+
+    # -------- STRUK --------
+    elif page=="struk":
+        st.header("📄 Struk Pembayaran")
+        if st.session_state.struk:
+            st.markdown(f'<div class="nota">{st.session_state.struk.replace(" ","&nbsp;")}</div>', unsafe_allow_html=True)
+            st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
+        else:
+            st.info("Belum ada struk. Lakukan transaksi dulu.")
+
+    # -------- LAPORAN --------
+    elif page=="laporan":
+        st.header("📈 Laporan Penjualan")
+        if os.path.exists(DATA_FILE):
+            df=pd.read_csv(DATA_FILE)
+            df['items_parsed']=df['items'].apply(lambda x: json.loads(x) if pd.notna(x) and x!='' else {})
+            df['date']=pd.to_datetime(df['timestamp']).dt.date
+            rev=df.groupby('date')['total'].sum().reset_index()
+            rev.columns=['Tanggal','Total Pendapatan']
+            st.subheader("Pendapatan per Hari")
+            st.bar_chart(rev.set_index('Tanggal'))
+            st.subheader("Riwayat Transaksi")
+            st.dataframe(df[['timestamp','nama','total']].sort_values('timestamp',ascending=False))
+        else:
+            st.info("Belum ada transaksi.")
+
+    # -------- TENTANG --------
+    elif page=="tentang":
+        st.header("ℹ️ Tentang Aplikasi")
+        st.write("""
+        **Kasir Mas Ragil**  
+        Aplikasi kasir sederhana untuk warung Mie Ayam & Bakso.  
+        Dibuat oleh **Kelompok 5**.  
+        Fitur:
+        - Hitung pesanan makanan & minuman
+        - Diskon otomatis
+        - Struk digital & unduh
+        - Laporan penjualan harian
+        """)
+
+st.markdown("---")
+st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
