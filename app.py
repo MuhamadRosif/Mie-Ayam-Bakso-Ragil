@@ -8,7 +8,7 @@ from datetime import datetime
 # -----------------------
 # Config
 # -----------------------
-st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
+st.set_page_config(page_title="Kasir Mas Ragil — Kelompok 5", page_icon="🍜", layout="wide")
 
 DATA_FILE = "riwayat_penjualan.csv"  # file penyimpanan riwayat
 
@@ -32,13 +32,31 @@ if not st.session_state.login:
         color: #e6eef8;
         max-width: 420px;
         margin: 80px auto;
+        animation: fadeIn 1.2s ease-in-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-text {
+        text-align:center;
+        color:#8ab4f8;
+        font-size:26px;
+        font-weight:700;
+        margin-bottom:15px;
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+        from { text-shadow: 0 0 5px #8ab4f8, 0 0 10px #5a8dfc; }
+        to { text-shadow: 0 0 20px #b3d4ff, 0 0 30px #8ab4f8; }
     }
     .stTextInput>div>div>input { background: rgba(255,255,255,0.03); color: #e6eef8; }
-    .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color: white; }
+    .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color: white; font-weight:600; }
     </style>
     """, unsafe_allow_html=True)
 
     st.markdown("<div class='login-box'>", unsafe_allow_html=True)
+    st.markdown("<div class='fade-text'>💻 Kelompok 5</div>", unsafe_allow_html=True)
     st.markdown("## 🔐 Login Admin — Kasir Mas Ragil", unsafe_allow_html=True)
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -58,7 +76,7 @@ if not st.session_state.login:
     st.stop()
 
 # -----------------------
-# Session defaults for kasir
+# Session defaults
 # -----------------------
 defaults = {
     "menu_open": False,
@@ -74,7 +92,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # -----------------------
-# Styling (indigo dark)
+# Styling (indigo-dark)
 # -----------------------
 st.markdown("""
 <style>
@@ -87,7 +105,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Topbar (hamburger + brand + logout)
+# Topbar
 # -----------------------
 col_tb1, col_tb2, col_tb3 = st.columns([1,10,2])
 with col_tb1:
@@ -103,7 +121,7 @@ with col_tb3:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -----------------------
-# Layout: main + optional right panel
+# Layout
 # -----------------------
 if st.session_state.menu_open:
     main_col, side_col = st.columns([7, 3])
@@ -112,7 +130,7 @@ else:
     side_col = None
 
 # -----------------------
-# Right panel navigation (includes Laporan)
+# Right Panel (Navigation)
 # -----------------------
 if side_col is not None:
     with side_col:
@@ -148,10 +166,9 @@ menu_makanan = {"Mie Ayam": 15000, "Bakso Urat": 18000, "Mie Ayam Bakso": 20000,
 menu_minuman = {"Es Teh Manis": 5000, "Es Jeruk": 7000, "Teh Hangat": 5000, "Jeruk Hangat": 6000}
 
 # -----------------------
-# Helper: save transaction to CSV
+# Helper: Save & Struk
 # -----------------------
 def save_transaction(timestamp, nama, items_dict, subtotal, diskon, total, bayar=None, kembalian=None):
-    # items_dict -> JSON string for safe storage
     record = {
         "timestamp": timestamp,
         "nama": nama,
@@ -168,9 +185,6 @@ def save_transaction(timestamp, nama, items_dict, subtotal, diskon, total, bayar
     else:
         df.to_csv(DATA_FILE, index=False)
 
-# -----------------------
-# Helper: build struk (text)
-# -----------------------
 def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_bayar=None, kembalian=None):
     t = "===== STRUK PEMBAYARAN =====\n"
     t += f"Tanggal : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
@@ -277,9 +291,8 @@ with main_col:
                     st.error("Uang tidak cukup.")
                 else:
                     kembalian = uang - st.session_state.total_bayar
-                    sub_total = sum(st.session_state.pesanan.values()) if st.session_state.pesanan else 0
+                    sub_total = sum(st.session_state.pesanan.values())
                     diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
-                    # Build struk & save
                     st.session_state.struk = build_struk(
                         st.session_state.nama_pelanggan,
                         st.session_state.pesanan,
@@ -289,7 +302,6 @@ with main_col:
                         uang_bayar=uang,
                         kembalian=kembalian,
                     )
-                    # save to CSV
                     save_transaction(
                         timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                         nama=st.session_state.nama_pelanggan,
@@ -304,7 +316,6 @@ with main_col:
                     st.balloons()
                     st.markdown(f'<div class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>', unsafe_allow_html=True)
                     st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
-                    # optionally clear current order (you can keep commented to preserve)
                     st.session_state.pesanan = {}
                     st.session_state.sudah_dihitung = False
                     st.session_state.total_bayar = 0
@@ -319,12 +330,10 @@ with main_col:
 
     elif page == "laporan":
         st.header("📈 Laporan Penjualan")
-        st.write("Ringkasan transaksi yang tersimpan di riwayat_penjualan.csv")
+        st.write("Ringkasan transaksi dari riwayat_penjualan.csv")
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE)
-            # parse items JSON
             df['items_parsed'] = df['items'].apply(lambda x: json.loads(x) if pd.notna(x) and x!='' else {})
-            # revenue per day
             df['date'] = pd.to_datetime(df['timestamp']).dt.date
             rev = df.groupby('date')['total'].sum().reset_index()
             rev.columns = ['Tanggal', 'Total Pendapatan']
@@ -334,12 +343,10 @@ with main_col:
             st.subheader("Riwayat Transaksi (terbaru)")
             st.dataframe(df.sort_values('timestamp', ascending=False).head(50))
 
-            # top items
             all_items = {}
             for d in df['items_parsed']:
                 for k, v in d.items():
                     all_items[k] = all_items.get(k, 0) + v // (menu_makanan.get(k,1) if menu_makanan.get(k) else 1)
-                    # note: counting by quantity approximation via subtotal/price
 
             if all_items:
                 top = pd.DataFrame(list(all_items.items()), columns=['Menu', 'Jumlah (estimasi)']).sort_values('Jumlah (estimasi)', ascending=False)
@@ -348,19 +355,19 @@ with main_col:
             else:
                 st.info("Belum ada data menu untuk dihitung.")
         else:
-            st.info("Belum ada riwayat transaksi. Lakukan pembayaran untuk mulai menyimpan riwayat.")
+            st.info("Belum ada riwayat transaksi.")
 
     elif page == "tentang":
         st.header("ℹ️ Tentang")
         st.write("""
-        Aplikasi kasir Mas Ragil — versi lengkap:
+        Aplikasi kasir Mas Ragil — versi lengkap (Kelompok 5):
         - Login Admin (admin / 1234)
-        - UI indigo-dark, panel kanan navigasi
+        - UI tema indigo-dark + animasi
         - Fitur Pesan → Hitung → Bayar → Cetak Struk
-        - Riwayat transaksi otomatis tersimpan (riwayat_penjualan.csv)
-        - Halaman Laporan: pendapatan per hari, riwayat, top menu (estimasi)
+        - Laporan otomatis disimpan ke riwayat_penjualan.csv
+        - Tampilan interaktif dan profesional
         """)
 
 # Footer
 st.markdown("---")
-st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
+st.caption("© Rosif Al Khikam — 💻 Kelompok 5")
