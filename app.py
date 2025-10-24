@@ -10,10 +10,38 @@ st.set_page_config(
 )
 
 # ===============================
+# 🎨 Gaya & Tema Warna
+# ===============================
+st.markdown("""
+    <style>
+    body {
+        background-color: #fff8e1;
+    }
+    .stTextArea textarea {
+        font-family: 'Courier New', monospace;
+        background-color: #fafafa;
+        border-radius: 10px;
+    }
+    .stButton>button {
+        background-color: #ffb300;
+        color: white;
+        font-weight: bold;
+        border-radius: 8px;
+        padding: 8px 20px;
+    }
+    .stButton>button:hover {
+        background-color: #ff8f00;
+        color: #fff;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# ===============================
 # 🎯 Header Aplikasi
 # ===============================
+st.image("https://i.imgur.com/ZpVLK4t.png", width=120)
 st.title("🍜 Kasir Mie Ayam & Bakso Mas Ragil")
-st.caption("Sistem kasir modern berbasis web - dibuat dengan ❤️ pakai Streamlit")
+st.caption("Sistem kasir modern berbasis web — dibuat dengan ❤️ pakai Streamlit")
 
 # ===============================
 # 📋 Daftar Menu
@@ -124,3 +152,13 @@ if st.session_state.struk:
     st.subheader("📄 Struk Pembayaran")
     st.text_area("Rincian Struk:", st.session_state.struk, height=240)
     st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mie_ayam_mas_ragil.txt")
+
+# ===============================
+# 🔄 Tombol Reset Pesanan
+# ===============================
+st.write("---")
+if st.button("🔄 Reset Pesanan"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.success("Pesanan berhasil direset! Silakan mulai pesanan baru 🍜")
+    st.rerun()
