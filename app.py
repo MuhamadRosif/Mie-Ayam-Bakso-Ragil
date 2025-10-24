@@ -26,12 +26,12 @@ if "struk" not in st.session_state:
     st.session_state.struk = ""
 
 # ===============================
-# CSS (responsive + sidebar slide)
+# CSS + Topbar + Sidebar
 # ===============================
 st.markdown(
     """
     <style>
-    /* navbar */
+    /* topbar */
     .topbar{
         background: linear-gradient(90deg,#c62828,#b71c1c);
         color: white;
@@ -41,6 +41,9 @@ st.markdown(
         align-items:center;
         justify-content:space-between;
         box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        position: sticky;
+        top: 0;
+        z-index: 1000;
     }
     .hamburger{
         font-size:22px;
@@ -73,7 +76,7 @@ st.markdown(
         box-shadow: 0 8px 30px rgba(0,0,0,0.12);
         padding: 14px;
         transform: translateX(-340px);
-        transition: transform 0.28s ease;
+        transition: transform 0.3s ease;
         z-index: 9999;
         overflow:auto;
     }
@@ -114,12 +117,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# ===============================
-# Top bar HTML
-# ===============================
+# -------------------------------
+# Topbar dengan hamburger
+# -------------------------------
 col1, col2 = st.columns([1, 9])
 with col1:
-    # Hamburger button -> toggle
     if st.button("≡", key="hamb"):
         st.session_state.menu_open = not st.session_state.menu_open
 with col2:
@@ -128,47 +130,33 @@ with col2:
         unsafe_allow_html=True,
     )
 
-# ===============================
-# Slide-out sidebar (rendered via CSS class toggle)
-# ===============================
+# -------------------------------
+# Slide-out sidebar (Streamlit buttons + auto-close)
+# -------------------------------
 panel_class = "side-panel open" if st.session_state.menu_open else "side-panel"
-st.markdown(
-    f"""
-    <div class="{panel_class}">
-        <h3 style="color:#c62828; margin-top:0">Menu Navigasi</h3>
-        <a href="#" class="menu-item" onclick="document.title='home'">🏠 Beranda</a>
-        <a href="#" class="menu-item" onclick="document.title='pesan'">🍜 Pesan Menu</a>
-        <a href="#" class="menu-item" onclick="document.title='bayar'">💳 Pembayaran</a>
-        <a href="#" class="menu-item" onclick="document.title='struk'">📄 Struk</a>
-        <a href="#" class="menu-item" onclick="document.title='tentang'">ℹ️ Tentang</a>
-        <hr/>
-        <div style="font-size:12px;color:#666">Tip: klik ikon ≡ lagi untuk tutup.</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-# NOTE:
-# The above menu links use href="#" and onclick to change document.title as a mild hack
-# to let users click — we still control navigation server-side using Streamlit buttons below.
-# This avoids needing custom JS to call Streamlit.
-
-# ===============================
-# Navigation row (in-page) - fallback for accessibility
-# ===============================
-nav_col1, nav_col2, nav_col3, nav_col4, nav_col5 = st.columns([1,1,1,1,1])
-if nav_col1.button("🏠 Beranda"):
-    st.session_state.page = "home"
-if nav_col2.button("🍜 Pesan Menu"):
-    st.session_state.page = "pesan"
-if nav_col3.button("💳 Pembayaran"):
-    st.session_state.page = "bayar"
-if nav_col4.button("📄 Struk"):
-    st.session_state.page = "struk"
-if nav_col5.button("ℹ️ Tentang"):
-    st.session_state.page = "tentang"
-
-st.markdown("---")
+with st.container():
+    st.markdown(f'<div class="{panel_class}">', unsafe_allow_html=True)
+    st.markdown('<h3 style="color:#c62828; margin-top:0">Menu Navigasi</h3>', unsafe_allow_html=True)
+    
+    # Fungsi bantu klik menu + auto close
+    def klik_menu(page_name):
+        st.session_state.page = page_name
+        st.session_state.menu_open = False  # auto close sidebar
+    
+    if st.button("🏠 Beranda"):
+        klik_menu("home")
+    if st.button("🍜 Pesan Menu"):
+        klik_menu("pesan")
+    if st.button("💳 Pembayaran"):
+        klik_menu("bayar")
+    if st.button("📄 Struk"):
+        klik_menu("struk")
+    if st.button("ℹ️ Tentang"):
+        klik_menu("tentang")
+    
+    st.markdown('<hr/>', unsafe_allow_html=True)
+    st.markdown('<div style="font-size:12px;color:#666">Tip: klik ikon ≡ lagi untuk tutup.</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # ===============================
 # Data menu
@@ -216,7 +204,6 @@ page = st.session_state.page
 if page == "home":
     st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
     st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
-    # high quality image from Unsplash (royalty-free)
     st.image(
         "https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=8c71b1a1a7f2e3e8f6c1a8f0e8b2f9c4",
         caption="Mie Ayam & Bakso — nikmati hangatnya!",
@@ -264,7 +251,6 @@ elif page == "pesan":
             total_bayar = sub_total - diskon
             st.session_state.total_bayar = total_bayar
             st.session_state.sudah_dihitung = True
-            # build struk (partial)
             st.session_state.struk = build_struk(
                 st.session_state.nama_pelanggan,
                 st.session_state.pesanan,
@@ -287,8 +273,6 @@ elif page == "bayar":
                 st.error("Uang tidak cukup.")
             else:
                 kembalian = uang - st.session_state.total_bayar
-                # finalize struk
-                # Recompute sub_total and diskon to include in final struk
                 sub_total = sum(st.session_state.pesanan.values())
                 diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
                 st.session_state.struk = build_struk(
@@ -302,15 +286,11 @@ elif page == "bayar":
                 )
                 st.success(f"Pembayaran berhasil — Kembalian: Rp {kembalian:,}")
                 st.balloons()
-                # show nota right away
                 st.markdown(
                     f'<div class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>',
                     unsafe_allow_html=True,
                 )
                 st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
-                # reset flags if you want to start new (optional)
-                # st.session_state.pesanan = {}
-                # st.session_state.sudah_dihitung = False
 
 # --- STRUK ---
 elif page == "struk":
