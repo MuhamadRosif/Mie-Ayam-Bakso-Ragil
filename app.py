@@ -12,7 +12,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # -----------------------
-# Admin Login
+# Admin Login (Halaman login lebih rapi)
 # -----------------------
 if "login" not in st.session_state:
     st.session_state.login = False
@@ -23,38 +23,38 @@ ADMIN_PASS = "1234"
 if not st.session_state.login:
     st.markdown("""
     <style>
-    .login-box {
-        background-color: #1c1c1c;
-        padding: 40px;
-        border-radius: 12px;
+    .login-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 100px;
+    }
+    .login-card {
+        background: linear-gradient(135deg,#1f1f1f,#121212);
+        padding: 50px;
+        border-radius: 15px;
+        width: 380px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.6);
         color: #e6eef8;
-        max-width: 420px;
-        margin: 50px auto;
         text-align: center;
     }
-    .stTextInput>div>div>input { background: rgba(255,255,255,0.03); color: #e6eef8; }
-    .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color: white; }
+    .stTextInput>div>div>input { background: rgba(255,255,255,0.05); color: #e6eef8; border-radius:5px; padding:8px;}
+    .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color:white; font-weight:bold; width:100%; margin-top:10px; padding:10px; border-radius:8px;}
     </style>
     """, unsafe_allow_html=True)
-
-    st.markdown("<div class='login-box'>", unsafe_allow_html=True)
-    st.markdown("## 🔐 Login Admin — Kasir Mas Ragil", unsafe_allow_html=True)
+    
+    st.markdown('<div class="login-container"><div class="login-card">', unsafe_allow_html=True)
+    st.markdown("## 🔐 Login Admin — Kasir Mas Ragil")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-
-    col1, col2 = st.columns([1,1])
-    with col1:
-        if st.button("Masuk"):
-            if username == ADMIN_USER and password == ADMIN_PASS:
-                st.session_state.login = True
-                st.success("Login berhasil — Selamat datang, admin!")
-                st.experimental_rerun()
-            else:
-                st.error("Username atau password salah.")
-    with col2:
-        if st.button("Batal"):
-            st.stop()
-    st.markdown("</div>", unsafe_allow_html=True)
+    
+    if st.button("Masuk"):
+        if username == ADMIN_USER and password == ADMIN_PASS:
+            st.session_state.login = True
+            st.success("Login berhasil — Selamat datang, admin!")
+            st.experimental_rerun()
+        else:
+            st.error("Username atau password salah.")
+    st.markdown('</div></div>', unsafe_allow_html=True)
     st.stop()
 
 # -----------------------
@@ -66,7 +66,6 @@ defaults = {
     "pesanan": {},
     "nama_pelanggan": "",
     "total_bayar": 0,
-    "sudah_dihitung": False,
     "struk": ""
 }
 for k,v in defaults.items():
@@ -124,7 +123,6 @@ if side_col is not None:
             st.session_state.pesanan={}
             st.session_state.nama_pelanggan=""
             st.session_state.total_bayar=0
-            st.session_state.sudah_dihitung=False
             st.session_state.struk=""
             st.success("Pesanan direset.")
         st.markdown("<div style='font-size:12px;opacity:0.9;margin-top:8px'>Mas Ragil • Aplikasi Kasir</div>", unsafe_allow_html=True)
@@ -177,64 +175,25 @@ with main_col:
         st.session_state.nama_pelanggan = nama
         st.subheader("Menu Makanan")
         for item, harga in menu_makanan.items():
-            jumlah = st.number_input(f"{item} (Rp {harga:,})", min_value=0, value=st.session_state.pesanan.get(item,0))
-            st.session_state.pesanan[item] = jumlah
+            col1, col2, col3 = st.columns([2,1,1])
+            with col1: st.write(f"{item} (Rp {harga:,})")
+            with col2:
+                if st.button("-", key=f"{item}-minus"): 
+                    st.session_state.pesanan[item] = max(0, st.session_state.pesanan.get(item,0)-1)
+            with col3:
+                if st.button("+", key=f"{item}-plus"): 
+                    st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
         st.subheader("Menu Minuman")
         for item, harga in menu_minuman.items():
-            jumlah = st.number_input(f"{item} (Rp {harga:,})", min_value=0, value=st.session_state.pesanan.get(item,0))
-            st.session_state.pesanan[item] = jumlah
-        if st.button("Simpan Pesanan"):
-            st.success("Pesanan berhasil disimpan!")
-
-    elif page=="bayar":
-        st.header("💳 Pembayaran")
-        if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
-            st.warning("Belum ada pesanan. Silakan pilih menu terlebih dahulu.")
-        else:
-            subtotal = sum(menu_makanan.get(k,0)*v + menu_minuman.get(k,0)*v for k,v in st.session_state.pesanan.items())
-            diskon = int(subtotal*0.05) if subtotal>=100000 else 0
-            total_bayar = subtotal - diskon
-            st.write(f"Sub Total: Rp {subtotal:,}")
-            st.write(f"Diskon: Rp {diskon:,}")
-            st.write(f"Total Bayar: Rp {total_bayar:,}")
-            uang = st.number_input("Uang Diterima", min_value=0, value=0)
-            if st.button("Bayar"):
-                if uang>=total_bayar:
-                    kembalian = uang-total_bayar
-                    st.success(f"Pembayaran berhasil. Kembalian: Rp {kembalian:,}")
-                    struk = build_struk(st.session_state.nama_pelanggan, 
-                                        {k:v*(menu_makanan.get(k, menu_minuman.get(k,0))) for k,v in st.session_state.pesanan.items() if v>0},
-                                        subtotal,diskon,total_bayar,uang,kembalian)
-                    st.session_state.struk = struk
-                    save_transaction(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),st.session_state.nama_pelanggan,
-                                     {k:v for k,v in st.session_state.pesanan.items() if v>0},
-                                     subtotal,diskon,total_bayar,uang,kembalian)
-                    st.session_state.pesanan={}
-                else:
-                    st.error("Uang diterima kurang!")
-
-    elif page=="struk":
-        st.header("📄 Struk")
-        if st.session_state.struk:
-            st.text(st.session_state.struk)
-        else:
-            st.warning("Belum ada struk. Silakan lakukan pembayaran terlebih dahulu.")
-
-    elif page=="laporan":
-        st.header("📈 Laporan Penjualan")
-        if os.path.exists(DATA_FILE):
-            df=pd.read_csv(DATA_FILE)
-            st.dataframe(df)
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            summary = df.groupby(df['timestamp'].dt.date)['total'].sum()
-            st.bar_chart(summary)
-        else:
-            st.info("Belum ada transaksi.")
-
-    elif page=="tentang":
-        st.header("ℹ️ Tentang Aplikasi")
-        st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil versi Streamlit.")
-        st.write("Membantu mencatat pesanan, pembayaran, dan laporan penjualan dengan mudah.")
+            col1, col2, col3 = st.columns([2,1,1])
+            with col1: st.write(f"{item} (Rp {harga:,})")
+            with col2:
+                if st.button("-", key=f"{item}-minus"): 
+                    st.session_state.pesanan[item] = max(0, st.session_state.pesanan.get(item,0)-1)
+            with col3:
+                if st.button("+", key=f"{item}-plus"): 
+                    st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
+        st.write("Pesanan Saat Ini:", {k:v for k,v in st.session_state.pesanan.items() if v>0})
 
 st.markdown("---")
 st.caption("© 2025 Mas Ragil — Aplikasi Kasir")
