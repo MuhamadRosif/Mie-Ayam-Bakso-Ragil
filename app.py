@@ -25,23 +25,22 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # ===============================
-# App-level CSS (indigo dark theme + spacing so content starts below navbar iframe)
+# App-level CSS (indigo dark theme + spacing so content starts below navbar component)
 # ===============================
 st.markdown(
     """
     <style>
-    /* body background / main theme */
+    /* main background */
     .stApp {
         background: linear-gradient(180deg,#0b1020,#0e1430);
         color: #e6eef8;
         min-height: 100vh;
     }
-    /* make sure top content sits below the navbar component area */
+    /* leave space for the navbar component area (the HTML component at top) */
     .app-top-padding {
-        padding-top: 140px;  /* leave space for the navbar component area */
+        padding-top: 140px;
     }
-
-    /* Nota / struk style (same as original but tuned for dark bg) */
+    /* struk / nota */
     .nota {
         background-color:#1f2330;
         padding:18px;
@@ -51,13 +50,7 @@ st.markdown(
         white-space: pre;
         color:#e6eef8;
     }
-
-    /* Tweak Streamlit container width (class names may vary by Streamlit version) */
-    .css-1d391kg {  /* fallback — if not matching, it's harmless */
-        max-width: 1100px;
-    }
-
-    /* small visual tweaks for forms */
+    /* tweak input/button visuals */
     .stTextInput>div>div>input, .stNumberInput>div>div>input {
         background: rgba(255,255,255,0.03);
         color: #e6eef8;
@@ -67,6 +60,8 @@ st.markdown(
         color: white;
         border-radius: 8px;
     }
+    /* container width hint; harmless if class differs by streamlit version */
+    .css-1d391kg { max-width: 1100px; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -74,7 +69,6 @@ st.markdown(
 
 # ===============================
 # NAVBAR + SIDE PANEL (dark indigo) INSIDE COMPONENT
-# - Panel includes menu items and JS to set active class reading ?page=
 # ===============================
 components.html(
     """
@@ -196,7 +190,6 @@ components.html(
             panel.classList.add('open');
             overlay.classList.add('show');
             panel.setAttribute('aria-hidden','false');
-            // set active on load (in case page param present)
             setActiveByQuery();
           }
         }
@@ -222,7 +215,6 @@ components.html(
         }
 
         function setActiveByQuery(){
-          // read page param from top if possible, else from current
           let search = "";
           try { search = window.top.location.search; } catch(e) { search = window.location.search; }
           const params = new URLSearchParams(search);
@@ -234,7 +226,7 @@ components.html(
           });
         }
 
-        // run on load to set active menu
+        // set active when component is loaded
         setActiveByQuery();
       </script>
     </body>
@@ -250,6 +242,7 @@ components.html(
 q = st.query_params
 if "page" in q:
     st.session_state.page = q["page"][0]
+page = st.session_state.page
 
 # ===============================
 # DATA MENU (original)
@@ -290,13 +283,11 @@ def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_baya
 
 # ===============================
 # PAGE / KASIR CONTENT
-# - Keep content below the navbar iframe by adding padding div
+# - Keep content below the navbar component by adding padding div
 # ===============================
 st.markdown('<div class="app-top-padding"></div>', unsafe_allow_html=True)
 
-page = st.session_state.page
-
-# ---------- HOME: show welcome + quick summary + option to go to Pesan ----------
+# ---------- HOME ----------
 if page == "home":
     st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
     st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
@@ -307,16 +298,15 @@ if page == "home":
     colh1, colh2 = st.columns([1,1])
     with colh1:
         if st.button("➡️ Pesan Menu"):
-            st.session_state.page = "pesan"
+            # set query param so sidebar can highlight and page state remains URL-driven
             st.experimental_set_query_params(page="pesan")
             st.experimental_rerun()
     with colh2:
         if st.button("➡️ Pembayaran"):
-            st.session_state.page = "bayar"
             st.experimental_set_query_params(page="bayar")
             st.experimental_rerun()
 
-# ---------- PESAN: pilih menu, simpan ke session_state.pesanan ----------
+# ---------- PESAN ----------
 elif page == "pesan":
     st.header("🍜 Pesan Menu")
     st.session_state.nama_pelanggan = st.text_input("Nama Pelanggan", st.session_state.nama_pelanggan)
@@ -358,20 +348,16 @@ elif page == "pesan":
                 total_bayar,
             )
             st.success("Total dihitung. Lanjut ke Pembayaran.")
-            # suggest to go to pembayaran
             if st.button("➡️ Lanjut ke Pembayaran"):
-                st.session_state.page = "bayar"
                 st.experimental_set_query_params(page="bayar")
                 st.experimental_rerun()
 
-# ---------- BAYAR: tampilkan total & proses pembayaran ----------
+# ---------- BAYAR ----------
 elif page == "bayar":
     st.header("💳 Pembayaran")
     if not st.session_state.sudah_dihitung:
         st.warning("Silakan hitung total di menu Pesan terlebih dahulu.")
-        # quick link to Pesan
         if st.button("➡️ Pergi ke Pesan"):
-            st.session_state.page = "pesan"
             st.experimental_set_query_params(page="pesan")
             st.experimental_rerun()
     else:
@@ -397,12 +383,12 @@ elif page == "bayar":
                 st.balloons()
                 st.markdown(f'<div style="margin-top:12px;" class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>', unsafe_allow_html=True)
                 st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
-                # Reset order after payment (optional) - comment out if you want to keep
+                # optional: clear order after payment (comment/uncomment as needed)
                 # st.session_state.pesanan = {}
                 # st.session_state.sudah_dihitung = False
                 # st.session_state.total_bayar = 0
 
-# ---------- STRUK: tampilkan struk yg terakhir dibuat ----------
+# ---------- STRUK ----------
 elif page == "struk":
     st.header("📄 Struk Pembayaran")
     if st.session_state.struk:
