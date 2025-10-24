@@ -12,7 +12,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # -----------------------
-# Admin Login (Halaman login lebih rapi)
+# Admin Login (Modern & Berwarna)
 # -----------------------
 if "login" not in st.session_state:
     st.session_state.login = False
@@ -26,24 +26,42 @@ if not st.session_state.login:
     .login-container {
         display: flex;
         justify-content: center;
-        margin-top: 100px;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(135deg,#ff5858,#f857a6);
     }
     .login-card {
         background: linear-gradient(135deg,#1f1f1f,#121212);
         padding: 50px;
         border-radius: 15px;
-        width: 380px;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+        width: 400px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         color: #e6eef8;
         text-align: center;
     }
-    .stTextInput>div>div>input { background: rgba(255,255,255,0.05); color: #e6eef8; border-radius:5px; padding:8px;}
-    .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color:white; font-weight:bold; width:100%; margin-top:10px; padding:10px; border-radius:8px;}
+    .stTextInput>div>div>input { 
+        background: rgba(255,255,255,0.05); 
+        color: #e6eef8; 
+        border-radius:5px; 
+        padding:8px;
+        font-weight:bold;
+    }
+    .stButton>button { 
+        background: linear-gradient(90deg,#ff512f,#dd2476); 
+        color:white; 
+        font-weight:bold; 
+        width:100%; 
+        margin-top:15px; 
+        padding:10px; 
+        border-radius:8px;
+    }
+    .login-title { font-size:24px; font-weight:bold; margin-bottom:20px; }
     </style>
     """, unsafe_allow_html=True)
-    
+
     st.markdown('<div class="login-container"><div class="login-card">', unsafe_allow_html=True)
-    st.markdown("## 🔐 Login Admin — Kasir Mas Ragil")
+    st.markdown('<div class="login-title">🔐 Login Admin — Kasir Mas Ragil</div>', unsafe_allow_html=True)
+    
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     
@@ -175,16 +193,6 @@ with main_col:
         st.session_state.nama_pelanggan = nama
         st.subheader("Menu Makanan")
         for item, harga in menu_makanan.items():
-            col1, col2, col3 = st.columns([2,1,1])
-            with col1: st.write(f"{item} (Rp {harga:,})")
-            with col2:
-                if st.button("-", key=f"{item}-minus"): 
-                    st.session_state.pesanan[item] = max(0, st.session_state.pesanan.get(item,0)-1)
-            with col3:
-                if st.button("+", key=f"{item}-plus"): 
-                    st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
-        st.subheader("Menu Minuman")
-        for item, harga in menu_minuman.items():
             col1, col2, col3 = st.columns([2,1,1])
             with col1: st.write(f"{item} (Rp {harga:,})")
             with col2:
