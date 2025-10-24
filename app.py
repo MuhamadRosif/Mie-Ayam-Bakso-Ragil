@@ -349,3 +349,4 @@ elif page == "tentang":
 
 st.markdown("---")
 st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
+ 
