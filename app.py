@@ -48,7 +48,7 @@ if not st.session_state.login:
             if username == ADMIN_USER and password == ADMIN_PASS:
                 st.session_state.login = True
                 st.success("Login berhasil — Selamat datang, admin!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Username atau password salah.")
     with col2:
