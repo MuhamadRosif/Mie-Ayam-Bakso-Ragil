@@ -1,230 +1,343 @@
+# app.py
 import streamlit as st
+from datetime import datetime
 
 # ===============================
-# 🧾 Konfigurasi Halaman
+# Page config
 # ===============================
-st.set_page_config(
-    page_title="Kasir Mie Ayam & Bakso Mas Ragil",
-    page_icon="🍜",
-    layout="centered"
-)
+st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 
 # ===============================
-# 💾 Session State
+# Session state defaults
 # ===============================
+if "menu_open" not in st.session_state:
+    st.session_state.menu_open = False
 if "page" not in st.session_state:
     st.session_state.page = "home"
 if "pesanan" not in st.session_state:
     st.session_state.pesanan = {}
-if "total_bayar" not in st.session_state:
-    st.session_state.total_bayar = 0
-if "struk" not in st.session_state:
-    st.session_state.struk = ""
-if "sudah_dihitung" not in st.session_state:
-    st.session_state.sudah_dihitung = False
 if "nama_pelanggan" not in st.session_state:
     st.session_state.nama_pelanggan = ""
+if "total_bayar" not in st.session_state:
+    st.session_state.total_bayar = 0
+if "sudah_dihitung" not in st.session_state:
+    st.session_state.sudah_dihitung = False
+if "struk" not in st.session_state:
+    st.session_state.struk = ""
 
 # ===============================
-# 🎨 NAVBAR ATAS (dengan ikon ≡)
+# CSS (responsive + sidebar slide)
 # ===============================
-st.markdown("""
+st.markdown(
+    """
     <style>
-    .navbar {
-        background-color: #c62828;
-        padding: 12px;
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    .judul {
+    /* navbar */
+    .topbar{
+        background: linear-gradient(90deg,#c62828,#b71c1c);
         color: white;
-        font-weight: bold;
-        font-size: 20px;
-        text-align: center;
-        width: 100%;
+        padding:10px 16px;
+        border-radius:8px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
     }
-    .menu-btn {
-        font-size: 26px;
-        color: white;
-        cursor: pointer;
-        margin-right: 15px;
+    .hamburger{
+        font-size:22px;
+        font-weight:bold;
+        background:transparent;
+        color:white;
+        border:none;
+        cursor:pointer;
+        padding:6px 10px;
+        border-radius:6px;
+    }
+    .brand {
+        font-weight:800;
+        font-size:18px;
+        text-align:center;
+        color:white;
+        flex:1;
+    }
+
+    /* slide panel */
+    .side-panel {
+        position: fixed;
+        top: 60px;
+        left: 12px;
+        width: 280px;
+        max-width: 80%;
+        height: calc(100% - 80px);
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        padding: 14px;
+        transform: translateX(-340px);
+        transition: transform 0.28s ease;
+        z-index: 9999;
+        overflow:auto;
+    }
+    .side-panel.open {
+        transform: translateX(0);
+    }
+    .menu-item {
+        display:block;
+        padding:10px 12px;
+        margin:6px 0;
+        border-radius:8px;
+        color:#c62828;
+        font-weight:600;
+        text-decoration:none;
+    }
+    .menu-item:hover{
+        background:#fff0f0;
+    }
+
+    /* responsive adjustments */
+    @media (max-width: 640px) {
+        .brand { font-size:16px; }
+        .side-panel { left: 8px; width: 86%; }
+    }
+
+    /* struk style */
+    .nota {
+        background-color:#fffbea;
+        padding:18px;
+        border-radius:10px;
+        border:1px solid #e6d9a7;
+        font-family: "Courier New", monospace;
+        white-space: pre;
+        color:#222;
     }
     </style>
-""", unsafe_allow_html=True)
+    """,
+    unsafe_allow_html=True,
+)
 
-# header bar dengan tombol garis 3
-col1, col2, col3 = st.columns([1, 6, 1])
+# ===============================
+# Top bar HTML
+# ===============================
+col1, col2 = st.columns([1, 9])
 with col1:
-    menu_open = st.button("≡")
+    # Hamburger button -> toggle
+    if st.button("≡", key="hamb"):
+        st.session_state.menu_open = not st.session_state.menu_open
 with col2:
-    st.markdown('<div class="judul">🍜 Kasir Mie Ayam & Bakso Mas Ragil</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="topbar"><div style="width:36px"></div><div class="brand">🍜 Mie Ayam & Bakso — Mas Ragil</div></div>',
+        unsafe_allow_html=True,
+    )
+
+# ===============================
+# Slide-out sidebar (rendered via CSS class toggle)
+# ===============================
+panel_class = "side-panel open" if st.session_state.menu_open else "side-panel"
+st.markdown(
+    f"""
+    <div class="{panel_class}">
+        <h3 style="color:#c62828; margin-top:0">Menu Navigasi</h3>
+        <a href="#" class="menu-item" onclick="document.title='home'">🏠 Beranda</a>
+        <a href="#" class="menu-item" onclick="document.title='pesan'">🍜 Pesan Menu</a>
+        <a href="#" class="menu-item" onclick="document.title='bayar'">💳 Pembayaran</a>
+        <a href="#" class="menu-item" onclick="document.title='struk'">📄 Struk</a>
+        <a href="#" class="menu-item" onclick="document.title='tentang'">ℹ️ Tentang</a>
+        <hr/>
+        <div style="font-size:12px;color:#666">Tip: klik ikon ≡ lagi untuk tutup.</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+# NOTE:
+# The above menu links use href="#" and onclick to change document.title as a mild hack
+# to let users click — we still control navigation server-side using Streamlit buttons below.
+# This avoids needing custom JS to call Streamlit.
+
+# ===============================
+# Navigation row (in-page) - fallback for accessibility
+# ===============================
+nav_col1, nav_col2, nav_col3, nav_col4, nav_col5 = st.columns([1,1,1,1,1])
+if nav_col1.button("🏠 Beranda"):
+    st.session_state.page = "home"
+if nav_col2.button("🍜 Pesan Menu"):
+    st.session_state.page = "pesan"
+if nav_col3.button("💳 Pembayaran"):
+    st.session_state.page = "bayar"
+if nav_col4.button("📄 Struk"):
+    st.session_state.page = "struk"
+if nav_col5.button("ℹ️ Tentang"):
+    st.session_state.page = "tentang"
 
 st.markdown("---")
 
 # ===============================
-# 🌐 SIDEBAR (navigasi)
-# ===============================
-if menu_open:
-    st.sidebar.title("📂 Menu Navigasi")
-    halaman = st.sidebar.radio(
-        "Pilih Halaman:",
-        ["🏠 Beranda", "🍜 Pesan Menu", "💳 Pembayaran", "📄 Struk", "ℹ️ Tentang"]
-    )
-    if halaman == "🏠 Beranda":
-        st.session_state.page = "home"
-    elif halaman == "🍜 Pesan Menu":
-        st.session_state.page = "pesan"
-    elif halaman == "💳 Pembayaran":
-        st.session_state.page = "bayar"
-    elif halaman == "📄 Struk":
-        st.session_state.page = "struk"
-    elif halaman == "ℹ️ Tentang":
-        st.session_state.page = "tentang"
-
-# ===============================
-# 📋 Daftar Menu
+# Data menu
 # ===============================
 menu_makanan = {
     "Mie Ayam": 15000,
     "Bakso Urat": 18000,
     "Mie Ayam Bakso": 20000,
-    "Bakso Telur": 19000
+    "Bakso Telur": 19000,
 }
-
 menu_minuman = {
     "Es Teh Manis": 5000,
     "Es Jeruk": 7000,
     "Teh Hangat": 5000,
-    "Jeruk Hangat": 6000
+    "Jeruk Hangat": 6000,
 }
 
 # ===============================
-# 🏠 HALAMAN BERANDA
+# Helper: build struk text
 # ===============================
-if st.session_state.page == "home":
-    st.title("Selamat Datang di 🍜 Mas Ragil")
-    st.info("Gunakan tombol ≡ di kiri atas untuk membuka menu navigasi.")
-    st.image("https://upload.wikimedia.org/wikipedia/commons/f/f6/Mie_ayam_jamur.jpg",
-             caption="Mie Ayam & Bakso Mas Ragil - Lezat & Nikmat", use_container_width=True)
+def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_bayar=None, kembalian=None):
+    t = "===== STRUK PEMBAYARAN =====\n"
+    t += f"Tanggal : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    t += f"Nama    : {nama}\n"
+    t += "-----------------------------\n"
+    for it, subtotal in pesanan_dict.items():
+        t += f"{it:<20} Rp {subtotal:,}\n"
+    t += "-----------------------------\n"
+    t += f"Sub Total           : Rp {total_before:,}\n"
+    t += f"Diskon              : Rp {diskon:,}\n"
+    t += f"Total Bayar         : Rp {total_bayar:,}\n"
+    if uang_bayar is not None:
+        t += f"Uang Diterima       : Rp {uang_bayar:,}\n"
+        t += f"Kembalian           : Rp {kembalian:,}\n"
+    t += "=============================\n"
+    t += "Terima kasih! Salam, Mas Ragil\n"
+    return t
 
 # ===============================
-# 🍜 HALAMAN PESAN MENU
+# PAGES
 # ===============================
-elif st.session_state.page == "pesan":
-    st.header("🧾 Pilih Pesanan Anda")
-    st.session_state.nama_pelanggan = st.text_input("🧍 Nama Pelanggan", st.session_state.nama_pelanggan)
+page = st.session_state.page
 
-    tab1, tab2 = st.tabs(["🍜 Makanan", "🥤 Minuman"])
+# --- HOME ---
+if page == "home":
+    st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
+    st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
+    # high quality image from Unsplash (royalty-free)
+    st.image(
+        "https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3&s=8c71b1a1a7f2e3e8f6c1a8f0e8b2f9c4",
+        caption="Mie Ayam & Bakso — nikmati hangatnya!",
+        use_container_width=True,
+    )
 
-    with tab1:
-        st.subheader("🍜 Pilih Makanan")
-        for item, harga in menu_makanan.items():
-            qty = st.number_input(f"{item} (Rp {harga:,})", min_value=0, max_value=20, step=1, key=item)
+# --- PESAN MENU ---
+elif page == "pesan":
+    st.header("🍜 Pesan Menu")
+    st.session_state.nama_pelanggan = st.text_input("Nama Pelanggan", st.session_state.nama_pelanggan)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("Makanan")
+        for item, price in menu_makanan.items():
+            qty = st.number_input(f"{item} (Rp {price:,})", min_value=0, max_value=20, step=1, key=f"m_{item}")
             if qty > 0:
-                st.session_state.pesanan[item] = harga * qty
+                st.session_state.pesanan[item] = price * qty
+            elif item in st.session_state.pesanan:
+                del st.session_state.pesanan[item]
+    with c2:
+        st.subheader("Minuman")
+        for item, price in menu_minuman.items():
+            qty = st.number_input(f"{item} (Rp {price:,})", min_value=0, max_value=20, step=1, key=f"d_{item}")
+            if qty > 0:
+                st.session_state.pesanan[item] = price * qty
             elif item in st.session_state.pesanan:
                 del st.session_state.pesanan[item]
 
-    with tab2:
-        st.subheader("🥤 Pilih Minuman")
-        for item, harga in menu_minuman.items():
-            qty = st.number_input(f"{item} (Rp {harga:,})", min_value=0, max_value=20, step=1, key=item)
-            if qty > 0:
-                st.session_state.pesanan[item] = harga * qty
-            elif item in st.session_state.pesanan:
-                del st.session_state.pesanan[item]
+    st.markdown("---")
+    st.write("Daftar Pesanan Saat Ini:")
+    if st.session_state.pesanan:
+        for it, s in st.session_state.pesanan.items():
+            st.write(f"- {it}: Rp {s:,}")
+    else:
+        st.info("Belum ada pesanan.")
 
-    if st.button("💵 Hitung Total Pembayaran"):
+    if st.button("💵 Hitung Total"):
         if not st.session_state.nama_pelanggan:
-            st.warning("Masukkan nama pelanggan terlebih dahulu.")
+            st.warning("Masukkan nama pelanggan dulu.")
         elif not st.session_state.pesanan:
-            st.warning("Belum ada pesanan yang dipilih.")
+            st.warning("Belum ada pesanan.")
         else:
-            total = sum(st.session_state.pesanan.values())
-            diskon = int(0.1 * total) if total >= 50000 else 0
-            total_bayar = total - diskon
+            sub_total = sum(st.session_state.pesanan.values())
+            diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
+            total_bayar = sub_total - diskon
             st.session_state.total_bayar = total_bayar
             st.session_state.sudah_dihitung = True
+            # build struk (partial)
+            st.session_state.struk = build_struk(
+                st.session_state.nama_pelanggan,
+                st.session_state.pesanan,
+                sub_total,
+                diskon,
+                total_bayar,
+            )
+            st.success("Total dihitung. Lanjut ke Pembayaran.")
 
-            struk = "===== STRUK PEMBAYARAN =====\n"
-            struk += f"Nama Pelanggan : {st.session_state.nama_pelanggan}\n"
-            struk += "-----------------------------\n"
-            for item, subtotal in st.session_state.pesanan.items():
-                struk += f"{item:<20} Rp {subtotal:,}\n"
-            struk += "\n"
-            struk += f"Total Sebelum Diskon : Rp {total:,}\n"
-            struk += f"Diskon (10%)         : Rp {diskon:,}\n"
-            struk += f"Total Bayar          : Rp {total_bayar:,}\n"
-            struk += "=============================\n"
-            st.session_state.struk = struk
-            st.success("✅ Total sudah dihitung! Silakan lanjut ke 💳 Pembayaran.")
-
-# ===============================
-# 💳 HALAMAN PEMBAYARAN
-# ===============================
-elif st.session_state.page == "bayar":
+# --- PEMBAYARAN ---
+elif page == "bayar":
     st.header("💳 Pembayaran")
-
     if not st.session_state.sudah_dihitung:
-        st.warning("Silakan hitung total terlebih dahulu di menu Pesan.")
+        st.warning("Silakan hitung total di menu Pesan terlebih dahulu.")
     else:
-        st.info(f"Total yang harus dibayar: **Rp {st.session_state.total_bayar:,}**")
-        uang_bayar = st.number_input("Masukkan jumlah uang bayar:", min_value=0, step=1000, key="uang_bayar")
-
+        st.info(f"Total yang harus dibayar: Rp {st.session_state.total_bayar:,}")
+        uang = st.number_input("Masukkan uang bayar:", min_value=0, step=1000, key="pay_input")
         if st.button("✅ Bayar Sekarang"):
-            if uang_bayar < st.session_state.total_bayar:
-                st.error("❌ Uang tidak cukup.")
+            if uang < st.session_state.total_bayar:
+                st.error("Uang tidak cukup.")
             else:
-                kembalian = uang_bayar - st.session_state.total_bayar
-                st.success(f"✅ Pembayaran berhasil! Kembalian Anda: Rp {kembalian:,}")
+                kembalian = uang - st.session_state.total_bayar
+                # finalize struk
+                # Recompute sub_total and diskon to include in final struk
+                sub_total = sum(st.session_state.pesanan.values())
+                diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
+                st.session_state.struk = build_struk(
+                    st.session_state.nama_pelanggan,
+                    st.session_state.pesanan,
+                    sub_total,
+                    diskon,
+                    st.session_state.total_bayar,
+                    uang_bayar=uang,
+                    kembalian=kembalian,
+                )
+                st.success(f"Pembayaran berhasil — Kembalian: Rp {kembalian:,}")
                 st.balloons()
-                st.session_state.struk += f"Uang Bayar           : Rp {uang_bayar:,}\n"
-                st.session_state.struk += f"Kembalian            : Rp {kembalian:,}\n"
-                st.session_state.struk += "=============================\nTerima kasih 🙏"
+                # show nota right away
+                st.markdown(
+                    f'<div class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>',
+                    unsafe_allow_html=True,
+                )
+                st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
+                # reset flags if you want to start new (optional)
+                # st.session_state.pesanan = {}
+                # st.session_state.sudah_dihitung = False
 
-# ===============================
-# 📄 HALAMAN STRUK
-# ===============================
-elif st.session_state.page == "struk":
+# --- STRUK ---
+elif page == "struk":
     st.header("📄 Struk Pembayaran")
     if st.session_state.struk:
         st.markdown(
-            f"""
-            <div style="
-                background-color:#fffbea;
-                padding:20px;
-                border-radius:10px;
-                border:1px solid #ddd;
-                font-family:monospace;
-                white-space:pre;
-                color:#333;">
-            {st.session_state.struk}
-            </div>
-            """,
-            unsafe_allow_html=True
+            f'<div class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>',
+            unsafe_allow_html=True,
         )
-        st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="Struk_MieAyamMasRagil.txt")
+        st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
     else:
-        st.info("Belum ada struk. Silakan lakukan pembayaran terlebih dahulu.")
+        st.info("Belum ada struk. Lakukan transaksi dulu.")
+
+# --- TENTANG ---
+elif page == "tentang":
+    st.header("ℹ️ Tentang")
+    st.write(
+        """
+        Aplikasi kasir sederhana untuk usaha Mie Ayam & Bakso Mas Ragil.
+        - Responsive UI (mobile-friendly)
+        - Navbar + hamburger (≡) yang membuka sidebar
+        - Struk pembayaran bisa ditampilkan & diunduh
+        """
+    )
 
 # ===============================
-# ℹ️ HALAMAN TENTANG
+# Small footer
 # ===============================
-elif st.session_state.page == "tentang":
-    st.header("ℹ️ Tentang Aplikasi")
-    st.write("""
-    Aplikasi kasir ini dibuat untuk mempermudah transaksi di warung **Mie Ayam & Bakso Mas Ragil** 🍜  
-    Dibangun dengan framework **Streamlit**, ringan, cepat, dan bisa dijalankan langsung di browser.
-
-    **Fitur:**
-    - Navigasi dengan tombol garis tiga (≡)
-    - Input nama pelanggan  
-    - Pemesanan makanan & minuman  
-    - Diskon otomatis 10% di atas Rp 50.000  
-    - Pembayaran & hitung kembalian  
-    - Cetak & unduh struk digital  
-
-    _Dibuat dengan ❤️ oleh Tim Kasir Mas Ragil_
-    """)
+st.markdown("---")
+st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
