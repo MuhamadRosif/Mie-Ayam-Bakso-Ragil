@@ -1,4 +1,4 @@
-# app.py (stable Streamlit-only version)
+# app.py — versi lengkap + tombol RESET PESANAN
 import streamlit as st
 from datetime import datetime
 
@@ -25,13 +25,10 @@ for k, v in defaults.items():
 # -----------------------
 st.markdown("""
 <style>
-/* app background */
 .stApp {
   background: linear-gradient(180deg,#0b1020,#0e1430);
   color: #e6eef8;
 }
-
-/* topbar */
 .topbar {
   display:flex;
   align-items:center;
@@ -41,8 +38,6 @@ st.markdown("""
   color:white;
   border-radius:8px;
 }
-
-/* right panel look */
 .right-panel {
   background: linear-gradient(180deg, rgba(8,10,16,0.94), rgba(12,14,22,0.90));
   padding: 14px;
@@ -50,8 +45,6 @@ st.markdown("""
   box-shadow: -6px 6px 30px rgba(0,0,0,0.5);
   color: #fff;
 }
-
-/* menu item */
 .menu-item {
   display:block;
   width:100%;
@@ -64,8 +57,6 @@ st.markdown("""
   font-weight:600;
   border: none;
 }
-
-/* nota */
 .nota {
   background-color:#1f2330;
   padding:18px;
@@ -79,7 +70,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Topbar (hamburger + brand)
+# Topbar
 # -----------------------
 col_tb1, col_tb2 = st.columns([1, 11])
 with col_tb1:
@@ -91,7 +82,7 @@ with col_tb2:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # -----------------------
-# Layout: main + optional right panel
+# Layout
 # -----------------------
 if st.session_state.menu_open:
     main_col, side_col = st.columns([7, 3])
@@ -100,29 +91,34 @@ else:
     side_col = None
 
 # -----------------------
-# Right panel content (menu) if open
+# Right Panel
 # -----------------------
 if side_col is not None:
     with side_col:
         st.markdown('<div class="right-panel">', unsafe_allow_html=True)
         st.markdown("<div style='font-weight:700;margin-bottom:8px'>Menu Navigasi</div>", unsafe_allow_html=True)
-        # Use Streamlit buttons to change page
-        if st.button("🏠 Beranda", key="btn_home"):
+        if st.button("🏠 Beranda"):
             st.session_state.page = "home"
-        if st.button("🍜 Pesan Menu", key="btn_pesan"):
+        if st.button("🍜 Pesan Menu"):
             st.session_state.page = "pesan"
-        if st.button("💳 Pembayaran", key="btn_bayar"):
+        if st.button("💳 Pembayaran"):
             st.session_state.page = "bayar"
-        if st.button("📄 Struk", key="btn_struk"):
+        if st.button("📄 Struk"):
             st.session_state.page = "struk"
-        if st.button("ℹ️ Tentang", key="btn_tentang"):
+        if st.button("ℹ️ Tentang"):
             st.session_state.page = "tentang"
         st.markdown("<hr>", unsafe_allow_html=True)
+        if st.button("♻️ Reset Pesanan"):
+            for key in ["pesanan", "nama_pelanggan", "total_bayar", "sudah_dihitung", "struk"]:
+                st.session_state[key] = defaults[key]
+            st.session_state.page = "pesan"
+            st.success("Pesanan berhasil direset ✅")
+            st.experimental_rerun()
         st.markdown("<div style='font-size:12px;opacity:0.9'>Mas Ragil • Aplikasi Kasir</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
-# Data menu (same as original)
+# Data Menu
 # -----------------------
 menu_makanan = {
     "Mie Ayam": 15000,
@@ -138,7 +134,7 @@ menu_minuman = {
 }
 
 # -----------------------
-# Struk builder (same)
+# Fungsi Struk
 # -----------------------
 def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_bayar=None, kembalian=None):
     t = "===== STRUK PEMBAYARAN =====\n"
@@ -159,7 +155,7 @@ def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_baya
     return t
 
 # -----------------------
-# Pages (home/pesan/bayar/struk/tentang)
+# Halaman Utama
 # -----------------------
 page = st.session_state.page
 
@@ -169,13 +165,13 @@ with main_col:
         st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
         st.markdown("---")
         st.subheader("Mulai Transaksi Cepat")
-        colh1, colh2 = st.columns(2)
-        with colh1:
-            if st.button("➡️ Pesan Menu (langsung)", key="quick_pesan"):
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("➡️ Pesan Menu (langsung)"):
                 st.session_state.page = "pesan"
                 st.experimental_rerun()
-        with colh2:
-            if st.button("➡️ Pembayaran (langsung)", key="quick_bayar"):
+        with c2:
+            if st.button("➡️ Pembayaran (langsung)"):
                 st.session_state.page = "bayar"
                 st.experimental_rerun()
 
@@ -233,13 +229,13 @@ with main_col:
                 st.experimental_rerun()
         else:
             st.info(f"Total yang harus dibayar: Rp {st.session_state.total_bayar:,}")
-            uang = st.number_input("Masukkan uang bayar:", min_value=0, step=1000, key="pay_input")
+            uang = st.number_input("Masukkan uang bayar:", min_value=0, step=1000)
             if st.button("✅ Bayar Sekarang"):
                 if uang < st.session_state.total_bayar:
                     st.error("Uang tidak cukup.")
                 else:
                     kembalian = uang - st.session_state.total_bayar
-                    sub_total = sum(st.session_state.pesanan.values()) if st.session_state.pesanan else 0
+                    sub_total = sum(st.session_state.pesanan.values())
                     diskon = int(0.1 * sub_total) if sub_total >= 50000 else 0
                     st.session_state.struk = build_struk(
                         st.session_state.nama_pelanggan,
@@ -268,11 +264,11 @@ with main_col:
         st.write("""
         Aplikasi kasir sederhana untuk usaha Mie Ayam & Bakso Mas Ragil.
         - Responsive UI (mobile-friendly)
-        - Navbar + tombol (≡) membuka panel kanan
-        - Panel kanan tema gelap transparan (auto-close saat klik luar)
-        - Struk pembayaran bisa ditampilkan & diunduh
+        - Navbar kanan dengan tombol ≡
+        - Tema dark elegan
+        - Struk bisa diunduh
+        - Fitur reset pesanan (♻️)
         """)
 
-# Footer
 st.markdown("---")
 st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
