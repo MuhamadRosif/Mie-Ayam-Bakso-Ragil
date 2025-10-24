@@ -203,6 +203,65 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
 # -----------------------
 page=st.session_state.page
 with main_col:
+    if page=="home":
+        st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
+        st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
+        st.image("https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop", use_container_width=True)
+        st.markdown("---")
+        st.subheader("Mulai Transaksi Cepat")
+        c1,c2=st.columns(2)
+        with c1:
+            if st.button("➡️ Pesan Menu (langsung)"):
+                st.session_state.page="pesan"
+                st.experimental_rerun()
+        with c2:
+            if st.button("➡️ Pembayaran (langsung)"):
+                st.session_state.page="bayar"
+                st.experimental_rerun()
 
-st.markdown("---")
-st.caption("© Rosif Al Khikam — Kelompok 5 Boii")
+    elif page=="pesan":
+        st.header("🍜 Pesan Menu")
+        st.session_state.nama_pelanggan = st.text_input("Nama Pelanggan", st.session_state.nama_pelanggan)
+        c1,c2=st.columns(2)
+        with c1:
+            st.subheader("Makanan")
+            for item,price in menu_makanan.items():
+                qty=st.number_input(f"{item} (Rp {price:,})", min_value=0,max_value=20,step=1,key=f"m_{item}")
+                if qty>0:
+                    st.session_state.pesanan[item]=price*qty
+                elif item in st.session_state.pesanan:
+                    del st.session_state.pesanan[item]
+        with c2:
+            st.subheader("Minuman")
+            for item,price in menu_minuman.items():
+                qty=st.number_input(f"{item} (Rp {price:,})", min_value=0,max_value=20,step=1,key=f"d_{item}")
+                if qty>0:
+                    st.session_state.pesanan[item]=price*qty
+                elif item in st.session_state.pesanan:
+                    del st.session_state.pesanan[item]
+
+        st.markdown("---")
+        c3,c4=st.columns([2,1])
+        with c3:
+            if st.button("💵 Hitung Total"):
+                if not st.session_state.nama_pelanggan:
+                    st.warning("Masukkan nama pelanggan dulu.")
+                elif not st.session_state.pesanan:
+                    st.warning("Belum ada pesanan.")
+                else:
+                    sub_total=sum(st.session_state.pesanan.values())
+                    diskon=int(0.1*sub_total) if sub_total>=50000 else 0
+                    total_bayar=sub_total-diskon
+                    st.session_state.total_bayar=total_bayar
+                    st.session_state.sudah_dihitung=True
+                    st.session_state.struk=build_struk(
+                        st.session_state.nama_pelanggan,
+                        st.session_state.pesanan,
+                        sub_total,
+                        diskon,
+                        total_bayar
+                    )
+                    st.success("Total dihitung. Lanjut ke Pembayaran.")
+        with c4:
+            if st.button("🔄 Reset Pesanan"):
+                st.session_state
