@@ -1,11 +1,15 @@
+# app.py
 import streamlit as st
-from datetime import datetime
 import streamlit.components.v1 as components
+from datetime import datetime
 
+# ===============================
+# Page config
+# ===============================
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 
 # ===============================
-# SESSION DEFAULT
+# Session state defaults
 # ===============================
 defaults = {
     "page": "home",
@@ -20,128 +24,189 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # ===============================
-# CSS & HTML + JS aktif via components
+# NAVBAR + PANEL (INTERACTIVE) via components.html
+# - Panel dark transparent (sesuai request #2)
 # ===============================
-components.html("""
+components.html(
+"""
 <!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body {margin:0;padding:0;}
+  :root { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
+  body { margin:0; padding:0; }
+
+/* TOPBAR (fixed) */
 .topbar {
-  background: linear-gradient(90deg,#c62828,#b71c1c);
-  color: white;
-  padding: 10px 16px;
-  border-radius: 8px;
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  height: 56px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-.hamburger {
-  font-size: 22px;
-  font-weight: bold;
-  background: transparent;
+  gap: 12px;
+  padding: 6px 12px;
+  background: linear-gradient(90deg,#c62828,#b71c1c);
   color: white;
+  border-radius: 10px;
+  z-index: 9999;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+
+/* hamburger */
+.hambutton {
+  background: transparent;
   border: none;
+  color: white;
+  font-size: 22px;
   cursor: pointer;
   padding: 6px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 .brand {
   font-weight: 800;
-  font-size: 18px;
-  text-align: center;
-  color: white;
+  font-size: 16px;
   flex: 1;
+  text-align: center;
 }
+
+/* overlay dark (covers page when panel open) */
 .overlay {
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
+  inset: 0;
+  background: rgba(0,0,0,0.45);
   display: none;
-  z-index: 998;
+  z-index: 9990;
+  transition: opacity 0.25s ease;
 }
-.overlay.show { display: block; }
+.overlay.show { display:block; opacity:1; }
+
+/* side panel (dark transparent theme) */
 .side-panel {
   position: fixed;
   top: 0;
-  right: -320px;
-  width: 280px;
+  right: -360px; /* hidden by default */
+  width: 340px;
+  max-width: 85%;
   height: 100%;
-  background: rgba(255,255,255,0.97);
+  z-index: 9991;
+  transition: right 0.32s cubic-bezier(.2,.9,.2,1);
+  padding: 18px;
+  box-sizing: border-box;
   border-radius: 12px 0 0 12px;
-  padding: 16px;
-  transition: right 0.3s ease;
-  z-index: 999;
-  overflow: auto;
-  box-shadow: -2px 2px 8px rgba(0,0,0,0.2);
+  backdrop-filter: blur(6px);
+  /* dark transparent */
+  background: linear-gradient(180deg, rgba(10,10,12,0.86), rgba(6,6,8,0.82));
+  color: #fff;
+  box-shadow: -8px 0 24px rgba(0,0,0,0.5);
+  overflow-y: auto;
 }
-.side-panel.open { right: 0; }
+.side-panel.open {
+  right: 0;
+}
+
+/* menu items */
 .menu-item {
   display: block;
-  padding: 12px 16px;
-  margin: 6px 0;
-  border-radius: 8px;
-  color: #c62828;
-  font-weight: 600;
-  text-decoration: none;
-  background: #f5f5f5;
-  border: none;
   width: 100%;
   text-align: left;
-  transition: background 0.2s ease;
+  padding: 12px 14px;
+  margin: 8px 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
 }
-.menu-item:hover { background: rgba(198,40,40,0.1); }
-.menu-item.active { background: rgba(198,40,40,0.2); }
+.menu-item:hover {
+  background: rgba(255,255,255,0.06);
+}
+.menu-item.active {
+  background: rgba(255,255,255,0.10);
+  color: #fff;
+}
 
-@media (prefers-color-scheme: dark) {
-  .side-panel { background: rgba(20,20,20,0.97); color:white; }
-  .menu-item { background:#222; color:#fff; }
-  .menu-item:hover { background:#333; }
-  .menu-item.active { background:#800000; }
+/* small responsive tweak */
+@media (max-width: 600px) {
+  .topbar { left: 6px; right: 6px; top: 6px; }
+  .brand { font-size: 15px; }
+  .side-panel { width: 86%; }
 }
 </style>
 </head>
 <body>
-  <div class="topbar">
-    <button class="hamburger" onclick="toggleMenu()">≡</button>
+  <div class="topbar" role="banner">
+    <button class="hambutton" aria-label="Toggle menu" onclick="toggleMenu()">☰</button>
     <div class="brand">🍜 Mie Ayam & Bakso — Mas Ragil</div>
   </div>
 
   <div id="overlay" class="overlay" onclick="closeMenu()"></div>
-  <div id="sidepanel" class="side-panel">
-    <a href="?page=home" class="menu-item">🏠 Beranda</a>
-    <a href="?page=pesan" class="menu-item">🍜 Pesan Menu</a>
-    <a href="?page=bayar" class="menu-item">💳 Pembayaran</a>
-    <a href="?page=struk" class="menu-item">📄 Struk</a>
-    <a href="?page=tentang" class="menu-item">ℹ️ Tentang</a>
-  </div>
 
-  <script>
-  function toggleMenu(){
-    document.getElementById('sidepanel').classList.toggle('open');
-    document.getElementById('overlay').classList.toggle('show');
+  <nav id="sidepanel" class="side-panel" aria-hidden="true">
+    <div style="margin-bottom:6px; font-weight:700; font-size:14px;">Menu Navigasi</div>
+    <button class="menu-item" onclick="navigateTop('home')">🏠 Beranda</button>
+    <button class="menu-item" onclick="navigateTop('pesan')">🍜 Pesan Menu</button>
+    <button class="menu-item" onclick="navigateTop('bayar')">💳 Pembayaran</button>
+    <button class="menu-item" onclick="navigateTop('struk')">📄 Struk</button>
+    <button class="menu-item" onclick="navigateTop('tentang')">ℹ️ Tentang</button>
+    <hr style="border:none;border-top:1px solid rgba(255,255,255,0.06);margin:12px 0;">
+    <div style="font-size:13px;opacity:0.9">Mas Ragil • Aplikasi Kasir</div>
+  </nav>
+
+<script>
+function toggleMenu() {
+  const panel = document.getElementById('sidepanel');
+  const overlay = document.getElementById('overlay');
+  if (panel.classList.contains('open')) {
+    panel.classList.remove('open');
+    overlay.classList.remove('show');
+    panel.setAttribute('aria-hidden','true');
+  } else {
+    panel.classList.add('open');
+    overlay.classList.add('show');
+    panel.setAttribute('aria-hidden','false');
   }
-  function closeMenu(){
-    document.getElementById('sidepanel').classList.remove('open');
-    document.getElementById('overlay').classList.remove('show');
+}
+function closeMenu(){
+  const panel = document.getElementById('sidepanel');
+  const overlay = document.getElementById('overlay');
+  panel.classList.remove('open');
+  overlay.classList.remove('show');
+  panel.setAttribute('aria-hidden','true');
+}
+
+/* navigate parent/top window to new page param and close panel */
+function navigateTop(pageKey){
+  try {
+    const topUrl = new URL(window.top.location.href);
+    topUrl.searchParams.set('page', pageKey);
+    window.top.location.href = topUrl.toString();
+  } catch(e) {
+    // fallback: change current location (should still work in many deploy setups)
+    const cur = new URL(window.location.href);
+    cur.searchParams.set('page', pageKey);
+    window.location.href = cur.toString();
   }
-  </script>
+  // close panel right away
+  closeMenu();
+}
+</script>
 </body>
 </html>
-""", height=80)
+""",
+height=680, scrolling=True
+)
 
 # ===============================
-# HANDLE PAGE PARAMETER
+# Handle page parameter (no experimental_get_query_params)
 # ===============================
-query_params = st.query_params
-if "page" in query_params:
-    st.session_state.page = query_params["page"][0]
+q = st.query_params
+if "page" in q:
+    st.session_state.page = q["page"][0]
 
 # ===============================
 # DATA MENU
@@ -160,35 +225,39 @@ menu_minuman = {
 }
 
 # ===============================
-# STRUK BUILDER
+# HELPER STRUK
 # ===============================
 def build_struk(nama, pesanan_dict, total_before, diskon, total_bayar, uang_bayar=None, kembalian=None):
-    t = "===== STRUK PEMBAYARAN =====\\n"
-    t += f"Tanggal : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\\n"
-    t += f"Nama    : {nama}\\n"
-    t += "-----------------------------\\n"
+    t = "===== STRUK PEMBAYARAN =====\n"
+    t += f"Tanggal : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
+    t += f"Nama    : {nama}\n"
+    t += "-----------------------------\n"
     for it, subtotal in pesanan_dict.items():
-        t += f"{it:<20} Rp {subtotal:,}\\n"
-    t += "-----------------------------\\n"
-    t += f"Sub Total           : Rp {total_before:,}\\n"
-    t += f"Diskon              : Rp {diskon:,}\\n"
-    t += f"Total Bayar         : Rp {total_bayar:,}\\n"
+        t += f"{it:<20} Rp {subtotal:,}\n"
+    t += "-----------------------------\n"
+    t += f"Sub Total           : Rp {total_before:,}\n"
+    t += f"Diskon              : Rp {diskon:,}\n"
+    t += f"Total Bayar         : Rp {total_bayar:,}\n"
     if uang_bayar is not None:
-        t += f"Uang Diterima       : Rp {uang_bayar:,}\\n"
-        t += f"Kembalian           : Rp {kembalian:,}\\n"
-    t += "============================\\n"
-    t += "Terima kasih! Salam, Mas Ragil\\n"
+        t += f"Uang Diterima       : Rp {uang_bayar:,}\n"
+        t += f"Kembalian           : Rp {kembalian:,}\n"
+    t += "=============================\n"
+    t += "Terima kasih! Salam, Mas Ragil\n"
     return t
 
 # ===============================
-# PAGE ROUTING
+# HALAMAN (original kasir logic preserved)
 # ===============================
 page = st.session_state.page
 
 if page == "home":
     st.header("Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
     st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
-    st.image("https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop", caption="Mie Ayam & Bakso — nikmati hangatnya!", use_container_width=True)
+    st.image(
+        "https://images.unsplash.com/photo-1604908177522-3f9a9b2f4d9f?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3",
+        caption="Mie Ayam & Bakso — nikmati hangatnya!",
+        use_container_width=True,
+    )
 
 elif page == "pesan":
     st.header("🍜 Pesan Menu")
@@ -257,13 +326,13 @@ elif page == "bayar":
                 )
                 st.success(f"Pembayaran berhasil — Kembalian: Rp {kembalian:,}")
                 st.balloons()
-                st.text(st.session_state.struk)
+                st.markdown(f'<div style="margin-top:12px;" class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>', unsafe_allow_html=True)
                 st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
 
 elif page == "struk":
     st.header("📄 Struk Pembayaran")
     if st.session_state.struk:
-        st.text(st.session_state.struk)
+        st.markdown(f'<div class="nota">{st.session_state.struk.replace(" ", "&nbsp;")}</div>', unsafe_allow_html=True)
         st.download_button("💾 Unduh Struk", st.session_state.struk, file_name="struk_mas_ragil.txt")
     else:
         st.info("Belum ada struk. Lakukan transaksi dulu.")
@@ -272,10 +341,10 @@ elif page == "tentang":
     st.header("ℹ️ Tentang")
     st.write("""
     Aplikasi kasir sederhana untuk usaha Mie Ayam & Bakso Mas Ragil.
-    - Responsive mobile
-    - Menu slide dari kanan
-    - Klik luar panel menutup menu
-    - Struk bisa dicetak dan diunduh
+    - Responsive UI (mobile-friendly)
+    - Navbar + tombol (≡) membuka panel kanan
+    - Panel kanan tema gelap transparan (auto-close saat klik luar)
+    - Struk pembayaran bisa ditampilkan & diunduh
     """)
 
 st.markdown("---")
