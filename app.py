@@ -4,6 +4,7 @@ import pandas as pd
 import os
 import json
 from datetime import datetime
+import time  # Untuk efek typing
 
 # -----------------------
 # Config
@@ -13,7 +14,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"  # file penyimpanan riwayat
 
 # -----------------------
-# Simple Admin Login + Marquee
+# Simple Admin Login + Typing Banner
 # -----------------------
 if "login" not in st.session_state:
     st.session_state.login = False
@@ -33,13 +34,15 @@ if not st.session_state.login:
         max-width: 420px;
         margin: 80px auto;
         text-align: center;
+        position: relative;
     }
-    .marquee {
-        font-size: 20px;
+    .typing-banner {
+        font-size: 22px;
         font-weight: bold;
         color: #00eaff;
         text-shadow: 0 0 10px #00eaff, 0 0 25px #00eaff;
-        margin-bottom: 10px;
+        margin-bottom: 20px;
+        min-height: 30px;
     }
     .stTextInput>div>div>input { background: rgba(255,255,255,0.03); color: #e6eef8; }
     .stButton>button { background: linear-gradient(90deg,#c62828,#b71c1c); color: white; }
@@ -48,12 +51,14 @@ if not st.session_state.login:
 
     st.markdown("<div class='login-box'>", unsafe_allow_html=True)
 
-    # 🔥 Teks berjalan
-    st.markdown("""
-    <marquee behavior="alternate" direction="left" scrollamount="5" class="marquee">
-        🌟 Kelompok 5 🌟
-    </marquee>
-    """, unsafe_allow_html=True)
+    # 🔥 Banner typing effect di dalam kotak login
+    banner_placeholder = st.empty()
+    teks_banner = "🌟 Kelompok 5 🌟"
+    display_text = ""
+    for char in teks_banner:
+        display_text += char
+        banner_placeholder.markdown(f"<div class='typing-banner'>{display_text}</div>", unsafe_allow_html=True)
+        time.sleep(0.1)
 
     st.markdown("## 🔐 Login Admin — Kasir Mas Ragil", unsafe_allow_html=True)
     username = st.text_input("Username")
