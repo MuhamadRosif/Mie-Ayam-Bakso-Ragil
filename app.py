@@ -1,6 +1,6 @@
-# ==============================
-# Kasir Mas Ragil 🍜 — Versi Full Final Clean & Enhanced (use_container_width fix)
-# ==============================
+# =====================================================
+# 🍜 Kasir Mas Ragil — Versi Full Final + Backsound Musik
+# =====================================================
 import streamlit as st
 import pandas as pd
 import os
@@ -8,13 +8,24 @@ import json
 from datetime import datetime
 
 # -----------------------
-# Config
+# Konfigurasi Aplikasi
 # -----------------------
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
 
+# ===============================
+# 🔊 Musik Backsound
+# ===============================
+# Taruh file "backsound.mp3" di folder yang sama dengan app.py
+try:
+    audio_file = open("backsound.mp3", "rb")
+    audio_bytes = audio_file.read()
+    st.audio(audio_bytes, format="audio/mp3", loop=True, autoplay=True)
+except FileNotFoundError:
+    st.warning("🎵 File 'backsound.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
+
 # -----------------------
-# Admin Login (Dark Centered)
+# Login Admin
 # -----------------------
 if "login" not in st.session_state:
     st.session_state.login = False
@@ -24,18 +35,16 @@ ADMIN_PASS = "1234"
 
 if not st.session_state.login:
     st.markdown("""
-<style>
-.stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8; font-family: "Segoe UI", sans-serif;}
-.login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; color:#fff; text-align:center; margin:100px auto; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
-.login-title {font-size:22px; font-weight:bold; margin-bottom:20px;}
-.stTextInput>div>div>input {background-color:#2b2b2b; color:#fff; border:1px solid #444; border-radius:6px; padding:10px;}
-.stButton>button {background-color:#c62828; color:white; font-weight:bold; border:none; border-radius:6px; padding:10px 20px; width:100px; margin-top:10px;}
-.stButton>button:hover {background-color:#9c1f1f;}
-</style>
-""", unsafe_allow_html=True)
+    <style>
+    .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
+    .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; 
+                 margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
+    .stTextInput>div>div>input {background-color:#2b2b2b; color:#fff; border-radius:6px;}
+    .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
+    </style>
+    """, unsafe_allow_html=True)
 
-    st.markdown('<div class="login-card">', unsafe_allow_html=True)
-    st.markdown('<div class="login-title">🔐 Login Admin — Kasir Mas Ragil</div>', unsafe_allow_html=True)
+    st.markdown('<div class="login-card"><h3>🔐 Login Admin — Kasir Mas Ragil</h3>', unsafe_allow_html=True)
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Masuk"):
@@ -67,19 +76,16 @@ for k, v in defaults.items():
 # -----------------------
 st.markdown("""
 <style>
-.stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8; font-family: "Segoe UI", sans-serif;}
-.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
-.right-panel {background: linear-gradient(180deg, rgba(8,10,16,0.94), rgba(12,14,22,0.90)); padding:14px; border-radius:10px; box-shadow:-6px 6px 30px rgba(0,0,0,0.5); color:#fff;}
-.menu-item {display:block; width:100%; text-align:left; padding:10px 12px; margin:8px 0; border-radius:8px; background: rgba(255,255,255,0.03); color:#fff; font-weight:600; border:none; transition:0.3s;}
-.menu-item:hover {background: rgba(255,255,255,0.1);}
-.nota {background-color:#141826; padding:18px; border-radius:10px; border:1px solid #2f3340; font-family:"Courier New", monospace; white-space: pre; color:#e6eef8; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);}
-.stButton>button {background: linear-gradient(90deg,#c62828,#9c1f1f); color:white; border:none; border-radius:6px; padding:8px 16px; transition:all 0.3s;}
-.stButton>button:hover {transform: scale(1.05); box-shadow:0 4px 10px rgba(0,0,0,0.3);}
-.stTextInput>div>div>input, .stNumberInput>div>div>input {background-color:#2b2b2b; color:#fff; border:1px solid #444; border-radius:6px; padding:8px;}
-.stDataFrame {background-color:#1b1b1b; color:#e6eef8; border-radius:8px;}
-.btn-qty button {background:#444;color:#fff;border:none;border-radius:5px;padding:3px 8px;margin:2px;cursor:pointer;}
-.btn-qty button:hover {background:#666;}
-hr {border: 0; border-top: 1px solid #2c3d66; margin: 1em 0;}
+.stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
+.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; 
+         background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
+         border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+.right-panel {background: linear-gradient(180deg,#0c0e16,#181b26); padding:14px; border-radius:10px;}
+.menu-item {display:block; width:100%; padding:10px; border-radius:8px; background:#222; color:white; border:none;}
+.menu-item:hover {background:#333;}
+.nota {background-color:#141826; padding:18px; border-radius:10px; border:1px solid #2f3340; font-family:"Courier New", monospace;}
+.stButton>button {background: linear-gradient(90deg,#c62828,#9c1f1f); color:white; border:none; border-radius:6px; padding:8px 16px;}
+.stButton>button:hover {transform:scale(1.05);}
 </style>
 """, unsafe_allow_html=True)
 
@@ -107,34 +113,36 @@ else:
     side_col = None
 
 # -----------------------
-# Sidebar
+# Sidebar Navigasi
 # -----------------------
 if side_col is not None:
     with side_col:
         st.markdown('<div class="right-panel">', unsafe_allow_html=True)
-        st.markdown("<div style='font-weight:700;margin-bottom:8px'>🍽️ Menu Navigasi</div>", unsafe_allow_html=True)
-        if st.button("🏠 Beranda", key="nav_home"): st.session_state.page="home"
-        if st.button("🍜 Pesan Menu", key="nav_pesan"): st.session_state.page="pesan"
-        if st.button("💳 Pembayaran", key="nav_bayar"): st.session_state.page="bayar"
-        if st.button("📄 Struk", key="nav_struk"): st.session_state.page="struk"
-        if st.button("📈 Laporan", key="nav_laporan"): st.session_state.page="laporan"
-        if st.button("ℹ️ Tentang", key="nav_tentang"): st.session_state.page="tentang"
+        if st.button("🏠 Beranda"): st.session_state.page="home"
+        if st.button("🍜 Pesan Menu"): st.session_state.page="pesan"
+        if st.button("💳 Pembayaran"): st.session_state.page="bayar"
+        if st.button("📄 Struk"): st.session_state.page="struk"
+        if st.button("📈 Laporan"): st.session_state.page="laporan"
+        if st.button("ℹ️ Tentang"): st.session_state.page="tentang"
         st.markdown("<hr>", unsafe_allow_html=True)
-        if st.button("♻️ Reset Pesanan", key="reset"):
+        if st.button("♻️ Reset Pesanan"):
             st.session_state.pesanan={}
             st.session_state.nama_pelanggan=""
             st.session_state.total_bayar=0
             st.session_state.struk=""
             st.success("Pesanan direset.")
-        st.markdown("<div style='font-size:12px;opacity:0.9;margin-top:8px'>Mas Ragil • Aplikasi Kasir 🍜</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:12px;opacity:0.7;'>© Mas Ragil 2025</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
-# Menu & Helpers
+# Data Menu
 # -----------------------
 menu_makanan = {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
 menu_minuman = {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
 
+# -----------------------
+# Fungsi Pendukung
+# -----------------------
 def save_transaction(timestamp,nama,items_dict,subtotal,diskon,total,bayar=None,kembalian=None):
     record={"timestamp":timestamp,"nama":nama,"items":json.dumps(items_dict,ensure_ascii=False),
             "subtotal":subtotal,"diskon":diskon,"total":total,"bayar":bayar if bayar else "","kembalian":kembalian if kembalian else ""}
@@ -152,12 +160,12 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
     for it,subtotal in pesanan_dict.items():
         t+=f"{it:<20} Rp {subtotal:,}\n"
     t+="-----------------------------\n"
-    t+=f"Sub Total           : Rp {total_before:,}\n"
-    t+=f"Diskon              : Rp {diskon:,}\n"
-    t+=f"Total Bayar         : Rp {total_bayar:,}\n"
+    t+=f"Sub Total : Rp {total_before:,}\n"
+    t+=f"Diskon    : Rp {diskon:,}\n"
+    t+=f"Total     : Rp {total_bayar:,}\n"
     if uang_bayar:
-        t+=f"Uang Diterima       : Rp {uang_bayar:,}\n"
-        t+=f"Kembalian           : Rp {kembalian:,}\n"
+        t+=f"Bayar     : Rp {uang_bayar:,}\n"
+        t+=f"Kembalian : Rp {kembalian:,}\n"
     t+="=============================\n"
     t+="Terima kasih! Salam, Mas Ragil 🍜\n"
     return t
@@ -169,30 +177,18 @@ page = st.session_state.page
 with main_col:
     if page=="home":
         st.header("🏠 Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
+        st.write("Pilih menu, lakukan pembayaran, dan cetak struk pelanggan.")
         st.image("https://via.placeholder.com/800x400/071026/ffffff?text=Mie+Ayam+%26+Bakso+Mas+Ragil", use_container_width=True)
-
-        # === ADDED: Mulai Transaksi Cepat (only this block was added) ===
-        st.markdown("<hr>", unsafe_allow_html=True)
-        st.subheader("🚀 Mulai Transaksi Cepat")
-
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("🍜 Pesan Menu Sekarang"):
-                st.session_state.page = "pesan"
-                st.rerun()
-        with col2:
-            if st.button("💳 Langsung ke Pembayaran"):
-                st.session_state.page = "bayar"
-                st.rerun()
-        # === end added block ===
+        if st.button("🚀 Mulai Transaksi Cepat"):
+            st.session_state.page = "pesan"
+            st.rerun()
 
     elif page=="pesan":
         st.header("🍜 Pesan Menu")
-        nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan, placeholder="Masukkan nama pelanggan")
+        nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan)
         st.session_state.nama_pelanggan = nama
         if not nama.strip():
-            st.warning("❌ Silakan masukkan nama pelanggan sebelum memesan.")
+            st.warning("Masukkan nama pelanggan sebelum memesan.")
         else:
             st.subheader("🍽️ Menu Makanan")
             for item,harga in menu_makanan.items():
@@ -212,7 +208,6 @@ with main_col:
                 with col3: st.write(f"Qty: {st.session_state.pesanan.get(item,0)}")
                 with col4:
                     if st.button("+", key=f"{item}-plus-minum"): st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
-            # Realistik Papan Pesanan
             pesanan_aktif = {k:v for k,v in st.session_state.pesanan.items() if v>0}
             if pesanan_aktif:
                 st.markdown("**📋 Pesanan Saat Ini:**")
@@ -220,21 +215,22 @@ with main_col:
                     harga_satuan = menu_makanan.get(k, menu_minuman.get(k,0))
                     st.write(f"{k} x {v} = Rp {v*harga_satuan:,}")
                 subtotal = sum(menu_makanan.get(k,0)*v + menu_minuman.get(k,0)*v for k,v in pesanan_aktif.items())
-                st.info(f"Subtotal Sementara: Rp {subtotal:,}")
+                st.info(f"Subtotal: Rp {subtotal:,}")
             else:
                 st.info("Belum ada pesanan.")
+
     elif page=="bayar":
         st.header("💳 Pembayaran")
         if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
-            st.warning("Belum ada pesanan. Silakan pilih menu terlebih dahulu.")
+            st.warning("Belum ada pesanan.")
         else:
             pesanan_aktif = {k:v for k,v in st.session_state.pesanan.items() if v>0}
             subtotal = sum(menu_makanan.get(k,0)*v + menu_minuman.get(k,0)*v for k,v in pesanan_aktif.items())
             diskon = int(subtotal*0.05) if subtotal>=100000 else 0
             total_bayar = subtotal - diskon
-            st.write(f"**Sub Total:** Rp {subtotal:,}")
-            st.write(f"**Diskon:** Rp {diskon:,}")
-            st.write(f"**Total Bayar:** Rp {total_bayar:,}")
+            st.write(f"Sub Total: Rp {subtotal:,}")
+            st.write(f"Diskon: Rp {diskon:,}")
+            st.write(f"Total Bayar: Rp {total_bayar:,}")
             uang = st.number_input("Uang Diterima", min_value=0, value=total_bayar, step=1000)
             if st.button("Bayar Sekarang"):
                 if uang >= total_bayar:
@@ -248,19 +244,21 @@ with main_col:
                     st.session_state.page = "struk"
                     st.rerun()
                 else:
-                    st.error("❌ Uang diterima kurang!")
+                    st.error("Uang diterima kurang!")
+
     elif page=="struk":
         st.header("📄 Struk Pembayaran")
         if st.session_state.struk:
             st.markdown('<div class="nota">', unsafe_allow_html=True)
             st.text(st.session_state.struk)
             st.markdown('</div>', unsafe_allow_html=True)
-            if st.button("💾 Simpan Struk ke File"):
+            if st.button("💾 Simpan Struk"):
                 with open("struk_terakhir.txt","w",encoding="utf-8") as f:
                     f.write(st.session_state.struk)
-                st.success("Struk berhasil disimpan ke file 'struk_terakhir.txt'.")
+                st.success("Struk disimpan.")
         else:
-            st.warning("Belum ada struk. Silakan lakukan pembayaran terlebih dahulu.")
+            st.warning("Belum ada struk.")
+
     elif page=="laporan":
         st.header("📈 Laporan Penjualan")
         if os.path.exists(DATA_FILE):
@@ -268,19 +266,16 @@ with main_col:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
-            st.subheader("Total Pendapatan per Hari")
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
-            st.subheader("Total Transaksi per Hari")
-            daily_count = df.groupby(df['timestamp'].dt.date)['total'].count()
-            st.line_chart(daily_count)
         else:
             st.info("Belum ada transaksi.")
+
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
-        st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil versi Streamlit.")
-        st.write("Fitur: Login admin, pesan menu, pembayaran, struk, laporan, reset pesanan.")
+        st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan backsound musik akustik.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full Enhanced")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Akustik")
