@@ -1,5 +1,5 @@
 # ==============================
-# Kasir Mas Ragil 🍜 — Versi Full Final Clean & Enhanced (dengan Mulai Transaksi Cepat)
+# Kasir Mas Ragil 🍜 — Versi Full Final Clean & Enhanced (use_container_width fix)
 # ==============================
 import streamlit as st
 import pandas as pd
@@ -170,7 +170,7 @@ with main_col:
     if page=="home":
         st.header("🏠 Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
-        st.image("https://via.placeholder.com/800x400/071026/ffffff?text=Mie+Ayam+%26+Bakso+Mas+Ragil", use_column_width=True)
+        st.image("https://via.placeholder.com/800x400/071026/ffffff?text=Mie+Ayam+%26+Bakso+Mas+Ragil", use_container_width=True)
 
         # === ADDED: Mulai Transaksi Cepat (only this block was added) ===
         st.markdown("<hr>", unsafe_allow_html=True)
