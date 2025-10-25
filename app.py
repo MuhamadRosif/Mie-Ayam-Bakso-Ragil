@@ -1,4 +1,6 @@
-# app.py
+# ==============================
+# Kasir Mas Ragil 🍜 — Versi Final
+# ==============================
 import streamlit as st
 import pandas as pd
 import os
@@ -12,7 +14,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # -----------------------
-# Admin Login (Flat Dark Theme)
+# Admin Login (Dark Centered)
 # -----------------------
 if "login" not in st.session_state:
     st.session_state.login = False
@@ -23,19 +25,20 @@ ADMIN_PASS = "1234"
 if not st.session_state.login:
     st.markdown("""
     <style>
+    body {background-color: #0e0e0e;}
+    .stApp {background-color: #0e0e0e;}
     .login-container {
         display: flex;
         justify-content: center;
         align-items: center;
         height: 100vh;
-        background-color: #0e0e0e;
     }
     .login-card {
         background-color: #1b1b1b;
         padding: 40px;
         border-radius: 12px;
-        width: 380px;
-        color: #ffffff;
+        width: 360px;
+        color: #fff;
         text-align: center;
         font-family: "Segoe UI", sans-serif;
         box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -60,7 +63,7 @@ if not st.session_state.login:
         border-radius: 6px;
         padding: 10px 20px;
         width: 100px;
-        margin: 10px 6px 0 6px;
+        margin-top: 10px;
     }
     .stButton>button:hover {
         background-color: #9c1f1f;
@@ -70,33 +73,20 @@ if not st.session_state.login:
 
     st.markdown('<div class="login-container"><div class="login-card">', unsafe_allow_html=True)
     st.markdown('<div class="login-title">🔐 Login Admin — Kasir Mas Ragil</div>', unsafe_allow_html=True)
-    
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        masuk = st.button("Masuk")
-    with col2:
-        batal = st.button("Batal")
-
-    if masuk:
+    if st.button("Masuk"):
         if username == ADMIN_USER and password == ADMIN_PASS:
             st.session_state.login = True
-            st.success("Login berhasil — Selamat datang, admin!")
             st.experimental_rerun()
         else:
             st.error("Username atau password salah.")
-    elif batal:
-        username = ""
-        password = ""
-        st.warning("Login dibatalkan.")
-
     st.markdown('</div></div>', unsafe_allow_html=True)
     st.stop()
 
 # -----------------------
-# Session defaults
+# Default Session
 # -----------------------
 defaults = {
     "menu_open": False,
@@ -115,11 +105,48 @@ for k, v in defaults.items():
 # -----------------------
 st.markdown("""
 <style>
-.stApp { background: linear-gradient(180deg,#071026,#0b1440); color: #e6eef8; font-family: "Segoe UI", sans-serif; }
-.topbar { display:flex; align-items:center; gap:12px; padding:10px 18px; background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; border-radius:8px;}
-.right-panel { background: linear-gradient(180deg, rgba(8,10,16,0.94), rgba(12,14,22,0.90)); padding: 14px; border-radius: 10px; box-shadow: -6px 6px 30px rgba(0,0,0,0.5); color: #fff; }
-.menu-item { display:block; width:100%; text-align:left; padding:10px 12px; margin:8px 0; border-radius:8px; background: rgba(255,255,255,0.03); color: #fff; font-weight:600; border: none; }
-.nota { background-color:#141826; padding:18px; border-radius:10px; border:1px solid #2f3340; font-family: "Courier New", monospace; white-space: pre; color:#e6eef8; }
+.stApp {
+    background: linear-gradient(180deg,#071026,#0b1440);
+    color: #e6eef8;
+    font-family: "Segoe UI", sans-serif;
+}
+.topbar {
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 18px;
+    background: linear-gradient(90deg,#b71c1c,#9c2a2a);
+    color:white;
+    border-radius:8px;
+}
+.right-panel {
+    background: linear-gradient(180deg, rgba(8,10,16,0.94), rgba(12,14,22,0.90));
+    padding: 14px;
+    border-radius: 10px;
+    box-shadow: -6px 6px 30px rgba(0,0,0,0.5);
+    color: #fff;
+}
+.menu-item {
+    display:block;
+    width:100%;
+    text-align:left;
+    padding:10px 12px;
+    margin:8px 0;
+    border-radius:8px;
+    background: rgba(255,255,255,0.03);
+    color: #fff;
+    font-weight:600;
+    border: none;
+}
+.nota {
+    background-color:#141826;
+    padding:18px;
+    border-radius:10px;
+    border:1px solid #2f3340;
+    font-family: "Courier New", monospace;
+    white-space: pre;
+    color:#e6eef8;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -138,7 +165,7 @@ with col_tb3:
         st.experimental_rerun()
 
 # -----------------------
-# Layout & Sidebar
+# Layout
 # -----------------------
 if st.session_state.menu_open:
     main_col, side_col = st.columns([7,3])
@@ -146,6 +173,9 @@ else:
     main_col = st.columns([1])[0]
     side_col = None
 
+# -----------------------
+# Sidebar
+# -----------------------
 if side_col is not None:
     with side_col:
         st.markdown('<div class="right-panel">', unsafe_allow_html=True)
@@ -200,7 +230,7 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
     return t
 
 # -----------------------
-# Pages
+# Halaman
 # -----------------------
 page = st.session_state.page
 with main_col:
@@ -220,6 +250,16 @@ with main_col:
                     st.session_state.pesanan[item] = max(0, st.session_state.pesanan.get(item,0)-1)
             with col3:
                 if st.button("+", key=f"{item}-plus"): 
+                    st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
+        st.subheader("Menu Minuman")
+        for item, harga in menu_minuman.items():
+            col1, col2, col3 = st.columns([2,1,1])
+            with col1: st.write(f"{item} (Rp {harga:,})")
+            with col2:
+                if st.button("-", key=f"{item}-minus-minum"): 
+                    st.session_state.pesanan[item] = max(0, st.session_state.pesanan.get(item,0)-1)
+            with col3:
+                if st.button("+", key=f"{item}-plus-minum"): 
                     st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
         st.write("Pesanan Saat Ini:", {k:v for k,v in st.session_state.pesanan.items() if v>0})
     elif page=="bayar":
@@ -289,4 +329,4 @@ with main_col:
         st.write("Membantu mencatat pesanan, pembayaran, dan laporan penjualan dengan mudah.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜")
