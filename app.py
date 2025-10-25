@@ -18,11 +18,11 @@ DATA_FILE = "riwayat_penjualan.csv"
 # ===============================
 # Taruh file "backsound.mp3" di folder yang sama dengan app.py
 try:
-    audio_file = open("backsound.mp3", "rb")
+    audio_file = open("asek.mp3", "rb")
     audio_bytes = audio_file.read()
     st.audio(audio_bytes, format="audio/mp3", loop=True, autoplay=True)
 except FileNotFoundError:
-    st.warning("🎵 File 'backsound.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
+    st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
 
 # -----------------------
 # Login Admin
