@@ -1,11 +1,12 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Versi Full Final + Backsound Musik
+# 🍜 Kasir Mas Ragil — Versi Full Final + Backsound Musik Otomatis
 # =====================================================
 import streamlit as st
 import pandas as pd
 import os
 import json
 from datetime import datetime
+import base64
 
 # -----------------------
 # Konfigurasi Aplikasi
@@ -14,13 +15,20 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # ===============================
-# 🔊 Musik Backsound
+# 🔊 Musik Backsound (Auto Play Tanpa Kontrol)
 # ===============================
-# Taruh file "backsound.mp3" di folder yang sama dengan app.py
+# Taruh file "asek.mp3" di folder yang sama dengan app.py
 try:
     audio_file = open("asek.mp3", "rb")
     audio_bytes = audio_file.read()
-    st.audio(audio_bytes, format="audio/mp3", loop=True, autoplay=True)
+    audio_base64 = base64.b64encode(audio_bytes).decode()
+
+    st.markdown(f"""
+    <audio autoplay loop hidden>
+        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+    </audio>
+    """, unsafe_allow_html=True)
+
 except FileNotFoundError:
     st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
 
