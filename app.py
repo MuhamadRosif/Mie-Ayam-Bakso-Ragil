@@ -1,5 +1,5 @@
 # ==============================
-# Kasir Mas Ragil 🍜 — Versi Final
+# Kasir Mas Ragil 🍜 — Versi Final Clean
 # ==============================
 import streamlit as st
 import pandas as pd
@@ -25,13 +25,10 @@ ADMIN_PASS = "1234"
 if not st.session_state.login:
     st.markdown("""
     <style>
-    body {background-color: #0e0e0e;}
-    .stApp {background-color: #0e0e0e;}
-    .login-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
+    .stApp {
+        background: linear-gradient(180deg,#071026,#0b1440);
+        color: #e6eef8;
+        font-family: "Segoe UI", sans-serif;
     }
     .login-card {
         background-color: #1b1b1b;
@@ -40,7 +37,7 @@ if not st.session_state.login:
         width: 360px;
         color: #fff;
         text-align: center;
-        font-family: "Segoe UI", sans-serif;
+        margin: 100px auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
     .login-title {
@@ -71,7 +68,7 @@ if not st.session_state.login:
     </style>
     """, unsafe_allow_html=True)
 
-    st.markdown('<div class="login-container"><div class="login-card">', unsafe_allow_html=True)
+    st.markdown('<div class="login-card">', unsafe_allow_html=True)
     st.markdown('<div class="login-title">🔐 Login Admin — Kasir Mas Ragil</div>', unsafe_allow_html=True)
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -82,7 +79,7 @@ if not st.session_state.login:
             st.experimental_rerun()
         else:
             st.error("Username atau password salah.")
-    st.markdown('</div></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
 # -----------------------
@@ -151,7 +148,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -----------------------
-# Topbar
+# Topbar (hanya setelah login)
 # -----------------------
 col_tb1, col_tb2, col_tb3 = st.columns([1,10,2])
 with col_tb1:
