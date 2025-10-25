@@ -1,5 +1,5 @@
 # ==============================
-# Kasir Mas Ragil 🍜 — Versi Full Final Clean & Enhanced
+# Kasir Mas Ragil 🍜 — Versi Full Final Clean & Enhanced (dengan Mulai Transaksi Cepat)
 # ==============================
 import streamlit as st
 import pandas as pd
@@ -79,6 +79,7 @@ st.markdown("""
 .stDataFrame {background-color:#1b1b1b; color:#e6eef8; border-radius:8px;}
 .btn-qty button {background:#444;color:#fff;border:none;border-radius:5px;padding:3px 8px;margin:2px;cursor:pointer;}
 .btn-qty button:hover {background:#666;}
+hr {border: 0; border-top: 1px solid #2c3d66; margin: 1em 0;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -170,6 +171,22 @@ with main_col:
         st.header("🏠 Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Warung rumahan dengan cita rasa otentik. Pilih menu, hitung total, lalu bayar dan cetak struk.")
         st.image("https://via.placeholder.com/800x400/071026/ffffff?text=Mie+Ayam+%26+Bakso+Mas+Ragil", use_column_width=True)
+
+        # === ADDED: Mulai Transaksi Cepat (only this block was added) ===
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.subheader("🚀 Mulai Transaksi Cepat")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🍜 Pesan Menu Sekarang"):
+                st.session_state.page = "pesan"
+                st.rerun()
+        with col2:
+            if st.button("💳 Langsung ke Pembayaran"):
+                st.session_state.page = "bayar"
+                st.rerun()
+        # === end added block ===
+
     elif page=="pesan":
         st.header("🍜 Pesan Menu")
         nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan, placeholder="Masukkan nama pelanggan")
