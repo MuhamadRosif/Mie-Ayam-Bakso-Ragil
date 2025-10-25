@@ -12,7 +12,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # -----------------------
-# Admin Login (Modern & Elegan)
+# Admin Login (Flat Dark Theme)
 # -----------------------
 if "login" not in st.session_state:
     st.session_state.login = False
@@ -28,36 +28,43 @@ if not st.session_state.login:
         justify-content: center;
         align-items: center;
         height: 100vh;
-        background: linear-gradient(135deg,#0b1440,#071026);
+        background-color: #0e0e0e;
     }
     .login-card {
-        background: linear-gradient(135deg,#1f1f1f,#121212);
-        padding: 50px;
-        border-radius: 15px;
-        width: 400px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-        color: #e6eef8;
+        background-color: #1b1b1b;
+        padding: 40px;
+        border-radius: 12px;
+        width: 380px;
+        color: #ffffff;
         text-align: center;
         font-family: "Segoe UI", sans-serif;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
-    .stTextInput>div>div>input { 
-        background: rgba(255,255,255,0.05); 
-        color: #e6eef8; 
-        border-radius:5px; 
-        padding:10px;
-        font-weight:bold;
+    .login-title {
+        font-size: 22px;
+        font-weight: bold;
+        margin-bottom: 20px;
     }
-    .stButton>button { 
-        background: linear-gradient(90deg,#c62828,#9c1f1f);
-        color:white; 
-        font-weight:bold; 
-        width:100%; 
-        margin-top:15px; 
-        padding:12px; 
-        border-radius:8px;
-        font-size:16px;
+    .stTextInput>div>div>input {
+        background-color: #2b2b2b;
+        color: #fff;
+        border: 1px solid #444;
+        border-radius: 6px;
+        padding: 10px;
     }
-    .login-title { font-size:26px; font-weight:bold; margin-bottom:25px; }
+    .stButton>button {
+        background-color: #c62828;
+        color: white;
+        font-weight: bold;
+        border: none;
+        border-radius: 6px;
+        padding: 10px 20px;
+        width: 100px;
+        margin: 10px 6px 0 6px;
+    }
+    .stButton>button:hover {
+        background-color: #9c1f1f;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -66,14 +73,25 @@ if not st.session_state.login:
     
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
-    
-    if st.button("Masuk"):
+
+    col1, col2 = st.columns(2)
+    with col1:
+        masuk = st.button("Masuk")
+    with col2:
+        batal = st.button("Batal")
+
+    if masuk:
         if username == ADMIN_USER and password == ADMIN_PASS:
             st.session_state.login = True
             st.success("Login berhasil — Selamat datang, admin!")
             st.experimental_rerun()
         else:
             st.error("Username atau password salah.")
+    elif batal:
+        username = ""
+        password = ""
+        st.warning("Login dibatalkan.")
+
     st.markdown('</div></div>', unsafe_allow_html=True)
     st.stop()
 
@@ -88,7 +106,7 @@ defaults = {
     "total_bayar": 0,
     "struk": ""
 }
-for k,v in defaults.items():
+for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
@@ -159,9 +177,9 @@ def save_transaction(timestamp,nama,items_dict,subtotal,diskon,total,bayar=None,
             "subtotal":subtotal,"diskon":diskon,"total":total,"bayar":bayar if bayar else "","kembalian":kembalian if kembalian else ""}
     df=pd.DataFrame([record])
     if os.path.exists(DATA_FILE):
-        df.to_csv(DATA_FILE,mode="a",header=False,index=False)
+        df.to_csv(DATA_FILE,mode="a",header=False,index=False,encoding="utf-8-sig")
     else:
-        df.to_csv(DATA_FILE,index=False)
+        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
 
 def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=None,kembalian=None):
     t="===== STRUK PEMBAYARAN =====\n"
@@ -247,16 +265,21 @@ with main_col:
         st.header("📄 Struk")
         if st.session_state.struk:
             st.text(st.session_state.struk)
+            if st.button("💾 Simpan Struk ke File"):
+                with open("struk_terakhir.txt", "w", encoding="utf-8") as f:
+                    f.write(st.session_state.struk)
+                st.success("Struk berhasil disimpan ke file 'struk_terakhir.txt'.")
         else:
             st.warning("Belum ada struk. Silakan lakukan pembayaran terlebih dahulu.")
     elif page=="laporan":
         st.header("📈 Laporan Penjualan")
         if os.path.exists(DATA_FILE):
-            df = pd.read_csv(DATA_FILE)
+            df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
+            df['total'] = df['total'].apply(lambda x: f"Rp {int(x):,}")
             st.dataframe(df)
             df['timestamp'] = pd.to_datetime(df['timestamp'])
-            summary = df.groupby(df['timestamp'].dt.date)['total'].sum()
-            st.subheader("Total Penjualan per Hari")
+            summary = df.groupby(df['timestamp'].dt.date)['total'].count()
+            st.subheader("Total Transaksi per Hari")
             st.bar_chart(summary)
         else:
             st.info("Belum ada transaksi.")
