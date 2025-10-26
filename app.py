@@ -1,87 +1,47 @@
 import streamlit as st
 
-st.set_page_config(page_title="Rumah Makan Mas Ragil 🍜", page_icon="🍜", layout="centered")
+# Fungsi navbar sederhana dan elegan
+def navbar():
+    st.markdown(
+        """
+        <style>
+        /* Navbar container */
+        .navbar {
+            display: flex;
+            justify-content: center;
+            background-color: #004c97;
+            padding: 10px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        /* Link style */
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            margin: 0 20px;
+            font-weight: 600;
+            font-size: 18px;
+            transition: color 0.3s;
+        }
+        /* Hover effect */
+        .nav-link:hover {
+            color: #ffd700;
+        }
+        </style>
 
-# ====== CSS Custom Login Style ======
-st.markdown("""
-<style>
-body {
-    background: linear-gradient(180deg, #e9eff5, #f6f8fb);
-}
-.login-container {
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 30px 40px;
-    width: 380px;
-    margin: 100px auto;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    text-align: center;
-}
-.logo {
-    width: 80px;
-    margin-bottom: 15px;
-}
-.title {
-    font-weight: 700;
-    color: #0b3d91;
-    font-size: 20px;
-}
-.subtitle {
-    color: #4b6584;
-    font-size: 13px;
-    margin-bottom: 25px;
-}
-.stTextInput > div > div > input {
-    border-radius: 6px;
-    border: 1px solid #ccc;
-}
-.stButton > button {
-    background-color: #0b3d91;
-    color: white;
-    border-radius: 6px;
-    padding: 6px 0;
-    width: 100%;
-    font-weight: 600;
-    transition: 0.3s;
-}
-.stButton > button:hover {
-    background-color: #1565c0;
-    transform: scale(1.03);
-}
-.footer {
-    font-size: 13px;
-    margin-top: 10px;
-}
-.footer a {
-    color: #1565c0;
-    text-decoration: none;
-}
-.footer a:hover {
-    text-decoration: underline;
-}
-</style>
-""", unsafe_allow_html=True)
+        <div class="navbar">
+            <a href="#" class="nav-link">Beranda</a>
+            <a href="#" class="nav-link">Tentang</a>
+            <a href="#" class="nav-link">Kelas</a>
+            <a href="#" class="nav-link">Kontak</a>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
-# ====== UI Login Box ======
-st.markdown('<div class="login-container">', unsafe_allow_html=True)
+# Panggil navbar
+navbar()
 
-st.image("https://upload.wikimedia.org/wikipedia/commons/3/3b/Logo_Institut_Widya_Pratama.png", width=80)
-st.markdown('<div class="title">Rumah Makan Mas Ragil</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitle">Sistem Pemesanan Digital</div>', unsafe_allow_html=True)
-
-username = st.text_input("ID Pengguna")
-password = st.text_input("Password", type="password")
-role = st.selectbox("Sebagai", ["User", "Admin"])
-
-if st.button("Masuk"):
-    if username and password:
-        if role == "Admin" and username == "admin" and password == "admin123":
-            st.success("Login berhasil sebagai Admin.")
-        else:
-            st.success(f"Selamat datang, {username} ({role})!")
-    else:
-        st.error("Masukkan ID Pengguna dan Password.")
-
-st.markdown('<div class="footer"><a href="#">Lupa password?</a></div>', unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
+# Konten halaman utama
+st.title("Selamat Datang di LMS Institut Widya Pratama")
+st.write("Ini adalah contoh global navbar elegan tanpa logo, dibuat dengan Streamlit.")
