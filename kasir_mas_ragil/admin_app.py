@@ -30,7 +30,7 @@ def run_admin():
             if username == ADMIN_USER and password == ADMIN_PASS:
                 st.session_state.admin_login = True
                 st.success("Login admin berhasil!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Username atau password salah.")
         return
