@@ -169,7 +169,7 @@ def login_page():
         elif role == "Pelanggan" and username == "user" and password == "123":
             st.session_state.role = "user"
             st.success("Login berhasil sebagai PELANGGAN 🍜")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Username atau password salah!")
 
