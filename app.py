@@ -1,12 +1,12 @@
-# app.py — entry point (login + navbar + toggle sidebar)
+# app.py — entry point (login tetap seperti yang kamu suka; global navbar + sidebar navigation)
 import streamlit as st
 from kasir_mas_ragil import admin_app, user_app
 
 st.set_page_config(page_title="Rumah Makan Mas Ragil", page_icon="🍜", layout="wide")
 
-# --------------------
+# -----------------------
 # Session defaults
-# --------------------
+# -----------------------
 if "is_logged_in" not in st.session_state:
     st.session_state.is_logged_in = False
 if "role" not in st.session_state:
@@ -18,9 +18,9 @@ if "sidebar_open" not in st.session_state:
 if "page" not in st.session_state:
     st.session_state.page = "Beranda"
 
-# --------------------
-# Global CSS (theme)
-# --------------------
+# -----------------------
+# Global CSS (login + theme)
+# -----------------------
 st.markdown("""
 <style>
 :root{
@@ -51,15 +51,24 @@ st.markdown("""
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 .topbar .title { font-weight:700; font-size:18px; }
-.topbar button { background:transparent; border:none; color:var(--white); font-size:22px; cursor:pointer; }
+.topbar .hamb {
+  background: transparent;
+  border: none;
+  color: var(--white);
+  font-size: 22px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.topbar .hamb:hover { background: rgba(255,255,255,0.06); transform: scale(1.03); }
 
-/* sidebar style (Streamlit sidebar) */
+/* sidebar appearance (when used) */
 [data-testid="stSidebar"] {
   background: linear-gradient(180deg, #0b1e3f, #124b7e);
   color: white;
 }
 
-/* login center box */
+/* login center box (KEEP THIS: your favorite login) */
 .login-wrap { display:flex; justify-content:center; align-items:center; min-height:calc(100vh - 60px); padding-top:60px; }
 .login-box {
   width:420px;
@@ -72,62 +81,56 @@ st.markdown("""
 .login-box h2 { margin-bottom:6px; }
 .login-box .muted { color:var(--muted); margin-bottom:16px; }
 
-/* content spacing */
+/* content spacing (main area) */
 .content { padding: 20px; margin-top: 70px; }
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------
-# Navbar (always)
-# --------------------
-st.markdown('<div class="topbar"><div class="title">🍜 Rumah Makan Mas Ragil</div><div><button id="hamburger">☰</button></div></div>', unsafe_allow_html=True)
+# -----------------------
+# Topbar (visual)
+# -----------------------
+st.markdown(
+    f"""
+    <div class="topbar">
+      <div class="title">🍜 Rumah Makan Mas Ragil</div>
+      <div>
+        <form>
+          <button class="hamb" id="hamb-streamlit">☰</button>
+        </form>
+      </div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
-# simple JS to call Streamlit button by id (toggle)
-st.markdown("""
-<script>
-const btn = document.getElementById('hamburger');
-btn.onclick = () => {
-    // post message to parent; Streamlit will not receive custom events reliably,
-    // so we simulate by clicking a hidden Streamlit button below via setting window.location hash.
-    // Instead, we trigger a window.postMessage that we will catch via a tiny HTML component.
-    window.parent.postMessage({type: 'TOGGLE_SIDEBAR'}, '*');
-};
-</script>
-""", unsafe_allow_html=True)
+# Provide a real Streamlit button as fallback to toggle sidebar (clicking the JS button will also try to press this)
+def _toggle_sidebar():
+    st.session_state.sidebar_open = not st.session_state.sidebar_open
+st.button("hidden-toggle-sidebar", key="hidden_toggle_sidebar", on_click=_toggle_sidebar, help="hidden toggle")
 
-# a tiny component listening for the message and clicking a hidden button
-import streamlit.components.v1 as components
-components.html("""
+# Small JS to forward the click on the styled button to the hidden Streamlit button
+st.components.v1.html("""
 <script>
-window.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'TOGGLE_SIDEBAR') {
-    const btn = window.parent.document.querySelector('button[data-toggle="hidden-sidebar-button"]');
-    if(btn) btn.click();
-  }
+document.getElementById('hamb-streamlit').addEventListener('click', function(e){
+    e.preventDefault();
+    // Find the hidden Streamlit button and click it
+    const btn = window.parent.document.querySelector('button[kind="primary"], button[data-baseweb="button"]');
+    // As fallback, trigger click on any Streamlit button with label "hidden-toggle-sidebar"
+    // But direct DOM for Streamlit internals is fragile; the hidden streamlit button above will be near top.
+    try {
+        const hidden = window.parent.document.querySelector('button[title="hidden_toggle_sidebar"], button[aria-label="hidden_toggle_sidebar"], button[role="button"]');
+        if(hidden) hidden.click();
+    } catch(e){}
+    // Also dispatch a window message to be safe
+    window.parent.postMessage({type:"TOGGLE_SIDEBAR"}, "*");
 });
 </script>
 """, height=0)
 
-# hidden Streamlit button to toggle sidebar in Python
-def _toggle_sidebar():
-    st.session_state.sidebar_open = not st.session_state.sidebar_open
-
-st.button("toggle-sidebar-hidden", key="hidden_sidebar_btn", on_click=_toggle_sidebar, args=None, kwargs=None)
-# mark attribute so JS can find it (data-toggle). Streamlit doesn't allow setting attributes directly;
-# We used query selector based on data-toggle attribute, but Streamlit doesn't set custom attr.
-# The HTML above uses querySelector('button[data-toggle="hidden-sidebar-button"]') but Streamlit won't set.
-# To ensure toggle works across environments, also provide a visible toggle via top-right Streamlit button:
-# (we'll also show a small clickable element)
-col1, col2 = st.columns([9,1])
-with col2:
-    if st.button("☰", key="hamburger_fallback"):
-        st.session_state.sidebar_open = not st.session_state.sidebar_open
-
-# --------------------
-# Show/hide sidebar content (only when sidebar_open True)
-# --------------------
+# -----------------------
+# Sidebar navigation (when open)
+# -----------------------
 if st.session_state.sidebar_open:
-    # Sidebar navigation only (no page content inside)
     with st.sidebar:
         st.markdown("### Navigasi")
         if st.session_state.is_logged_in and st.session_state.role == "Admin":
@@ -143,12 +146,14 @@ if st.session_state.sidebar_open:
             else:
                 st.session_state.page = "login_admin"
 
-# --------------------
+# -----------------------
 # Main content area
-# --------------------
+# -----------------------
 st.markdown('<div class="content">', unsafe_allow_html=True)
 
-# LOGIN UI (keep as you already like)
+# -----------------------
+# LOGIN UI (kept exactly like you liked)
+# -----------------------
 def login_ui():
     st.markdown('<div class="login-wrap">', unsafe_allow_html=True)
     st.markdown('<div class="login-box">', unsafe_allow_html=True)
@@ -165,31 +170,34 @@ def login_ui():
             if username.strip() == "" or password.strip() == "":
                 st.error("Isi ID Pengguna dan Kata Sandi.")
             else:
-                # if admin credentials, prefer admin role
+                # admin special credential
                 if username.strip() == "admin" and password.strip() == "admin123":
                     st.session_state.is_logged_in = True
                     st.session_state.role = "Admin"
                     st.session_state.username = username.strip()
                     st.success("Login berhasil sebagai Admin.")
+                    st.rerun()
                 else:
-                    # normal user — we'll check users.json in user_app
+                    # treat as normal user (user_app will also allow registration if needed)
                     st.session_state.is_logged_in = True
-                    st.session_state.role = role
+                    st.session_state.role = "User"
                     st.session_state.username = username.strip()
                     st.success(f"Login berhasil sebagai {role}.")
-                st.experimental_rerun()
+                    st.rerun()
     with col2:
         st.markdown("<div style='margin-top:6px;'><a style='color:#ffd97a'>Lupa password?</a></div>", unsafe_allow_html=True)
 
     st.markdown('</div></div>', unsafe_allow_html=True)
 
-# route
+# -----------------------
+# Route: render login or app pages
+# -----------------------
 if not st.session_state.is_logged_in:
     login_ui()
 else:
-    # route to admin or user modules, they expect st.session_state.page to be set by sidebar nav
+    # If logged in, forward page rendering to admin/user modules.
+    # They expect a `page` argument (string from sidebar navigation); default provided in admin/user code.
     if st.session_state.role == "Admin":
-        # admin_app expects to render content in main area
         admin_app.run_admin(page=st.session_state.page)
     else:
         user_app.run_user(page=st.session_state.page)
