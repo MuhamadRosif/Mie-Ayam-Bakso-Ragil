@@ -1,310 +1,100 @@
-# =====================================================
-# 🍜 Kasir Mas Ragil — Admin App
-# =====================================================
 import streamlit as st
-import pandas as pd
-import os
 import json
+import os
 from datetime import datetime
+import pandas as pd
 
-# -----------------------
-# Config
-# -----------------------
-st.set_page_config(page_title="Admin Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
 MENU_FILE = "menu.json"
 
-# -----------------------
-# Login Admin
-# -----------------------
-if "login" not in st.session_state:
-    st.session_state.login = False
+def run_user():
+    if "user_login" not in st.session_state:
+        st.session_state.user_login = False
+    if "users" not in st.session_state:
+        st.session_state.users = {}  # username:password
+    if "cart" not in st.session_state:
+        st.session_state.cart = {}
 
-ADMIN_USER = "admin"
-ADMIN_PASS = "1234"
+    # Registrasi/Login
+    st.header("🍜 Login / Registrasi User")
+    tab1, tab2 = st.tabs(["Login", "Daftar"])
+    
+    with tab1:
+        username = st.text_input("Username", key="login_user")
+        password = st.text_input("Password", type="password", key="login_pass")
+        if st.button("Login", key="login_btn"):
+            if username in st.session_state.users and st.session_state.users[username]==password:
+                st.session_state.user_login = username
+                st.success(f"Login berhasil! Selamat datang, {username}")
+            else:
+                st.error("Username/password salah atau belum daftar.")
 
-if not st.session_state.login:
-    st.markdown("""
-    <style>
-    .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-    .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; 
-                 margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
-    .stTextInput>div>div>input {background-color:#2b2b2b; color:#fff; border-radius:6px;}
-    .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
-    </style>
-    """, unsafe_allow_html=True)
+    with tab2:
+        new_user = st.text_input("Username", key="reg_user")
+        new_pass = st.text_input("Password", type="password", key="reg_pass")
+        if st.button("Daftar", key="reg_btn"):
+            if new_user.strip() and new_pass.strip():
+                st.session_state.users[new_user] = new_pass
+                st.success("Pendaftaran berhasil! Silahkan login.")
+            else:
+                st.warning("Isi username dan password dengan benar.")
 
-    st.markdown('<div class="login-card"><h3>🔐 Login Admin — Kasir Mas Ragil</h3>', unsafe_allow_html=True)
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Masuk"):
-        if username == ADMIN_USER and password == ADMIN_PASS:
-            st.session_state.login = True
-            st.rerun()
+    if st.session_state.user_login:
+        st.header(f"👋 Selamat datang, {st.session_state.user_login}")
+        # Load menu
+        if os.path.exists(MENU_FILE):
+            with open(MENU_FILE,"r",encoding="utf-8") as f:
+                menu_data = json.load(f)
         else:
-            st.error("Username atau password salah.")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.stop()
+            menu_data = {"makanan":{"Mie Ayam":15000,"Bakso":18000},
+                         "minuman":{"Es Teh":5000,"Es Jeruk":7000}}
 
-# -----------------------
-# Default Session
-# -----------------------
-defaults = {
-    "menu_open": False,
-    "page": "bayar",
-    "pesanan": {},
-    "nama_pelanggan": "",
-    "total_bayar": 0,
-    "struk": "",
-    "menu_makanan": {},
-    "menu_minuman": {}
-}
-for k,v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
-
-# -----------------------
-# Load Menu
-# -----------------------
-if os.path.exists(MENU_FILE):
-    with open(MENU_FILE,"r",encoding="utf-8") as f:
-        data = json.load(f)
-        st.session_state.menu_makanan = data.get("makanan",{})
-        st.session_state.menu_minuman = data.get("minuman",{})
-else:
-    st.session_state.menu_makanan = {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
-    st.session_state.menu_minuman = {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
-    with open(MENU_FILE,"w",encoding="utf-8") as f:
-        json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman},f,ensure_ascii=False, indent=2)
-
-# -----------------------
-# Styling
-# -----------------------
-st.markdown("""
-<style>
-.stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; 
-         background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
-         border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
-.right-panel {background: linear-gradient(180deg,#0c0e16,#181b26); padding:14px; border-radius:10px;}
-.menu-item {display:block; width:100%; padding:10px; border-radius:8px; background:#222; color:white; border:none;}
-.menu-item:hover {background:#333;}
-.nota {background-color:#141826; padding:18px; border-radius:10px; border:1px solid #2f3340; font-family:"Courier New", monospace;}
-.stButton>button {background: linear-gradient(90deg,#c62828,#9c1f1f); color:white; border:none; border-radius:6px; padding:8px 16px;}
-.stButton>button:hover {transform:scale(1.05);}
-</style>
-""", unsafe_allow_html=True)
-
-# -----------------------
-# Topbar
-# -----------------------
-col_tb1, col_tb2, col_tb3 = st.columns([1,10,2])
-with col_tb1:
-    if st.button("≡", key="hamb_btn"):
-        st.session_state.menu_open = not st.session_state.menu_open
-with col_tb2:
-    st.markdown('<div class="topbar"><div style="font-weight:800">🍜 Admin Kasir Mas Ragil</div></div>', unsafe_allow_html=True)
-with col_tb3:
-    if st.button("🚪 Logout"):
-        st.session_state.login = False
-        st.rerun()
-
-# -----------------------
-# Layout
-# -----------------------
-if st.session_state.menu_open:
-    main_col, side_col = st.columns([7,3])
-else:
-    main_col = st.columns([1])[0]
-    side_col = None
-
-# -----------------------
-# Sidebar Navigasi Admin
-# -----------------------
-if side_col is not None:
-    with side_col:
-        st.markdown('<div class="right-panel">', unsafe_allow_html=True)
-        if st.button("💳 Pembayaran"): st.session_state.page="bayar"
-        if st.button("📄 Struk"): st.session_state.page="struk"
-        if st.button("📈 Laporan"): st.session_state.page="laporan"
-        if st.button("🛠️ Admin Menu"): st.session_state.page="admin_menu"
-        st.markdown("<hr>", unsafe_allow_html=True)
-        if st.button("♻️ Reset Pesanan"):
-            st.session_state.pesanan={}
-            st.session_state.nama_pelanggan=""
-            st.session_state.total_bayar=0
-            st.session_state.struk=""
-            st.success("Pesanan direset.")
-        st.markdown("<div style='font-size:12px;opacity:0.7;'>© Mas Ragil 2025</div>", unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# -----------------------
-# Fungsi Pendukung
-# -----------------------
-def save_transaction(timestamp,nama,items_dict,subtotal,diskon,total,bayar=None,kembalian=None):
-    record={"timestamp":timestamp,"nama":nama,"items":json.dumps(items_dict,ensure_ascii=False),
-            "subtotal":subtotal,"diskon":diskon,"total":total,"bayar":bayar if bayar else "","kembalian":kembalian if kembalian else ""}
-    df=pd.DataFrame([record])
-    if os.path.exists(DATA_FILE):
-        df.to_csv(DATA_FILE,mode="a",header=False,index=False,encoding="utf-8-sig")
-    else:
-        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-
-def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=None,kembalian=None):
-    t="===== STRUK PEMBAYARAN =====\n"
-    t+=f"Tanggal : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"
-    t+=f"Nama    : {nama}\n"
-    t+="-----------------------------\n"
-    for it,subtotal in pesanan_dict.items():
-        t+=f"{it:<20} Rp {subtotal:,}\n"
-    t+="-----------------------------\n"
-    t+=f"Sub Total : Rp {total_before:,}\n"
-    t+=f"Diskon    : Rp {diskon:,}\n"
-    t+=f"Total     : Rp {total_bayar:,}\n"
-    if uang_bayar:
-        t+=f"Bayar     : Rp {uang_bayar:,}\n"
-        t+=f"Kembalian : Rp {kembalian:,}\n"
-    t+="=============================\n"
-    t+="Terima kasih! Salam, Mas Ragil 🍜\n"
-    return t
-
-# -----------------------
-# Halaman Admin
-# -----------------------
-page = st.session_state.page
-with main_col:
-    # ------------------- BAYAR -------------------
-    if page=="bayar":
-        st.header("💳 Pembayaran")
-        if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
-            st.warning("Belum ada pesanan.")
-        else:
-            pesanan_aktif = {k:v for k,v in st.session_state.pesanan.items() if v>0}
-            subtotal = sum(st.session_state.menu_makanan.get(k,0)*v + st.session_state.menu_minuman.get(k,0)*v for k,v in pesanan_aktif.items())
-            diskon = int(subtotal*0.05) if subtotal>=100000 else 0
-            total_bayar = subtotal - diskon
-            st.write(f"Sub Total: Rp {subtotal:,}")
-            st.write(f"Diskon: Rp {diskon:,}")
-            st.write(f"Total Bayar: Rp {total_bayar:,}")
-            uang = st.number_input("Uang Diterima", min_value=0, value=total_bayar, step=1000)
-            if st.button("Bayar Sekarang"):
-                if uang >= total_bayar:
-                    kembalian = uang - total_bayar
-                    st.success(f"✅ Pembayaran berhasil! Kembalian: Rp {kembalian:,}")
-                    pesanan_subtotal = {k:v*(st.session_state.menu_makanan.get(k, st.session_state.menu_minuman.get(k,0))) for k,v in pesanan_aktif.items()}
-                    struk = build_struk(st.session_state.nama_pelanggan,pesanan_subtotal,subtotal,diskon,total_bayar,uang,kembalian)
-                    st.session_state.struk = struk
-                    save_transaction(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),st.session_state.nama_pelanggan,pesanan_aktif,subtotal,diskon,total_bayar,uang,kembalian)
-                    st.session_state.pesanan = {}
-                    st.session_state.page = "struk"
-                    st.experimental_rerun()
-                else:
-                    st.error("Uang diterima kurang!")
-
-    # ------------------- STRUK -------------------
-    elif page=="struk":
-        st.header("📄 Struk Pembayaran")
-        if st.session_state.struk:
-            st.markdown('<div class="nota">', unsafe_allow_html=True)
-            st.text(st.session_state.struk)
-            st.markdown('</div>', unsafe_allow_html=True)
-            if st.button("💾 Simpan Struk"):
-                with open("struk_terakhir.txt","w",encoding="utf-8") as f:
-                    f.write(st.session_state.struk)
-                st.success("Struk disimpan.")
-        else:
-            st.warning("Belum ada struk.")
-
-    # ------------------- LAPORAN -------------------
-    elif page=="laporan":
-        st.header("📈 Laporan Penjualan")
-        if os.path.exists(DATA_FILE):
-            df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df['total'] = df['total'].astype(int)
-            st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
-            daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
-            st.bar_chart(daily_revenue)
-
-            # Delete transaksi
-            st.markdown("### ❌ Hapus Transaksi")
-            for idx,row in df.iterrows():
-                if st.button(f"Hapus {row['nama']} {row['timestamp']}", key=f"del-{idx}"):
-                    df.drop(idx,inplace=True)
-                    df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                    st.success("Transaksi dihapus")
-                    st.experimental_rerun()
-        else:
-            st.info("Belum ada transaksi.")
-
-    # ------------------- ADMIN MENU -------------------
-    elif page=="admin_menu":
-        st.header("🛠️ Admin Menu — Update/Tambah/Hapus")
+        # Menu Pesan
         st.subheader("🍽️ Menu Makanan")
-        for item,harga in st.session_state.menu_makanan.copy().items():
-            col1,col2,col3 = st.columns([3,2,1])
-            with col1:
-                nama_baru = st.text_input(f"{item}", value=item, key=f"makanan-{item}")
+        for item, harga in menu_data["makanan"].items():
+            col1, col2 = st.columns([3,1])
+            with col1: st.write(f"{item} - Rp {harga:,}")
             with col2:
-                harga_baru = st.number_input(f"Harga {item}", value=harga, step=1000, key=f"harga-{item}")
-            with col3:
-                if st.button("❌", key=f"del-makanan-{item}"):
-                    del st.session_state.menu_makanan[item]
-                    with open(MENU_FILE,"w",encoding="utf-8") as f:
-                        json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
-                    st.success(f"{item} dihapus")
-                    st.experimental_rerun()
-            update_key = f"update-makanan-{item}"
-            if st.button("💾 Update", key=update_key):
-                st.session_state.menu_makanan[nama_baru] = harga_baru
-                if nama_baru != item:
-                    del st.session_state.menu_makanan[item]
-                with open(MENU_FILE,"w",encoding="utf-8") as f:
-                    json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
-                st.success(f"{nama_baru} diperbarui")
-                st.experimental_rerun()
+                if st.button(f"Tambah {item}"):
+                    st.session_state.cart[item] = st.session_state.cart.get(item,0)+1
 
         st.subheader("🥤 Menu Minuman")
-        for item,harga in st.session_state.menu_minuman.copy().items():
-            col1,col2,col3 = st.columns([3,2,1])
-            with col1:
-                nama_baru = st.text_input(f"{item}", value=item, key=f"minum-{item}")
+        for item, harga in menu_data["minuman"].items():
+            col1, col2 = st.columns([3,1])
+            with col1: st.write(f"{item} - Rp {harga:,}")
             with col2:
-                harga_baru = st.number_input(f"Harga {item}", value=harga, step=1000, key=f"harga-minum-{item}")
-            with col3:
-                if st.button("❌", key=f"del-minum-{item}"):
-                    del st.session_state.menu_minuman[item]
-                    with open(MENU_FILE,"w",encoding="utf-8") as f:
-                        json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
-                    st.success(f"{item} dihapus")
-                    st.experimental_rerun()
-            update_key = f"update-minum-{item}"
-            if st.button("💾 Update", key=update_key):
-                st.session_state.menu_minuman[nama_baru] = harga_baru
-                if nama_baru != item:
-                    del st.session_state.menu_minuman[item]
-                with open(MENU_FILE,"w",encoding="utf-8") as f:
-                    json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
-                st.success(f"{nama_baru} diperbarui")
-                st.experimental_rerun()
+                if st.button(f"Tambah {item}"):
+                    st.session_state.cart[item] = st.session_state.cart.get(item,0)+1
 
-        # Tambah menu baru
-        st.markdown("### ➕ Tambah Menu Baru")
-        nama_baru = st.text_input("Nama Menu Baru")
-        harga_baru = st.number_input("Harga Menu Baru", min_value=0, step=1000)
-        jenis = st.selectbox("Jenis Menu", ["Makanan","Minuman"])
-        if st.button("Tambah Menu"):
-            if nama_baru.strip() and harga_baru>0:
-                if jenis=="Makanan":
-                    st.session_state.menu_makanan[nama_baru] = harga_baru
+        # Keranjang
+        st.subheader("🛒 Keranjang")
+        if st.session_state.cart:
+            total = 0
+            for k,v in st.session_state.cart.items():
+                harga = menu_data["makanan"].get(k, menu_data["minuman"].get(k,0))
+                st.write(f"{k} x {v} = Rp {v*harga:,}")
+                total += v*harga
+            st.info(f"Total: Rp {total:,}")
+            
+            bayar = st.number_input("Uang Diterima", min_value=0, value=total, step=1000)
+            if st.button("Bayar"):
+                if bayar>=total:
+                    kembalian = bayar - total
+                    st.success(f"✅ Pembayaran berhasil! Kembalian: Rp {kembalian:,}")
+                    # Simpan transaksi
+                    record={"timestamp":datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                            "nama":st.session_state.user_login,
+                            "items":json.dumps(st.session_state.cart,ensure_ascii=False),
+                            "total":total,
+                            "bayar":bayar,
+                            "kembalian":kembalian}
+                    df=pd.DataFrame([record])
+                    if os.path.exists(DATA_FILE):
+                        df.to_csv(DATA_FILE,mode="a",header=False,index=False,encoding="utf-8-sig")
+                    else:
+                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                    st.session_state.cart = {}
                 else:
-                    st.session_state.menu_minuman[nama_baru] = harga_baru
-                with open(MENU_FILE,"w",encoding="utf-8") as f:
-                    json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
-                st.success(f"{nama_baru} berhasil ditambahkan")
-                st.experimental_rerun()
-            else:
-                st.warning("Isi nama dan harga menu dengan benar.")
-
-st.markdown("---")
-st.caption("© 2025 Mas Ragil — Admin Kasir 🍜 | Versi Full Final")
+                    st.error("Uang kurang!")
+        else:
+            st.info("Keranjang kosong.")
