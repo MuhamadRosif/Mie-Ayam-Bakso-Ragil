@@ -52,7 +52,7 @@ def run_user():
                 st.session_state.username = username.strip()
                 st.session_state.cart = {}
                 st.success(f"Selamat datang, {st.session_state.username}!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.warning("Masukkan nama Anda terlebih dahulu.")
     else:
