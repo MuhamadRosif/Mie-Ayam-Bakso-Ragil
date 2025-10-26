@@ -45,11 +45,14 @@ body {
     color: #f1f1f1;
     margin-bottom: 2rem;
 }
-input, .stTextInput>div>div>input {
+
+/* === INPUT FIELD === */
+.stTextInput>div>div>input {
     background-color: rgba(255,255,255,0.15) !important;
     color: white !important;
     border-radius: 10px !important;
     border: 1px solid rgba(255,255,255,0.3);
+    width: 100% !important;
 }
 .stTextInput>label, .stSelectbox>label {
     color: #fff !important;
@@ -60,25 +63,32 @@ input, .stTextInput>div>div>input {
     color: white;
     border-radius: 10px;
 }
+
+/* === BUTTON STYLE sejajar input === */
+.stButton {
+    display: flex;
+    justify-content: center;
+}
 .stButton>button {
-    display: block;
-    margin: 10px auto 0 auto;
     border: none;
     color: white;
     border-radius: 10px;
     font-size: 1rem;
     font-weight: 600;
     padding: 0.6rem 0;
-    width: 85%; /* sama kayak input field */
+    width: 100% !important; /* sama kayak input */
     background: linear-gradient(90deg, #ffb300, #ff6b00);
     transition: all 0.3s ease;
+    margin-top: 4px;
 }
 .stButton>button:hover {
-    transform: scale(1.03);
+    transform: scale(1.01);
     background: linear-gradient(90deg, #ff9900, #e64a00);
 }
+
+/* === SOSMED === */
 .alt {
-    margin-top: 1.8rem;
+    margin-top: 1.5rem;
     color: #ccc;
     font-size: 0.9rem;
     text-align: center;
@@ -115,8 +125,12 @@ role = st.selectbox("Masuk sebagai", ["Pelanggan", "Admin"])
 username = st.text_input("Email / ID Pengguna")
 password = st.text_input("Password", type="password")
 
-login = st.button("MASUK")
+# Tombol sejajar field input
+col1, col2, col3 = st.columns([0.07, 0.86, 0.07])
+with col2:
+    login = st.button("MASUK")
 
+# ===== LOGIC LOGIN =====
 if login:
     if role == "Admin":
         if username == "admin" and password == "123":
@@ -133,6 +147,7 @@ if login:
         else:
             st.error("Email atau password pelanggan salah!")
 
+# ===== SOSIAL MEDIA =====
 st.markdown("""
 <div class='alt'>
     <p>Atau masuk dengan</p>
