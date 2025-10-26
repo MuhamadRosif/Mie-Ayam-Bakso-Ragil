@@ -2,31 +2,31 @@ import streamlit as st
 import json, os
 from datetime import datetime
 
-CHECKOUT_FILE = "checkout.json"
-MENU_FILE = "menu.json"
+CHECKOUT_FILE = "kasir_mas_ragil/checkout.json"
+MENU_FILE = "kasir_mas_ragil/menu.json"
 
 def run_admin():
     if "admin_login" not in st.session_state:
-        st.session_state.admin_login=False
+        st.session_state.admin_login = False
     if "menu_open" not in st.session_state:
-        st.session_state.menu_open=True  # Navbar default open
+        st.session_state.menu_open = True  # Navbar default open
 
     ADMIN_USER="admin"
     ADMIN_PASS="1234"
 
     if not st.session_state.admin_login:
         st.subheader("🔐 Login Admin")
-        username=st.text_input("Username")
-        password=st.text_input("Password", type="password")
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
         if st.button("Masuk"):
-            if username==ADMIN_USER and password==ADMIN_PASS:
-                st.session_state.admin_login=True
-                st.experimental_rerun()
+            if username == ADMIN_USER and password == ADMIN_PASS:
+                st.session_state.admin_login = True
+                st.rerun()
             else:
                 st.error("Username atau password salah.")
         return
 
-    # Toggle sidebar menu
+    # Toggle sidebar
     toggle_col1, toggle_col2 = st.columns([9,1])
     with toggle_col2:
         if st.button("☰"):
@@ -34,12 +34,12 @@ def run_admin():
 
     if st.session_state.menu_open:
         st.sidebar.title("🛠️ Admin Menu")
-        page = st.sidebar.selectbox("Menu Admin", ["Pesanan User","Pembayaran","Laporan","Kelola Menu"])
+        page = st.sidebar.selectbox("Menu Admin", ["Pesanan","Pembayaran","Laporan","Kelola Menu"])
         if st.sidebar.button("🚪 Logout Admin"):
             st.session_state.admin_login=False
-            st.experimental_rerun()
+            st.rerun()
     else:
-        page = "Pesanan User"  # Default page kalau sidebar ditutup
+        page = "Pesanan"
 
     st.title("🛠️ Admin Dashboard")
 
@@ -54,8 +54,7 @@ def run_admin():
         minuman={"Es Teh":5000,"Es Jeruk":7000}
 
     # --- Halaman Admin ---
-    # Pesanan User
-    if page=="Pesanan User":
+    if page=="Pesanan":
         st.header("📋 Pesanan User")
         if os.path.exists(CHECKOUT_FILE):
             with open(CHECKOUT_FILE,"r",encoding="utf-8") as f:
@@ -71,7 +70,6 @@ def run_admin():
         else:
             st.info("Belum ada pesanan.")
 
-    # Pembayaran
     elif page=="Pembayaran":
         st.header("💳 Proses Pembayaran")
         if os.path.exists(CHECKOUT_FILE):
@@ -89,7 +87,7 @@ def run_admin():
                             checkout.pop(idx)
                             with open(CHECKOUT_FILE,"w",encoding="utf-8") as f:
                                 json.dump(checkout,f,ensure_ascii=False,indent=2)
-                            st.rerun()
+                            st.experimental_rerun()
                         else:
                             st.error("Uang kurang!")
             else:
@@ -97,7 +95,6 @@ def run_admin():
         else:
             st.info("Belum ada pesanan.")
 
-    # Laporan
     elif page=="Laporan":
         st.header("📈 Laporan Penjualan")
         if os.path.exists(CHECKOUT_FILE):
@@ -110,7 +107,6 @@ def run_admin():
         else:
             st.info("Belum ada laporan.")
 
-    # Kelola Menu
     elif page=="Kelola Menu":
         st.header("🍽️ Kelola Menu")
         st.subheader("Makanan")
@@ -125,10 +121,10 @@ def run_admin():
                     with open(MENU_FILE,"w",encoding="utf-8") as f:
                         json.dump({"makanan":makanan,"minuman":minuman},f,ensure_ascii=False,indent=2)
                     st.success(f"{nama_baru} diperbarui")
-                    st.rerun()
+                    st.experimental_rerun()
                 if st.button("❌ Hapus", key=f"delm-{item}"):
                     del makanan[item]
                     with open(MENU_FILE,"w",encoding="utf-8") as f:
                         json.dump({"makanan":makanan,"minuman":minuman},f,ensure_ascii=False,indent=2)
                     st.success(f"{item} dihapus")
-                    st.rerun()
+                    st.experimental_rerun()
