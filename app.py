@@ -1,5 +1,5 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Versi Full Final + Update/Hapus Menu & Hapus Transaksi
+# 🍜 Kasir Mas Ragil — Versi Full Final + Update & Delete Menu
 # =====================================================
 import streamlit as st
 import pandas as pd
@@ -12,6 +12,7 @@ from datetime import datetime
 # -----------------------
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
+MENU_FILE = "menu.json"
 
 # -----------------------
 # Login Admin
@@ -26,8 +27,7 @@ if not st.session_state.login:
     st.markdown("""
     <style>
     .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-    .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; 
-                 margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
+    .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
     .stTextInput>div>div>input {background-color:#2b2b2b; color:#fff; border-radius:6px;}
     .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
     </style>
@@ -54,9 +54,7 @@ defaults = {
     "pesanan": {},
     "nama_pelanggan": "",
     "total_bayar": 0,
-    "struk": "",
-    "menu_makanan": {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000},
-    "menu_minuman": {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
+    "struk": ""
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -68,9 +66,7 @@ for k, v in defaults.items():
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; 
-         background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
-         border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
 .right-panel {background: linear-gradient(180deg,#0c0e16,#181b26); padding:14px; border-radius:10px;}
 .menu-item {display:block; width:100%; padding:10px; border-radius:8px; background:#222; color:white; border:none;}
 .menu-item:hover {background:#333;}
@@ -114,6 +110,7 @@ if side_col is not None:
         if st.button("💳 Pembayaran"): st.session_state.page="bayar"
         if st.button("📄 Struk"): st.session_state.page="struk"
         if st.button("📈 Laporan"): st.session_state.page="laporan"
+        if st.button("🛠️ Update Menu"): st.session_state.page="update_menu"
         if st.button("ℹ️ Tentang"): st.session_state.page="tentang"
         st.markdown("<hr>", unsafe_allow_html=True)
         if st.button("♻️ Reset Pesanan"):
@@ -124,6 +121,18 @@ if side_col is not None:
             st.success("Pesanan direset.")
         st.markdown("<div style='font-size:12px;opacity:0.7;'>© Mas Ragil 2025</div>", unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
+
+# -----------------------
+# Data Menu
+# -----------------------
+if os.path.exists(MENU_FILE):
+    with open(MENU_FILE, "r", encoding="utf-8") as f:
+        menus = json.load(f)
+    st.session_state.menu_makanan = menus.get("makanan", {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000})
+    st.session_state.menu_minuman = menus.get("minuman", {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000})
+else:
+    st.session_state.menu_makanan = {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
+    st.session_state.menu_minuman = {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
 
 # -----------------------
 # Fungsi Pendukung
@@ -160,6 +169,7 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
 # -----------------------
 page = st.session_state.page
 with main_col:
+    # ------------------- BERANDA -------------------
     if page=="home":
         st.header("🏠 Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Pilih menu, lakukan pembayaran, dan cetak struk pelanggan.")
@@ -168,6 +178,7 @@ with main_col:
             st.session_state.page = "pesan"
             st.rerun()
 
+    # ------------------- PESAN MENU -------------------
     elif page=="pesan":
         st.header("🍜 Pesan Menu")
         nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan)
@@ -184,7 +195,6 @@ with main_col:
                 with col3: st.write(f"Qty: {st.session_state.pesanan.get(item,0)}")
                 with col4:
                     if st.button("+", key=f"{item}-plus"): st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
-
             st.subheader("🥤 Menu Minuman")
             for item,harga in st.session_state.menu_minuman.items():
                 col1,col2,col3,col4 = st.columns([3,1,1,2])
@@ -194,7 +204,6 @@ with main_col:
                 with col3: st.write(f"Qty: {st.session_state.pesanan.get(item,0)}")
                 with col4:
                     if st.button("+", key=f"{item}-plus-minum"): st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
-
             pesanan_aktif = {k:v for k,v in st.session_state.pesanan.items() if v>0}
             if pesanan_aktif:
                 st.markdown("**📋 Pesanan Saat Ini:**")
@@ -206,6 +215,7 @@ with main_col:
             else:
                 st.info("Belum ada pesanan.")
 
+    # ------------------- BAYAR -------------------
     elif page=="bayar":
         st.header("💳 Pembayaran")
         if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
@@ -233,6 +243,7 @@ with main_col:
                 else:
                     st.error("Uang diterima kurang!")
 
+    # ------------------- STRUK -------------------
     elif page=="struk":
         st.header("📄 Struk Pembayaran")
         if st.session_state.struk:
@@ -246,40 +257,97 @@ with main_col:
         else:
             st.warning("Belum ada struk.")
 
+    # ------------------- LAPORAN -------------------
     elif page=="laporan":
         st.header("📈 Laporan Penjualan")
         if os.path.exists(DATA_FILE):
             df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
-
-            st.subheader("Daftar Transaksi")
-            for idx, row in df.iterrows():
-                col1, col2, col3, col4, col5, col6, col7 = st.columns([2,2,2,2,2,2,1])
-                with col1: st.write(row['timestamp'])
-                with col2: st.write(row['nama'])
-                with col3: st.write(f"Rp {row['subtotal']:,}")
-                with col4: st.write(f"Rp {row['diskon']:,}")
-                with col5: st.write(f"Rp {row['total']:,}")
-                with col6: st.write(f"Rp {row['bayar']:,}" if row['bayar']!="" else "")
-                with col7:
-                    if st.button("❌", key=f"del_{idx}"):
-                        df = df.drop(idx)
-                        df.to_csv(DATA_FILE, index=False, encoding="utf-8-sig")
-                        st.success("Transaksi berhasil dihapus!")
-                        st.experimental_rerun()
-
-            st.subheader("📊 Grafik Pendapatan Harian")
+            st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
+            # DELETE TRANSAKSI
+            st.markdown("### ❌ Hapus Transaksi")
+            idx_del = st.number_input("Masukkan nomor baris transaksi yang ingin dihapus (index 0..N)", min_value=0, step=1)
+            if st.button("Hapus Transaksi"):
+                if idx_del < len(df):
+                    df = df.drop(idx_del)
+                    df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                    st.success("Transaksi dihapus!")
+                    st.experimental_rerun()
+                else:
+                    st.error("Index tidak valid!")
         else:
             st.info("Belum ada transaksi.")
 
+    # ------------------- UPDATE MENU -------------------
+    elif page=="update_menu":
+        st.header("🛠️ Update / Tambah / Hapus Menu")
+        st.subheader("🍽️ Menu Makanan")
+        makanan = st.session_state.menu_makanan.copy()
+        for item,harga in makanan.items():
+            col1,col2,col3 = st.columns([3,2,1])
+            with col1: nama_baru = st.text_input(f"{item}", value=item, key=f"makanan-{item}")
+            with col2: harga_baru = st.number_input(f"Harga {item}", value=harga, step=1000, key=f"harga-{item}")
+            with col3:
+                if st.button("❌", key=f"del-makanan-{item}"):
+                    del st.session_state.menu_makanan[item]
+                    with open(MENU_FILE,"w",encoding="utf-8") as f: json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman},f,ensure_ascii=False, indent=2)
+                    st.success(f"{item} dihapus")
+                    st.experimental_rerun()
+            if nama_baru != item or harga_baru != harga:
+                st.session_state.menu_makanan[nama_baru] = harga_baru
+                if nama_baru != item: del st.session_state.menu_makanan[item]
+                with open(MENU_FILE,"w",encoding="utf-8") as f: json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman},f,ensure_ascii=False, indent=2)
+                st.success(f"{nama_baru} diperbarui")
+                st.experimental_rerun()
+
+        st.subheader("🥤 Menu Minuman")
+        minuman = st.session_state.menu_minuman.copy()
+        for item,harga in minuman.items():
+            col1,col2,col3 = st.columns([3,2,1])
+            with col1: nama_baru = st.text_input(f"{item}", value=item, key=f"minum-{item}")
+            with col2: harga_baru = st.number_input(f"Harga {item}", value=harga, step=1000, key=f"harga-minum-{item}")
+            with col3:
+                if st.button("❌", key=f"del-minum-{item}"):
+                    del st.session_state.menu_minuman[item]
+                    with open(MENU_FILE,"w",encoding="utf-8") as f: json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman},f,ensure_ascii=False, indent=2)
+                    st.success(f"{item} dihapus")
+                    st.experimental_rerun()
+            if nama_baru != item or harga_baru != harga:
+                st.session_state.menu_minuman[nama_baru] = harga_baru
+                if nama_baru != item: del st.session_state.menu_minuman[item]
+                with open(MENU_FILE,"w",encoding="utf-8") as f: json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman},f,ensure_ascii=False, indent=2)
+                st.success(f"{nama_baru} diperbarui")
+                st.experimental_rerun()
+
+        st.subheader("➕ Tambah Menu Baru")
+        nama_baru = st.text_input("Nama Menu Baru")
+        harga_baru = st.number_input("Harga Menu Baru", min_value=1000, step=1000)
+        tipe_baru = st.radio("Tipe Menu", ["Makanan","Minuman"])
+        if st.button("Tambah Menu"):
+            if nama_baru.strip() != "":
+                if tipe_baru=="Makanan":
+                    st.session_state.menu_makanan[nama_baru] = harga_baru
+                else:
+                    st.session_state.menu_minuman[nama_baru] = harga_baru
+                with open(MENU_FILE,"w",encoding="utf-8") as f: json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman},f,ensure_ascii=False, indent=2)
+                st.success(f"{nama_baru} berhasil ditambahkan!")
+                st.experimental_rerun()
+            else:
+                st.error("Nama menu tidak boleh kosong!")
+
+    # ------------------- TENTANG -------------------
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
-        st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, update/hapus menu, hapus transaksi.")
-        st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
-
-st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full Final")
+        st.markdown("""
+        **Kasir Mie Ayam & Bakso Mas Ragil**
+        - Versi: 1.0 (2025)
+        - Developer: Mas Ragil
+        - Fitur:
+          - Pesan menu makanan & minuman
+          - Pembayaran otomatis & struk
+          - Laporan penjualan + delete
+          - Update, tambah, hapus menu
+        """)
