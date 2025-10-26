@@ -2,58 +2,102 @@ import streamlit as st
 
 st.set_page_config(page_title="Login - Mie Ayam Bakso Mas Ragil", page_icon="🍜", layout="centered")
 
-# Styling CSS agar mirip form login LMS
+# ======== STYLE ==========
 st.markdown("""
 <style>
 body {
-    background-color: #faf8f5;
+    background-color: #00291b;
 }
-.login-box {
-    background-color: #ffffff;
-    padding: 2rem 3rem;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(0,0,0,0.1);
-    width: 380px;
-    margin: 60px auto;
-    border-top: 5px solid #e67e22;
-}
-h2 {
+.login-card {
+    background-color: #00422d;
+    width: 350px;
+    margin: 5rem auto;
+    padding: 2.5rem 2rem;
+    border-radius: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    color: white;
     text-align: center;
-    color: #d35400;
+    font-family: 'Poppins', sans-serif;
 }
-.subtext {
-    text-align: center;
-    font-size: 14px;
-    color: #555;
+.logo {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+.app-title {
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: #fff;
+}
+.subtitle {
+    color: #f0f0f0;
+    font-size: 0.9rem;
+    margin-bottom: 2rem;
+}
+input, .stTextInput>div>div>input {
+    background-color: #005c3c !important;
+    color: white !important;
+    border-radius: 8px !important;
+}
+.stTextInput>label {
+    color: #fff !important;
+    font-weight: 500;
+}
+.stCheckbox>label {
+    color: #fff !important;
+}
+.stButton>button {
+    background-color: #ff7a00;
+    color: white;
+    border: none;
+    padding: 0.7rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    width: 100%;
+    margin-top: 10px;
+}
+.stButton>button:hover {
+    background-color: #e66b00;
+}
+.forgot {
+    text-align: right;
+    font-size: 0.85rem;
+    margin-top: -10px;
+    margin-bottom: 20px;
+}
+.forgot a {
+    color: #ff7a00;
+    text-decoration: none;
 }
 footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Tampilan utama ---
-st.markdown("<div class='login-box'>", unsafe_allow_html=True)
-st.markdown("<h2>🍜 Mie Ayam Bakso Mas Ragil</h2>", unsafe_allow_html=True)
-st.markdown("<p class='subtext'>Silakan login untuk melanjutkan</p>", unsafe_allow_html=True)
-st.markdown("---", unsafe_allow_html=True)
+# ======== LOGIN FORM ==========
+st.markdown("<div class='login-card'>", unsafe_allow_html=True)
+st.markdown("<div class='logo'>🍜</div>", unsafe_allow_html=True)
+st.markdown("<div class='app-title'>Mie Ayam Bakso Mas Ragil</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Silakan login untuk memesan menu favoritmu</div>", unsafe_allow_html=True)
 
-# Form login
-with st.form("login_form"):
-    username = st.text_input("ID Pengguna")
-    password = st.text_input("Password", type="password")
-    role = st.selectbox("Masuk Sebagai", ["Pelanggan", "Admin"])
-    submitted = st.form_submit_button("Masuk")
+username = st.text_input("Email / ID Pengguna")
+password = st.text_input("Password", type="password")
 
-    if submitted:
-        if role == "Admin" and username == "admin" and password == "123":
-            st.success("Login berhasil sebagai Admin!")
-        elif role == "Pelanggan" and username == "user" and password == "123":
-            st.success("Login berhasil sebagai Pelanggan!")
-        else:
-            st.error("ID pengguna atau password salah.")
+col1, col2 = st.columns([1, 1])
+with col1:
+    remember = st.checkbox("Remember Me")
+with col2:
+    st.markdown("<div class='forgot'><a href='#'>Forgot?</a></div>", unsafe_allow_html=True)
 
-st.markdown("""
-<p style='text-align:center;'>
-    <a href='#' style='color:#e67e22;'>Lupa password?</a>
-</p>
-""", unsafe_allow_html=True)
+login = st.button("Login")
+
+if login:
+    if username == "user" and password == "123":
+        st.success("Login berhasil! Selamat datang di Mie Ayam Bakso Mas Ragil 🍜")
+        st.session_state["logged_in"] = True
+    else:
+        st.error("Email atau password salah!")
+
 st.markdown("</div>", unsafe_allow_html=True)
+
+# Setelah login nanti akan diarahkan ke halaman menu
+if "logged_in" in st.session_state and st.session_state["logged_in"]:
+    st.switch_page("kasir_mas_ragil/user_app.py")
