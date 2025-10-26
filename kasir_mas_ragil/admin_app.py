@@ -63,7 +63,7 @@ def run_admin(page=None):
                     checkout.pop(i)
                     _save_json(CHECKOUT_FILE, checkout)
                     st.success("Pesanan dihapus.")
-                    st.experimental_rerun()
+                    st.rerun()
         else:
             st.info("Belum ada pesanan masuk.")
 
@@ -81,7 +81,7 @@ def run_admin(page=None):
                         checkout.pop(i)
                         _save_json(CHECKOUT_FILE, checkout)
                         st.success("Pesanan dihapus.")
-                        st.experimental_rerun()
+                        st.rerun()
         else:
             st.info("Belum ada pesanan.")
 
@@ -107,7 +107,7 @@ def run_admin(page=None):
                         # remove checkout
                         checkout.pop(i)
                         _save_json(CHECKOUT_FILE, checkout)
-                        st.experimental_rerun()
+                        st.rerun()
                     else:
                         st.error("Uang kurang.")
         else:
@@ -122,7 +122,7 @@ def run_admin(page=None):
                 if os.path.exists(LAPORAN_FILE):
                     os.remove(LAPORAN_FILE)
                 st.success("Semua laporan dihapus.")
-                st.experimental_rerun()
+                st.rerun()
         else:
             st.info("Belum ada laporan.")
 
@@ -145,7 +145,7 @@ def run_admin(page=None):
                     menu_data["makanan"] = makanan
                     _save_json(MENU_FILE, menu_data)
                     st.success("Makanan dihapus.")
-                    st.experimental_rerun()
+                    st.rerun()
 
         st.markdown("#### Tambah Makanan")
         new_name = st.text_input("Nama Makanan", key="nm1")
@@ -156,7 +156,7 @@ def run_admin(page=None):
                 menu_data["makanan"] = makanan
                 _save_json(MENU_FILE, menu_data)
                 st.success("Makanan ditambahkan.")
-                st.experimental_rerun()
+                st.rerun()
 
         st.markdown("### Minuman")
         for name, price in list(minuman.items()):
@@ -171,7 +171,7 @@ def run_admin(page=None):
                     menu_data["minuman"] = minuman
                     _save_json(MENU_FILE, menu_data)
                     st.success("Minuman dihapus.")
-                    st.experimental_rerun()
+                    st.rerun()
 
         st.markdown("#### Tambah Minuman")
         new_name_d = st.text_input("Nama Minuman", key="nm2")
@@ -182,7 +182,7 @@ def run_admin(page=None):
                 menu_data["minuman"] = minuman
                 _save_json(MENU_FILE, menu_data)
                 st.success("Minuman ditambahkan.")
-                st.experimental_rerun()
+                st.rerun()
 
     else:
         st.info("Pilih menu di sidebar untuk mulai.")
