@@ -24,7 +24,7 @@ def run_user():
             if username.strip():
                 st.session_state.user_login = True
                 st.session_state.user_name = username.strip()
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.warning("Masukkan nama pengguna")
         return
