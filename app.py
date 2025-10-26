@@ -16,7 +16,7 @@ if not st.session_state.role_selected:
     if st.button("Lanjut"):
         st.session_state.role = role_choice
         st.session_state.role_selected = True
-        st.experimental_rerun()
+        st.rerun()
 else:
     role_choice = st.session_state.role
 
