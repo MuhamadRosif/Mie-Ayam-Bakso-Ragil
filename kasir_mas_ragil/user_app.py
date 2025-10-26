@@ -1,143 +1,126 @@
-# =========================
-# user_app.py — Kasir Mas Ragil
-# =========================
 import streamlit as st
+import pandas as pd
 import json
 import os
+from datetime import datetime
 
-MENU_FILE = "kasir_mas_ragil/menu.json"
-USERS_FILE = "kasir_mas_ragil/users.json"
+DATA_FILE = "riwayat_penjualan.csv"
+MENU_FILE = "menu.json"
+CHECKOUT_FILE = "checkout.json"
 
-def load_menu():
+def run_admin():
+    st.header("🛠️ Admin Panel — Kasir Mas Ragil")
+
+    # ----------------------
+    # Admin Login
+    # ----------------------
+    if "admin_login" not in st.session_state:
+        st.session_state.admin_login = False
+
+    ADMIN_USER = "admin"
+    ADMIN_PASS = "1234"
+
+    if not st.session_state.admin_login:
+        username = st.text_input("Username Admin")
+        password = st.text_input("Password Admin", type="password")
+        if st.button("Login"):
+            if username == ADMIN_USER and password == ADMIN_PASS:
+                st.session_state.admin_login = True
+                st.success("Login berhasil!")
+                st.rerun()
+            else:
+                st.error("Username atau password salah.")
+        st.stop()
+
+    # ----------------------
+    # Load Menu
+    # ----------------------
     if os.path.exists(MENU_FILE):
         with open(MENU_FILE,"r",encoding="utf-8") as f:
-            data = json.load(f)
-            return data.get("makanan",{}), data.get("minuman",{})
+            menu = json.load(f)
     else:
-        # default menu jika file belum ada
-        makanan = {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
-        minuman = {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
-        with open(MENU_FILE,"w",encoding="utf-8") as f:
-            json.dump({"makanan":makanan,"minuman":minuman}, f, ensure_ascii=False, indent=2)
-        return makanan, minuman
+        menu = {"makanan":{}, "minuman":{}}
 
-def load_users():
-    if os.path.exists(USERS_FILE):
-        with open(USERS_FILE,"r",encoding="utf-8") as f:
-            return json.load(f)
-    return {}
-
-def save_users(users):
-    with open(USERS_FILE,"w",encoding="utf-8") as f:
-        json.dump(users,f,ensure_ascii=False,indent=2)
-
-def run_user():
-    st.set_page_config(page_title="Kasir Mas Ragil - User", page_icon="🍜", layout="wide")
-    
-    # ------------------------------------
-    # Inisialisasi session state
-    # ------------------------------------
-    if "user_login" not in st.session_state:
-        st.session_state.user_login = False
-    if "username" not in st.session_state:
-        st.session_state.username = ""
-    if "cart" not in st.session_state:
-        st.session_state.cart = {}
-    
-    st.markdown("""
-    <style>
-    .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-    .login-card {background-color:#1b1b1b; padding:30px; border-radius:12px; width:360px; 
-                 margin:100px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
-    .stTextInput>div>div>input {background-color:#2b2b2b; color:#fff; border-radius:6px;}
-    .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # ------------------------------------
-    # Login / Registrasi
-    # ------------------------------------
-    if not st.session_state.user_login:
-        st.markdown('<div class="login-card"><h3>🔐 Login / Registrasi User</h3>', unsafe_allow_html=True)
-        username = st.text_input("Username", key="login_username")
-        password = st.text_input("Password", type="password", key="login_password")
-        col1, col2 = st.columns(2)
-        users = load_users()
-        with col1:
-            if st.button("Login"):
-                if username in users and users[username]==password:
-                    st.session_state.user_login = True
-                    st.session_state.username = username
-                    st.rerun()
-                else:
-                    st.error("Username atau password salah.")
-        with col2:
-            if st.button("Registrasi"):
-                if username.strip()=="" or password.strip()=="":
-                    st.warning("Isi username dan password!")
-                elif username in users:
-                    st.warning("Username sudah terdaftar!")
-                else:
-                    users[username] = password
-                    save_users(users)
-                    st.success("Registrasi berhasil! Silakan login.")
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.stop()
-    
-    # ------------------------------------
-    # User sudah login
-    # ------------------------------------
-    st.header(f"👋 Selamat datang, {st.session_state.username}!")
-    
-    makanan, minuman = load_menu()
-    
-    st.subheader("🍽️ Menu Makanan")
-    for item,harga in makanan.items():
-        col1,col2,col3,col4 = st.columns([3,1,1,2])
-        with col1: st.write(f"**{item}** (Rp {harga:,})")
-        with col2:
-            if st.button("-", key=f"{item}-minus"):
-                st.session_state.cart[item] = max(0, st.session_state.cart.get(item,0)-1)
-        with col3:
-            st.write(f"Qty: {st.session_state.cart.get(item,0)}")
-        with col4:
-            if st.button("+", key=f"{item}-plus"):
-                st.session_state.cart[item] = st.session_state.cart.get(item,0)+1
-    
-    st.subheader("🥤 Menu Minuman")
-    for item,harga in minuman.items():
-        col1,col2,col3,col4 = st.columns([3,1,1,2])
-        with col1: st.write(f"**{item}** (Rp {harga:,})")
-        with col2:
-            if st.button("-", key=f"{item}-minus-minum"):
-                st.session_state.cart[item] = max(0, st.session_state.cart.get(item,0)-1)
-        with col3:
-            st.write(f"Qty: {st.session_state.cart.get(item,0)}")
-        with col4:
-            if st.button("+", key=f"{item}-plus-minum"):
-                st.session_state.cart[item] = st.session_state.cart.get(item,0)+1
-    
-    # ------------------------------------
-    # Keranjang
-    # ------------------------------------
-    st.subheader("🛒 Keranjang Pesanan")
-    cart_items = {k:v for k,v in st.session_state.cart.items() if v>0}
-    if cart_items:
-        total = 0
-        for k,v in cart_items.items():
-            harga_satuan = makanan.get(k, minuman.get(k,0))
-            subtotal = harga_satuan*v
-            total += subtotal
-            st.write(f"{k} x {v} = Rp {subtotal:,}")
-        st.info(f"💰 Total: Rp {total:,}")
-        if st.button("Reset Keranjang"):
-            st.session_state.cart = {}
-            st.rerun()
+    # ----------------------
+    # Load Checkout
+    # ----------------------
+    if os.path.exists(CHECKOUT_FILE):
+        with open(CHECKOUT_FILE,"r",encoding="utf-8") as f:
+            checkout_data = json.load(f)
     else:
-        st.info("Belum ada pesanan.")
-    
-    if st.button("Logout"):
-        st.session_state.user_login = False
-        st.session_state.username = ""
-        st.session_state.cart = {}
-        st.rerun()
+        checkout_data = {}
+
+    # ----------------------
+    # Proses Pembayaran
+    # ----------------------
+    st.subheader("💳 Checkout User")
+    if checkout_data:
+        for user, pesanan in checkout_data.items():
+            st.markdown(f"### 👤 {user}")
+            total = 0
+            for k,v in pesanan.items():
+                harga_satuan = menu["makanan"].get(k, menu["minuman"].get(k,0))
+                subtotal = harga_satuan * v
+                st.write(f"{k} x {v} = Rp {subtotal:,}")
+                total += subtotal
+            st.info(f"Total: Rp {total:,}")
+
+            uang = st.number_input(f"Uang diterima {user}", min_value=0, value=total, step=1000, key=f"bayar-{user}")
+            if st.button(f"Bayar {user}", key=f"btn-bayar-{user}"):
+                if uang >= total:
+                    kembalian = uang - total
+                    st.success(f"✅ Pembayaran berhasil! Kembalian: Rp {kembalian:,}")
+
+                    # Simpan transaksi ke CSV
+                    record = {
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                        "nama": user,
+                        "items": json.dumps(pesanan, ensure_ascii=False),
+                        "subtotal": total,
+                        "diskon": 0,
+                        "total": total,
+                        "bayar": uang,
+                        "kembalian": kembalian
+                    }
+                    df = pd.DataFrame([record])
+                    if os.path.exists(DATA_FILE):
+                        df.to_csv(DATA_FILE, mode="a", header=False, index=False, encoding="utf-8-sig")
+                    else:
+                        df.to_csv(DATA_FILE, index=False, encoding="utf-8-sig")
+
+                    # Hapus pesanan yang sudah dibayar
+                    del checkout_data[user]
+                    with open(CHECKOUT_FILE,"w",encoding="utf-8") as f:
+                        json.dump(checkout_data,f,ensure_ascii=False, indent=2)
+
+                    st.experimental_rerun()
+                else:
+                    st.error("Uang kurang!")
+    else:
+        st.info("Belum ada user yang checkout.")
+
+    # ----------------------
+    # Laporan Penjualan
+    # ----------------------
+    st.subheader("📈 Laporan Penjualan")
+    if os.path.exists(DATA_FILE):
+        df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
+        if not df.empty:
+            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df['total'] = df['total'].astype(int)
+            st.dataframe(df[['timestamp','nama','subtotal','total','bayar','kembalian']])
+            daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
+            st.bar_chart(daily_revenue)
+
+            # Delete transaksi
+            st.markdown("### ❌ Hapus Transaksi")
+            for idx,row in df.iterrows():
+                if st.button(f"Hapus {row['nama']} {row['timestamp']}", key=f"del-{idx}"):
+                    df.drop(idx,inplace=True)
+                    df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                    st.success("Transaksi dihapus")
+                    st.experimental_rerun()
+        else:
+            st.info("Belum ada transaksi.")
+    else:
+        st.info("Belum ada transaksi.")
