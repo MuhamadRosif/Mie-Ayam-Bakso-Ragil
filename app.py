@@ -1,12 +1,11 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Full Final + Musik Auto-Play Tersembunyi
+# 🍜 Kasir Mas Ragil — Full Final + Musik Player & Admin Update/Hapus
 # =====================================================
 import streamlit as st
 import pandas as pd
 import os
 import json
 from datetime import datetime
-import base64
 
 # -----------------------
 # Konfigurasi Aplikasi
@@ -15,18 +14,12 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # ===============================
-# 🔊 Musik Backsound Auto Play (Tersembunyi)
+# 🔊 Musik Player dengan Kontrol
 # ===============================
-try:
-    with open("asek.mp3", "rb") as f:
-        audio_bytes = f.read()
-        audio_base64 = base64.b64encode(audio_bytes).decode()
-    st.markdown(f"""
-    <audio autoplay loop hidden>
-        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-    </audio>
-    """, unsafe_allow_html=True)
-except FileNotFoundError:
+musik_path = "asek.mp3"
+if os.path.exists(musik_path):
+    st.audio(musik_path, format="audio/mp3")
+else:
     st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
 
 # -----------------------
@@ -213,8 +206,6 @@ with main_col:
                 with col3: st.write(f"Qty: {st.session_state.pesanan.get(item,0)}")
                 with col4:
                     if st.button("+", key=f"{item}-plus-minum"): st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
-
-            # Display pesanan aktif
             pesanan_aktif = {k:v for k,v in st.session_state.pesanan.items() if v>0}
             if pesanan_aktif:
                 st.markdown("**📋 Pesanan Saat Ini:**")
@@ -272,36 +263,35 @@ with main_col:
             df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
-            # Dataframe
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
-            # Grafik pendapatan harian
+            # Update & hapus transaksi
+            st.markdown("### ✏️ Admin Actions")
+            transaksi_ids = df.index.tolist()
+            pilih_idx = st.selectbox("Pilih transaksi (index)", transaksi_ids)
+            if pilih_idx is not None:
+                st.write("Detail transaksi:", df.loc[pilih_idx])
+                if st.button("📝 Update transaksi"):
+                    # contoh update total diskon saja
+                    new_diskon = st.number_input("Diskon baru", min_value=0, value=int(df.loc[pilih_idx,'diskon']))
+                    df.at[pilih_idx,'diskon'] = new_diskon
+                    df.at[pilih_idx,'total'] = int(df.loc[pilih_idx,'subtotal']) - new_diskon
+                    df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                    st.success("Transaksi diperbarui.")
+                if st.button("❌ Hapus transaksi"):
+                    df = df.drop(pilih_idx)
+                    df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                    st.success("Transaksi dihapus.")
+            # Grafik
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
-            # Admin Update/Hapus
-            st.subheader("⚙️ Admin Update/Hapus Transaksi")
-            transaksi_id = st.selectbox("Pilih Tanggal Transaksi", df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S'))
-            row = df[df['timestamp'] == pd.to_datetime(transaksi_id)]
-            if not row.empty:
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("Update Diskon"):
-                        new_diskon = st.number_input("Masukkan diskon baru", min_value=0, value=int(row['diskon'].values[0]))
-                        df.loc[df['timestamp'] == pd.to_datetime(transaksi_id), 'diskon'] = new_diskon
-                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                        st.success("Diskon diperbarui!")
-                with col2:
-                    if st.button("Hapus Transaksi"):
-                        df = df[df['timestamp'] != pd.to_datetime(transaksi_id)]
-                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                        st.success("Transaksi dihapus!")
         else:
             st.info("Belum ada transaksi.")
 
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Fitur: Login admin, update/hapus transaksi, pembayaran, laporan, struk, reset, musik auto-play tersembunyi.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, update/hapus transaksi, dan musik player.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Akustik")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Player + Admin Update/Hapus")
