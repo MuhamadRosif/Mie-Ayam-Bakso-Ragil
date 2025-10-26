@@ -6,7 +6,7 @@ import pandas as pd
 MENU_FILE = "menu.json"
 CHECKOUT_FILE = "checkout.json"
 
-# --- Fungsi bantu load/save JSON dengan fallback aman ---
+# --- Fungsi bantu load/save JSON ---
 def load_data(file, default):
     if os.path.exists(file):
         try:
@@ -22,7 +22,7 @@ def save_data(file, data):
     with open(file, "w") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
-# --- Buat file menu default kalau belum ada atau rusak ---
+# --- Buat menu default kalau belum ada ---
 def init_menu():
     menu_default = [
         {"nama": "Mie Ayam Original", "harga": 12000},
@@ -34,51 +34,72 @@ def init_menu():
     if not os.path.exists(MENU_FILE):
         save_data(MENU_FILE, menu_default)
     else:
-        # Validasi kalau file menu.json rusak
         data = load_data(MENU_FILE, [])
         if not data:
             save_data(MENU_FILE, menu_default)
 
-# --- Halaman utama User ---
+# --- Fungsi utama halaman user ---
 def run_user():
-    st.title("🍜 Menu Mie Ayam Bakso Mas Ragil")
+    st.sidebar.title("🍜 Mie Ayam Bakso Mas Ragil")
+    st.sidebar.markdown("### Selamat Datang, Pelanggan!")
+    st.sidebar.markdown("---")
 
+    st.title("📋 Menu Pilihan")
     init_menu()
+
     menu_data = load_data(MENU_FILE, [])
     checkout_data = load_data(CHECKOUT_FILE, [])
 
-    if not menu_data:
-        st.error("Gagal memuat menu! File menu.json kosong atau rusak.")
-        return
+    if "cart" not in st.session_state:
+        # Inisialisasi keranjang
+        st.session_state.cart = {item["nama"]: 0 for item in menu_data}
 
-    st.subheader("📋 Daftar Menu")
+    # --- Tampilkan daftar menu ---
+    for item in menu_data:
+        nama = item["nama"]
+        harga = item["harga"]
 
-    for i, item in enumerate(menu_data):
-        nama = item.get("nama", f"Item {i+1}")
-        harga = item.get("harga", 0)
-        col1, col2, col3 = st.columns([3, 1, 1])
+        col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
         with col1:
             st.markdown(f"**{nama}**")
         with col2:
             st.markdown(f"Rp {harga:,}")
         with col3:
-            if st.button(f"Pesan Sekarang ({nama})"):
-                checkout_data.append({"nama": nama, "harga": harga})
-                save_data(CHECKOUT_FILE, checkout_data)
-                st.success(f"{nama} ditambahkan ke pesanan!")
+            if st.button("➖", key=f"min_{nama}"):
+                if st.session_state.cart[nama] > 0:
+                    st.session_state.cart[nama] -= 1
+        with col4:
+            if st.button("➕", key=f"plus_{nama}"):
+                st.session_state.cart[nama] += 1
+
+        st.progress(min(st.session_state.cart[nama] / 10, 1.0))  # indikasi jumlah
+        st.caption(f"Jumlah: {st.session_state.cart[nama]} porsi")
 
     st.markdown("---")
-    st.subheader("🛒 Keranjang Pesanan")
 
-    if len(checkout_data) > 0:
-        df = pd.DataFrame(checkout_data)
-        df["harga"] = df["harga"].astype(int)
-        total = df["harga"].sum()
-        st.dataframe(df, use_container_width=True)
-        st.markdown(f"### 💰 Total: Rp {total:,}")
+    # --- Sidebar Keranjang ---
+    st.sidebar.subheader("🛒 Keranjang Anda")
 
-        if st.button("Checkout Sekarang ✅"):
-            st.success("Pesanan berhasil dikirim ke kasir!")
-            save_data(CHECKOUT_FILE, [])  # Kosongkan keranjang
+    cart_items = []
+    total = 0
+    for item in menu_data:
+        jumlah = st.session_state.cart[item["nama"]]
+        if jumlah > 0:
+            subtotal = jumlah * item["harga"]
+            cart_items.append({"nama": item["nama"], "harga": item["harga"], "jumlah": jumlah, "subtotal": subtotal})
+            total += subtotal
+
+    if cart_items:
+        df = pd.DataFrame(cart_items)
+        st.sidebar.dataframe(df[["nama", "jumlah", "subtotal"]], hide_index=True, use_container_width=True)
+        st.sidebar.markdown(f"### 💰 Total: Rp {total:,}")
+
+        if st.sidebar.button("Checkout Sekarang ✅"):
+            save_data(CHECKOUT_FILE, cart_items)
+            st.sidebar.success("Pesanan berhasil dikirim ke kasir!")
+            st.session_state.cart = {item["nama"]: 0 for item in menu_data}
     else:
-        st.info("Belum ada pesanan. Silakan pilih menu di atas 🍜")
+        st.sidebar.info("Belum ada pesanan 😋")
+
+    st.sidebar.markdown("---")
+    st.sidebar.caption("Gunakan tombol ➕ dan ➖ untuk menambah atau mengurangi pesanan Anda.")
