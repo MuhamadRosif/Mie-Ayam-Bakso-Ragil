@@ -1,17 +1,54 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Versi Full Final + Musik Floating
+# 🍜 Kasir Mas Ragil — Full Final + Musik Tombol
 # =====================================================
 import streamlit as st
 import pandas as pd
 import os
 import json
 from datetime import datetime
+import base64
 
 # -----------------------
 # Konfigurasi Aplikasi
 # -----------------------
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
+
+# ===============================
+# 🔊 Musik dengan Tombol Play di Pojok Kanan Bawah
+# ===============================
+try:
+    audio_file = open("asek.mp3", "rb")
+    audio_bytes = audio_file.read()
+    audio_base64 = base64.b64encode(audio_bytes).decode()
+    st.markdown(f"""
+    <style>
+    .play-button {{
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        background-color: red;
+        color:white;
+        font-size:24px;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        z-index:9999;
+    }}
+    </style>
+    <button class="play-button" onclick="
+        var audio=document.getElementById('audio-back'); 
+        if(audio.paused){{audio.play(); this.innerText='⏸';}}
+        else{{audio.pause(); this.innerText='▶';}}
+    ">▶</button>
+    <audio id="audio-back" loop>
+        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+    </audio>
+    """, unsafe_allow_html=True)
+except FileNotFoundError:
+    st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
 
 # -----------------------
 # Login Admin
@@ -75,8 +112,6 @@ st.markdown("""
 .nota {background-color:#141826; padding:18px; border-radius:10px; border:1px solid #2f3340; font-family:"Courier New", monospace;}
 .stButton>button {background: linear-gradient(90deg,#c62828,#9c1f1f); color:white; border:none; border-radius:6px; padding:8px 16px;}
 .stButton>button:hover {transform:scale(1.05);}
-.play-button {position:fixed; bottom:20px; right:20px; width:50px; height:50px; border-radius:50%; background-color:red; border:none; cursor:pointer;}
-.play-button.paused {background-color:#ff6666;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -169,12 +204,13 @@ with main_col:
     if page=="home":
         st.header("🏠 Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Pilih menu, lakukan pembayaran, dan cetak struk pelanggan.")
-        st.image("https://via.placeholder.com/800x400/071026/ffffff?text=Mie+Ayam+%26+Bakso+Mas+Ragil", width=None)
+        st.image("https://via.placeholder.com/800x400/071026/ffffff?text=Mie+Ayam+%26+Bakso+Mas+Ragil", width=800)
         if st.button("🚀 Mulai Transaksi Cepat"):
             st.session_state.page = "pesan"
             st.rerun()
 
     elif page=="pesan":
+        st.header("🍜 Pesan Menu")
         nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan)
         st.session_state.nama_pelanggan = nama
         if not nama.strip():
@@ -210,6 +246,7 @@ with main_col:
                 st.info("Belum ada pesanan.")
 
     elif page=="bayar":
+        st.header("💳 Pembayaran")
         if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
             st.warning("Belum ada pesanan.")
         else:
@@ -263,33 +300,8 @@ with main_col:
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan musik floating.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan backsound musik tombol.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Floating")
-
-# -----------------------
-# Musik Floating Button
-# -----------------------
-if os.path.exists("asek.mp3"):
-    st.markdown("""
-    <audio id="bgmusic" src="asek.mp3" loop></audio>
-    <button class="play-button" id="btnPlay"></button>
-    <script>
-    const btn = document.getElementById("btnPlay");
-    const audio = document.getElementById("bgmusic");
-    audio.play().catch(()=>{});  // autoplay try
-    btn.addEventListener("click", ()=>{
-        if(audio.paused) {
-            audio.play();
-            btn.classList.remove("paused");
-        } else {
-            audio.pause();
-            btn.classList.add("paused");
-        }
-    });
-    </script>
-    """, unsafe_allow_html=True)
-else:
-    st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Tombol")
