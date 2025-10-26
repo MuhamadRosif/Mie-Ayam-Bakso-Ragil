@@ -62,14 +62,14 @@ input, .stTextInput>div>div>input {
 }
 .stButton>button {
     display: block;
-    margin: 0 auto;
+    margin: 10px auto 0 auto;
     border: none;
     color: white;
     border-radius: 10px;
     font-size: 1rem;
     font-weight: 600;
-    padding: 0.7rem 0;
-    width: 100%;
+    padding: 0.6rem 0;
+    width: 85%; /* sama kayak input field */
     background: linear-gradient(90deg, #ffb300, #ff6b00);
     transition: all 0.3s ease;
 }
