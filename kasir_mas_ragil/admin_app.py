@@ -45,7 +45,7 @@ def admin_login():
     if st.button("Masuk", key="admin_login_btn"):
         if username == ADMIN_USER and password == ADMIN_PASS:
             st.session_state.admin_login = True
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Username atau password salah.")
 
@@ -68,7 +68,7 @@ def admin_dashboard():
 
     if page == "🚪 Logout":
         st.session_state.admin_login = False
-        st.experimental_rerun()
+        st.rerun()
 
     elif page == "📈 Laporan":
         st.header("📊 Laporan Penjualan")
@@ -84,7 +84,7 @@ def admin_dashboard():
                     df.drop(idx,inplace=True)
                     df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
                     st.success("Transaksi dihapus")
-                    st.experimental_rerun()
+                    st.rerun()
         else:
             st.info("Belum ada transaksi.")
 
@@ -105,7 +105,7 @@ def admin_dashboard():
                     with open(MENU_FILE,"w",encoding="utf-8") as f:
                         json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
                     st.success(f"{item} dihapus")
-                    st.experimental_rerun()
+                    st.rerun()
             # Update
             if st.button("💾 Update", key=f"update-makanan-{item}"):
                 st.session_state.menu_makanan[nama_baru] = harga_baru
@@ -113,7 +113,7 @@ def admin_dashboard():
                 with open(MENU_FILE,"w",encoding="utf-8") as f:
                     json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
                 st.success(f"{nama_baru} diperbarui")
-                st.experimental_rerun()
+                st.rerun()
 
         # Minuman
         st.subheader("🥤 Menu Minuman")
@@ -129,14 +129,14 @@ def admin_dashboard():
                     with open(MENU_FILE,"w",encoding="utf-8") as f:
                         json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
                     st.success(f"{item} dihapus")
-                    st.experimental_rerun()
+                    st.rerun()
             if st.button("💾 Update", key=f"update-minum-{item}"):
                 st.session_state.menu_minuman[nama_baru] = harga_baru
                 if nama_baru != item: del st.session_state.menu_minuman[item]
                 with open(MENU_FILE,"w",encoding="utf-8") as f:
                     json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
                 st.success(f"{nama_baru} diperbarui")
-                st.experimental_rerun()
+                st.rerun()
 
         # Tambah menu baru
         st.markdown("### ➕ Tambah Menu Baru")
@@ -152,7 +152,7 @@ def admin_dashboard():
                 with open(MENU_FILE,"w",encoding="utf-8") as f:
                     json.dump({"makanan":st.session_state.menu_makanan,"minuman":st.session_state.menu_minuman}, f, ensure_ascii=False, indent=2)
                 st.success(f"{nama_baru} berhasil ditambahkan")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.warning("Isi nama dan harga menu dengan benar.")
 
