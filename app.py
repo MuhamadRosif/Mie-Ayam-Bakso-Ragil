@@ -1,5 +1,5 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Full Final + Musik Floating Merah
+# 🍜 Kasir Mas Ragil — Versi Full Final + Musik Floating
 # =====================================================
 import streamlit as st
 import pandas as pd
@@ -26,7 +26,8 @@ if not st.session_state.login:
     st.markdown("""
     <style>
     .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-    .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
+    .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; 
+                 margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
     .stTextInput>div>div>input {background-color:#2b2b2b; color:#fff; border-radius:6px;}
     .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
     </style>
@@ -60,12 +61,14 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # -----------------------
-# Styling & Topbar
+# Styling
 # -----------------------
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; 
+        background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
+        border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
 .right-panel {background: linear-gradient(180deg,#0c0e16,#181b26); padding:14px; border-radius:10px;}
 .menu-item {display:block; width:100%; padding:10px; border-radius:8px; background:#222; color:white; border:none;}
 .menu-item:hover {background:#333;}
@@ -78,28 +81,28 @@ st.markdown("""
     right: 20px;
     width: 60px;
     height: 60px;
+    background-color: #c62828;
     border-radius: 50%;
-    background: linear-gradient(45deg, #c62828, #9c1f1f);
     border: none;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     cursor: pointer;
     z-index: 9999;
 }
-.play-button:after {
+.play-button::after {
     content: '▶';
-    font-size: 24px;
     color: white;
+    font-size: 28px;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
 }
-.play-button.paused:after {
-    content: '❚❚';
-}
+.play-button.paused::after { content: '❚❚'; }
 </style>
 """, unsafe_allow_html=True)
 
+# -----------------------
+# Topbar
+# -----------------------
 col_tb1, col_tb2, col_tb3 = st.columns([1,10,2])
 with col_tb1:
     if st.button("≡", key="hamb_btn"):
@@ -112,7 +115,7 @@ with col_tb3:
         st.rerun()
 
 # -----------------------
-# Sidebar & Layout
+# Layout
 # -----------------------
 if st.session_state.menu_open:
     main_col, side_col = st.columns([7,3])
@@ -120,6 +123,9 @@ else:
     main_col = st.columns([1])[0]
     side_col = None
 
+# -----------------------
+# Sidebar Navigasi
+# -----------------------
 if side_col is not None:
     with side_col:
         st.markdown('<div class="right-panel">', unsafe_allow_html=True)
@@ -140,7 +146,7 @@ if side_col is not None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
-# Menu Makanan & Minuman
+# Data Menu
 # -----------------------
 menu_makanan = {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
 menu_minuman = {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
@@ -176,7 +182,7 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
     return t
 
 # -----------------------
-# Halaman & Logika
+# Halaman
 # -----------------------
 page = st.session_state.page
 with main_col:
@@ -271,23 +277,27 @@ with main_col:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
-            daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
-            st.bar_chart(daily_revenue)
 
-            st.subheader("📝 Update / Hapus Transaksi")
-            idx = st.number_input("Masukkan baris index untuk update/hapus", min_value=0, max_value=len(df)-1, step=1)
-            if st.button("Hapus Transaksi"):
-                df.drop(idx, inplace=True)
-                df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                st.success("Transaksi dihapus.")
-            st.write("Edit transaksi (Update):")
-            nama_edit = st.text_input("Nama", value=df.iloc[idx]['nama'])
-            total_edit = st.number_input("Total", value=int(df.iloc[idx]['total']))
-            if st.button("Update Transaksi"):
-                df.at[idx,'nama'] = nama_edit
-                df.at[idx,'total'] = total_edit
-                df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                st.success("Transaksi diupdate.")
+            # Update / Hapus transaksi
+            st.subheader("✏️ Update / Hapus Transaksi")
+            for idx,row in df.iterrows():
+                col1,col2,col3,col4 = st.columns([3,2,1,1])
+                with col1: st.write(f"{row['timestamp']} - {row['nama']} - Rp {row['total']}")
+                with col2:
+                    nama_edit = st.text_input(f"Nama-{idx}", value=row['nama'])
+                    total_edit = st.number_input(f"Total-{idx}", min_value=0, value=int(row['total']), step=1000)
+                with col3:
+                    if st.button(f"Update-{idx}"):
+                        df.at[idx,'nama'] = nama_edit
+                        df.at[idx,'total'] = total_edit
+                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                        st.success("Transaksi diupdate.")
+                with col4:
+                    if st.button(f"Hapus-{idx}"):
+                        df = df.drop(idx)
+                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                        st.success("Transaksi dihapus.")
+                        st.rerun()
         else:
             st.info("Belum ada transaksi.")
 
@@ -298,31 +308,27 @@ with main_col:
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Full + Musik Floating")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Floating")
 
 # -----------------------
 # Musik Floating Button
 # -----------------------
 if os.path.exists("asek.mp3"):
-    audio_file = open("asek.mp3", "rb")
-    audio_bytes = audio_file.read()
-    audio_base64 = audio_bytes.hex()  # convert to hex supaya bisa di JS
-
-    st.markdown(f"""
+    st.markdown("""
     <audio id="bgmusic" src="asek.mp3" loop></audio>
     <button class="play-button" id="btnPlay"></button>
     <script>
     const btn = document.getElementById("btnPlay");
     const audio = document.getElementById("bgmusic");
-    audio.play().catch(()=>{{}});  // autoplay try
+    audio.play().catch(()=>{});  // autoplay try
     btn.addEventListener("click", ()=>{
-        if(audio.paused) {{
+        if(audio.paused) {
             audio.play();
             btn.classList.remove("paused");
-        }} else {{
+        } else {
             audio.pause();
             btn.classList.add("paused");
-        }}
+        }
     });
     </script>
     """, unsafe_allow_html=True)
