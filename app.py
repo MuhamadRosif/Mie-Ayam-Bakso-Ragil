@@ -1,219 +1,186 @@
-# =====================================================
-# app.py — Kasir Mas Ragil (FINAL: Navbar Merah Elegan Global)
-# =====================================================
 import streamlit as st
 from kasir_mas_ragil import admin_app, user_app
 
-# ------------------------------------------------------
-# Konfigurasi Halaman
-# ------------------------------------------------------
-st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
+# ===============================
+# Konfigurasi halaman
+# ===============================
+st.set_page_config(page_title="Kasir Mas Ragil 🍜", page_icon="🍜", layout="wide")
 
-# ------------------------------------------------------
-# CSS: Navbar Merah Elegan
-# ------------------------------------------------------
+# ===============================
+# Session defaults
+# ===============================
+if "role" not in st.session_state:
+    st.session_state.role = None  # "admin" atau "user"
+if "sidebar_open" not in st.session_state:
+    st.session_state.sidebar_open = False
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+
+# ===============================
+# Gaya CSS (navbar + sidebar)
+# ===============================
 st.markdown("""
 <style>
-/* ======== NAVBAR ======== */
+/* Navbar */
 .navbar {
     position: fixed;
     top: 0;
+    left: 0;
     width: 100%;
-    background-color: #b30000; /* merah elegan */
+    height: 60px;
+    background-color: #b30000;
     color: white;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: 14px 30px;
-    z-index: 9999;
-    transition: top 0.4s ease;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 100;
     font-family: 'Poppins', sans-serif;
-    box-shadow: 0px 4px 12px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
 }
-
-/* Logo kiri */
-.logo {
-    font-weight: 700;
-    font-size: 20px;
-    display: flex;
-    align-items: center;
+.navbar-title {
+    font-size: 22px;
+    font-weight: bold;
 }
-.logo .dot {
-    height: 12px;
-    width: 12px;
-    background-color: #ff4d4d;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 8px;
-}
-
-/* Tombol toggle (hamburger kanan) */
-.toggle {
+.hamburger {
+    font-size: 28px;
     cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 18px;
-}
-.toggle div {
-    width: 25px;
-    height: 3px;
-    background-color: white;
-    border-radius: 2px;
     transition: 0.3s;
 }
+.hamburger:hover {transform: scale(1.2);}
 
-/* Dropdown menu */
-.menu {
+/* Sidebar */
+.sidebar-panel {
     position: fixed;
-    top: 56px;
-    right: 20px;
-    background-color: #800000; /* merah gelap */
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-    display: none;
-    flex-direction: column;
-}
-.menu.show {
+    top: 0;
+    right: -300px;
+    width: 280px;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
+    padding: 20px;
+    transition: right 0.4s ease;
+    z-index: 200;
     display: flex;
-    animation: fadeIn 0.3s ease;
+    flex-direction: column;
+    font-family: 'Poppins', sans-serif;
 }
-.menu button {
+.sidebar-panel.open {
+    right: 0;
+}
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #f1f1f1;
+    padding-bottom: 10px;
+}
+.sidebar-header h3 {
+    color: #b30000;
+    margin: 0;
+}
+.sidebar-menu {
+    margin-top: 20px;
+}
+.sidebar-menu button {
     background: none;
     border: none;
-    color: white;
-    padding: 12px 18px;
+    width: 100%;
     text-align: left;
-    font-size: 15px;
+    font-size: 16px;
+    padding: 12px 5px;
+    color: #333;
     cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.3s;
 }
-.menu button:hover {
-    background-color: #b30000;
-}
-
-/* Animasi */
-@keyframes fadeIn {
-    from {opacity: 0; transform: translateY(-5px);}
-    to {opacity: 1; transform: translateY(0);}
-}
-
-/* Hilang saat scroll */
-.hidden {
-    top: -70px;
+.sidebar-menu button:hover {
+    background-color: #f8f8f8;
+    color: #b30000;
+    font-weight: 600;
 }
 </style>
-
-<script>
-let lastScrollTop = 0;
-window.addEventListener("scroll", function(){
-    let navbar = document.querySelector(".navbar");
-    let st = window.pageYOffset || document.documentElement.scrollTop;
-    if(st > lastScrollTop){
-        navbar.classList.add("hidden");
-    } else {
-        navbar.classList.remove("hidden");
-    }
-    lastScrollTop = st <= 0 ? 0 : st;
-}, false);
-</script>
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------
-# Session defaults
-# ------------------------------------------------------
-if "role" not in st.session_state:
-    st.session_state.role = None  # "user", "admin"
-if "menu_open" not in st.session_state:
-    st.session_state.menu_open = False
-if "page" not in st.session_state:
-    st.session_state.page = "Beranda"
-
-# ------------------------------------------------------
+# ===============================
 # Navbar HTML
-# ------------------------------------------------------
+# ===============================
 st.markdown(f"""
 <div class="navbar">
-  <div class="logo"><span class="dot"></span>Kasir Mas Ragil</div>
-  <div class="toggle" onclick="toggleMenu()">
-    <div></div><div></div><div></div>
-  </div>
+    <div class="navbar-title">🍜 Kasir Mas Ragil</div>
+    <div class="hamburger" onclick="toggleSidebar()">☰</div>
 </div>
 
-<div id="menu" class="menu">
+<div id="sidebar" class="sidebar-panel">
+    <div class="sidebar-header">
+        <h3>Menu</h3>
+        <div style="font-size:22px;cursor:pointer;" onclick="toggleSidebar()">✕</div>
+    </div>
+    <div class="sidebar-menu">
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------
-# Isi menu berdasarkan role
-# ------------------------------------------------------
-menu_items = []
+# ===============================
+# Sidebar Menu (Dinamis)
+# ===============================
 if st.session_state.role == "admin":
-    menu_items = ["Pesanan", "Pembayaran", "Laporan", "Kelola Menu", "Logout"]
+    menu_list = {
+        "📦 Pesanan": "pesanan",
+        "💳 Pembayaran": "pembayaran",
+        "📊 Laporan": "laporan",
+        "🍴 Kelola Menu": "kelola_menu",
+        "🚪 Logout": "logout"
+    }
 elif st.session_state.role == "user":
-    menu_items = ["Beranda", "Menu", "Keranjang", "Riwayat", "Tentang", "Logout"]
+    menu_list = {
+        "🏠 Beranda": "home",
+        "🍜 Menu Makanan & Minuman": "menu",
+        "🛒 Keranjang": "keranjang",
+        "🧾 Riwayat": "riwayat",
+        "ℹ️ Tentang": "tentang",
+        "🚪 Logout": "logout"
+    }
 else:
-    menu_items = ["Masuk sebagai User", "Masuk sebagai Admin"]
+    menu_list = {
+        "👤 Login sebagai User": "login_user",
+        "🧑‍💼 Login sebagai Admin": "login_admin"
+    }
 
-for item in menu_items:
-    st.markdown(f'<button onclick="menuClicked(\'{item}\')">{item}</button>', unsafe_allow_html=True)
+# Render tombol sidebar
+for name, value in menu_list.items():
+    st.markdown(f"""
+    <button onclick="fetch('/?_page={value}', {{method:'POST'}})">{name}</button>
+    """, unsafe_allow_html=True)
 
-st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("</div></div>", unsafe_allow_html=True)
 
-# ------------------------------------------------------
-# JavaScript toggle dan klik menu
-# ------------------------------------------------------
+# ===============================
+# Javascript Toggle Sidebar
+# ===============================
 st.markdown("""
 <script>
-function toggleMenu(){
-    let menu = document.getElementById("menu");
-    menu.classList.toggle("show");
-}
-
-function menuClicked(item){
-    window.parent.postMessage({type: 'menuClick', value: item}, '*');
-    let menu = document.getElementById("menu");
-    menu.classList.remove("show");
+function toggleSidebar(){
+    var sb = document.getElementById("sidebar");
+    if(sb.classList.contains("open")){
+        sb.classList.remove("open");
+    } else {
+        sb.classList.add("open");
+    }
 }
 </script>
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------
-# Handle klik menu dari JS
-# ------------------------------------------------------
-import streamlit.components.v1 as components
-components.html("""
-<script>
-window.addEventListener('message', (event) => {
-    if (event.data.type === 'menuClick') {
-        window.parent.postMessage(event.data, '*');
-    }
-});
-</script>
-""", height=0)
+# ===============================
+# Konten Utama
+# ===============================
+st.markdown("<div style='margin-top:70px;'></div>", unsafe_allow_html=True)
 
-# ------------------------------------------------------
-# Spacer untuk navbar fixed
-# ------------------------------------------------------
-st.markdown("<br><br><br><br>", unsafe_allow_html=True)
-
-# ------------------------------------------------------
-# Navigasi antar halaman
-# ------------------------------------------------------
-if st.session_state.role == "admin":
-    admin_app.run_admin()
-
-elif st.session_state.role == "user":
+if st.session_state.page == "home":
+    st.title("Selamat Datang di 🍜 Kasir Mas Ragil")
+    st.write("Pilih menu di kanan atas untuk mulai.")
+elif st.session_state.page == "login_user":
     user_app.run_user()
-
+elif st.session_state.page == "login_admin":
+    admin_app.run_admin()
 else:
-    st.title("🍜 Kasir Mas Ragil")
-    st.markdown("### Selamat datang di sistem kasir modern berbasis Streamlit!")
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("👤 Masuk sebagai User"):
-            st.session_state.role = "user"
-            st.rerun()
-    with col2:
-        if st.button("🧰 Masuk sebagai Admin"):
-            st.session_state.role = "admin"
-            st.rerun()
+    st.write(f"📄 Halaman: {st.session_state.page}")
+
