@@ -1,5 +1,5 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Full Final + Musik Player & Admin Update/Hapus
+# 🍜 Kasir Mas Ragil — Full Final + Musik Floating Merah
 # =====================================================
 import streamlit as st
 import pandas as pd
@@ -12,15 +12,6 @@ from datetime import datetime
 # -----------------------
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
-
-# ===============================
-# 🔊 Musik Player dengan Kontrol
-# ===============================
-musik_path = "asek.mp3"
-if os.path.exists(musik_path):
-    st.audio(musik_path, format="audio/mp3")
-else:
-    st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
 
 # -----------------------
 # Login Admin
@@ -264,34 +255,91 @@ with main_col:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
-            # Update & hapus transaksi
-            st.markdown("### ✏️ Admin Actions")
-            transaksi_ids = df.index.tolist()
-            pilih_idx = st.selectbox("Pilih transaksi (index)", transaksi_ids)
-            if pilih_idx is not None:
-                st.write("Detail transaksi:", df.loc[pilih_idx])
-                if st.button("📝 Update transaksi"):
-                    # contoh update total diskon saja
-                    new_diskon = st.number_input("Diskon baru", min_value=0, value=int(df.loc[pilih_idx,'diskon']))
-                    df.at[pilih_idx,'diskon'] = new_diskon
-                    df.at[pilih_idx,'total'] = int(df.loc[pilih_idx,'subtotal']) - new_diskon
-                    df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                    st.success("Transaksi diperbarui.")
-                if st.button("❌ Hapus transaksi"):
-                    df = df.drop(pilih_idx)
-                    df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                    st.success("Transaksi dihapus.")
-            # Grafik
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
+
+            st.subheader("📝 Update / Hapus Transaksi")
+            idx = st.number_input("Masukkan baris index untuk update/hapus", min_value=0, max_value=len(df)-1, step=1)
+            if st.button("Hapus Transaksi"):
+                df.drop(idx, inplace=True)
+                df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                st.success("Transaksi dihapus.")
+            st.write("Edit transaksi (Update):")
+            nama_edit = st.text_input("Nama", value=df.iloc[idx]['nama'])
+            total_edit = st.number_input("Total", value=int(df.iloc[idx]['total']))
+            if st.button("Update Transaksi"):
+                df.at[idx,'nama'] = nama_edit
+                df.at[idx,'total'] = total_edit
+                df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                st.success("Transaksi diperbarui.")
         else:
             st.info("Belum ada transaksi.")
 
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, update/hapus transaksi, dan musik player.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan musik floating merah di pojok bawah.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Player + Admin Update/Hapus")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Full Final + Musik Floating")
+
+# -----------------------
+# Musik Floating Play/Pause Merah
+# -----------------------
+st.markdown("""
+<style>
+.play-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #c62828, #9c1f1f);
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    cursor: pointer;
+    z-index: 9999;
+}
+.play-button:after {
+    content: '▶';
+    font-size: 24px;
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.play-button.paused:after {
+    content: '❚❚';
+}
+</style>
+
+<audio id="bg-music" loop>
+    <source src="asek.mp3" type="audio/mp3">
+</audio>
+
+<button class="play-button" onclick="toggleMusic()"></button>
+
+<script>
+var music = document.getElementById('bg-music');
+var button = document.querySelector('.play-button');
+
+function toggleMusic() {
+    if(music.paused){
+        music.play();
+        button.classList.remove('paused');
+    } else {
+        music.pause();
+        button.classList.add('paused');
+    }
+}
+
+window.onload = function() {
+    music.play().catch(() => {
+        button.classList.add('paused');
+    });
+};
+</script>
+""", unsafe_allow_html=True)
