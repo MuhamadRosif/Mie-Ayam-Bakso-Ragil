@@ -1,63 +1,17 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Full App + Musik Backsound Tombol
+# 🍜 Kasir Mas Ragil — Full App Tanpa Musik
 # =====================================================
 import streamlit as st
 import pandas as pd
 import os
 import json
 from datetime import datetime
-import base64
 
 # -----------------------
 # Konfigurasi Aplikasi
 # -----------------------
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
-
-# ===============================
-# 🔊 Musik Backsound — Tombol Play di pojok kanan bawah
-# ===============================
-def play_music_ui(file_path):
-    if os.path.exists(file_path):
-        with open(file_path, "rb") as f:
-            audio_bytes = f.read()
-        audio_base64 = base64.b64encode(audio_bytes).decode()
-        st.markdown("""
-        <style>
-        .music-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #c62828;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            text-align: center;
-            line-height: 60px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            z-index:9999;
-        }
-        .music-button:hover {
-            background-color: #9c1f1f;
-            transform: scale(1.1);
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        st.markdown(f"""
-        <button class="music-button" onclick="document.getElementById('bg-music').play()">▶️</button>
-        <audio id="bg-music" loop>
-            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-        </audio>
-        """, unsafe_allow_html=True)
-    else:
-        st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
-
-# Panggil musik
-play_music_ui("asek.mp3")
 
 # -----------------------
 # Login Admin
@@ -218,7 +172,7 @@ with main_col:
             st.rerun()
 
     elif page=="pesan":
-        # Halaman Pesan
+        st.header("🍜 Pesan Menu")
         nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan)
         st.session_state.nama_pelanggan = nama
         if not nama.strip():
@@ -254,7 +208,7 @@ with main_col:
                 st.info("Belum ada pesanan.")
 
     elif page=="bayar":
-        # Halaman Bayar
+        st.header("💳 Pembayaran")
         if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
             st.warning("Belum ada pesanan.")
         else:
@@ -300,36 +254,25 @@ with main_col:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
-
-            # Tombol Update & Hapus
-            st.subheader("🔧 Update / Hapus Transaksi")
-            for idx,row in df.iterrows():
-                st.markdown(f"**{row['timestamp']} - {row['nama']}** | Total: Rp {row['total']:,}")
-                col1,col2 = st.columns([1,1])
-                with col1:
-                    if st.button("Update", key=f"update-{idx}"):
-                        # Update Total
-                        new_total = st.number_input(f"Total Baru untuk {row['nama']}", value=int(row['total']), step=1000, key=f"total-{idx}")
-                        df.at[idx,'total'] = new_total
-                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                        st.success("Data transaksi diperbarui.")
-                        st.experimental_rerun()
-                with col2:
-                    if st.button("Hapus", key=f"hapus-{idx}"):
-                        df = df.drop(idx)
-                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                        st.success("Data transaksi dihapus.")
-                        st.experimental_rerun()
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
+            # Fitur update & hapus transaksi
+            st.subheader("✏️ Update / Hapus Transaksi")
+            selected_index = st.number_input("Masukkan nomor baris untuk edit/hapus", min_value=0, max_value=len(df)-1, step=1)
+            if st.button("Hapus Transaksi"):
+                df.drop(df.index[selected_index], inplace=True)
+                df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                st.success("Transaksi dihapus!")
+            else:
+                st.write("Pilih baris, lalu klik Hapus untuk menghapus transaksi.")
         else:
             st.info("Belum ada transaksi.")
 
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan backsound musik interaktif.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, update & hapus transaksi.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Interaktif")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Tanpa Musik")
