@@ -26,8 +26,7 @@ if not st.session_state.login:
     st.markdown("""
     <style>
     .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-    .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; 
-                 margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
+    .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
     .stTextInput>div>div>input {background-color:#2b2b2b; color:#fff; border-radius:6px;}
     .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
     </style>
@@ -61,26 +60,46 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # -----------------------
-# Styling
+# Styling & Topbar
 # -----------------------
 st.markdown("""
 <style>
 .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
-.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; 
-        background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
-        border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+.topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
 .right-panel {background: linear-gradient(180deg,#0c0e16,#181b26); padding:14px; border-radius:10px;}
 .menu-item {display:block; width:100%; padding:10px; border-radius:8px; background:#222; color:white; border:none;}
 .menu-item:hover {background:#333;}
 .nota {background-color:#141826; padding:18px; border-radius:10px; border:1px solid #2f3340; font-family:"Courier New", monospace;}
 .stButton>button {background: linear-gradient(90deg,#c62828,#9c1f1f); color:white; border:none; border-radius:6px; padding:8px 16px;}
 .stButton>button:hover {transform:scale(1.05);}
+.play-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #c62828, #9c1f1f);
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    cursor: pointer;
+    z-index: 9999;
+}
+.play-button:after {
+    content: '▶';
+    font-size: 24px;
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+.play-button.paused:after {
+    content: '❚❚';
+}
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------
-# Topbar
-# -----------------------
 col_tb1, col_tb2, col_tb3 = st.columns([1,10,2])
 with col_tb1:
     if st.button("≡", key="hamb_btn"):
@@ -93,7 +112,7 @@ with col_tb3:
         st.rerun()
 
 # -----------------------
-# Layout
+# Sidebar & Layout
 # -----------------------
 if st.session_state.menu_open:
     main_col, side_col = st.columns([7,3])
@@ -101,9 +120,6 @@ else:
     main_col = st.columns([1])[0]
     side_col = None
 
-# -----------------------
-# Sidebar Navigasi
-# -----------------------
 if side_col is not None:
     with side_col:
         st.markdown('<div class="right-panel">', unsafe_allow_html=True)
@@ -124,7 +140,7 @@ if side_col is not None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
-# Data Menu
+# Menu Makanan & Minuman
 # -----------------------
 menu_makanan = {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
 menu_minuman = {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
@@ -160,7 +176,7 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
     return t
 
 # -----------------------
-# Halaman
+# Halaman & Logika
 # -----------------------
 page = st.session_state.page
 with main_col:
@@ -271,75 +287,44 @@ with main_col:
                 df.at[idx,'nama'] = nama_edit
                 df.at[idx,'total'] = total_edit
                 df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                st.success("Transaksi diperbarui.")
+                st.success("Transaksi diupdate.")
         else:
             st.info("Belum ada transaksi.")
 
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan musik floating merah di pojok bawah.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan musik floating.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Full Final + Musik Floating")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Full + Musik Floating")
 
 # -----------------------
-# Musik Floating Play/Pause Merah
+# Musik Floating Button
 # -----------------------
-st.markdown("""
-<style>
-.play-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: linear-gradient(45deg, #c62828, #9c1f1f);
-    border: none;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    cursor: pointer;
-    z-index: 9999;
-}
-.play-button:after {
-    content: '▶';
-    font-size: 24px;
-    color: white;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-.play-button.paused:after {
-    content: '❚❚';
-}
-</style>
+if os.path.exists("asek.mp3"):
+    audio_file = open("asek.mp3", "rb")
+    audio_bytes = audio_file.read()
+    audio_base64 = audio_bytes.hex()  # convert to hex supaya bisa di JS
 
-<audio id="bg-music" loop>
-    <source src="asek.mp3" type="audio/mp3">
-</audio>
-
-<button class="play-button" onclick="toggleMusic()"></button>
-
-<script>
-var music = document.getElementById('bg-music');
-var button = document.querySelector('.play-button');
-
-function toggleMusic() {
-    if(music.paused){
-        music.play();
-        button.classList.remove('paused');
-    } else {
-        music.pause();
-        button.classList.add('paused');
-    }
-}
-
-window.onload = function() {
-    music.play().catch(() => {
-        button.classList.add('paused');
+    st.markdown(f"""
+    <audio id="bgmusic" src="asek.mp3" loop></audio>
+    <button class="play-button" id="btnPlay"></button>
+    <script>
+    const btn = document.getElementById("btnPlay");
+    const audio = document.getElementById("bgmusic");
+    audio.play().catch(()=>{{}});  // autoplay try
+    btn.addEventListener("click", ()=>{
+        if(audio.paused) {{
+            audio.play();
+            btn.classList.remove("paused");
+        }} else {{
+            audio.pause();
+            btn.classList.add("paused");
+        }}
     });
-};
-</script>
-""", unsafe_allow_html=True)
+    </script>
+    """, unsafe_allow_html=True)
+else:
+    st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
