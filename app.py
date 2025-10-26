@@ -1,5 +1,5 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Versi Final + Admin Menu Management
+# 🍜 Kasir Mas Ragil — Versi Final + Admin Menu Interaktif
 # =====================================================
 import streamlit as st
 import pandas as pd
@@ -13,6 +13,24 @@ from datetime import datetime
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
 MENU_FILE = "menu.json"
+
+# -----------------------
+# Load Menu
+# -----------------------
+if os.path.exists(MENU_FILE):
+    with open(MENU_FILE, "r", encoding="utf-8") as f:
+        menu_data = json.load(f)
+else:
+    menu_data = {
+        "makanan": {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000},
+        "minuman": {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
+    }
+    with open(MENU_FILE, "w", encoding="utf-8") as f:
+        json.dump(menu_data, f, ensure_ascii=False, indent=4)
+
+def save_menu():
+    with open(MENU_FILE, "w", encoding="utf-8") as f:
+        json.dump(menu_data, f, ensure_ascii=False, indent=4)
 
 # -----------------------
 # Login Admin
@@ -68,8 +86,8 @@ st.markdown("""
 <style>
 .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
 .topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; 
-        background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
-        border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+         background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
+         border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
 .right-panel {background: linear-gradient(180deg,#0c0e16,#181b26); padding:14px; border-radius:10px;}
 .menu-item {display:block; width:100%; padding:10px; border-radius:8px; background:#222; color:white; border:none;}
 .menu-item:hover {background:#333;}
@@ -126,18 +144,6 @@ if side_col is not None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
-# Load Menu dari File
-# -----------------------
-if os.path.exists(MENU_FILE):
-    with open(MENU_FILE,"r",encoding="utf-8") as f:
-        menu_data = json.load(f)
-else:
-    menu_data = {
-        "makanan": {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000},
-        "minuman": {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
-    }
-
-# -----------------------
 # Fungsi Pendukung
 # -----------------------
 def save_transaction(timestamp,nama,items_dict,subtotal,diskon,total,bayar=None,kembalian=None):
@@ -166,10 +172,6 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
     t+="=============================\n"
     t+="Terima kasih! Salam, Mas Ragil 🍜\n"
     return t
-
-def save_menu():
-    with open(MENU_FILE,"w",encoding="utf-8") as f:
-        json.dump(menu_data,f,ensure_ascii=False, indent=2)
 
 # -----------------------
 # Halaman
@@ -273,27 +275,50 @@ with main_col:
             st.info("Belum ada transaksi.")
 
     elif page=="admin_menu":
-        st.header("🛠️ Admin Menu Management")
+        st.header("🛠️ Admin Menu Management (Interaktif)")
         cat = st.radio("Pilih Kategori", ["Makanan","Minuman"])
         cat_key = "makanan" if cat=="Makanan" else "minuman"
 
-        # Tabel Menu
         st.subheader(f"Daftar Menu {cat}")
-        menu_df = pd.DataFrame(menu_data[cat_key].items(), columns=["Nama Menu","Harga"])
-        edited_df = st.data_editor(menu_df, num_rows="dynamic", key="menu_editor")
+        menu_list = menu_data[cat_key]
 
-        # Update menu_data
-        if st.button("Simpan Perubahan Menu"):
-            new_menu = dict(zip(edited_df["Nama Menu"], edited_df["Harga"]))
-            menu_data[cat_key] = new_menu
-            save_menu()
-            st.success("Menu berhasil diperbarui!")
+        for item, harga in menu_list.copy().items():
+            col1, col2, col3, col4 = st.columns([4,2,2,2])
+            with col1:
+                st.text(item)
+            with col2:
+                new_price = st.number_input(f"Harga {item}", value=harga, step=1000, key=f"price_{item}")
+            with col3:
+                if st.button("Update", key=f"update_{item}"):
+                    menu_data[cat_key][item] = new_price
+                    save_menu()
+                    st.success(f"{item} berhasil diperbarui!")
+                    st.experimental_rerun()
+            with col4:
+                if st.button("Hapus", key=f"delete_{item}"):
+                    del menu_data[cat_key][item]
+                    save_menu()
+                    st.warning(f"{item} dihapus!")
+                    st.experimental_rerun()
+
+        st.markdown("---")
+        st.subheader("➕ Tambah Menu Baru")
+        new_name = st.text_input("Nama Menu Baru")
+        new_price = st.number_input("Harga Menu Baru", min_value=0, step=1000)
+        if st.button("Tambah Menu"):
+            if new_name.strip() and new_name not in menu_list:
+                menu_data[cat_key][new_name] = new_price
+                save_menu()
+                st.success(f"{new_name} berhasil ditambahkan!")
+                st.experimental_rerun()
+            else:
+                st.error("Nama menu kosong atau sudah ada.")
 
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan admin menu management.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan admin menu management interaktif.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Final + Admin Menu Management")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Final + Admin Interaktif")
