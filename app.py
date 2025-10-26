@@ -15,7 +15,7 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # ===============================
-# 🔊 Musik Backsound Otomatis
+# 🔊 Musik Backsound (Auto Play Tanpa Kontrol)
 # ===============================
 try:
     audio_file = open("asek.mp3", "rb")
@@ -45,7 +45,7 @@ if not st.session_state.login:
     <style>
     .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
     .login-card {background-color:#1b1b1b; padding:40px; border-radius:12px; width:360px; 
-                  margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
+                 margin:120px auto; text-align:center; box-shadow:0 4px 20px rgba(0,0,0,0.4);}
     .stTextInput>div>div>input {background-color:#2b2b2b; color:#fff; border-radius:6px;}
     .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
     </style>
@@ -182,7 +182,6 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
 # -----------------------
 page = st.session_state.page
 with main_col:
-    # ===== Home =====
     if page=="home":
         st.header("🏠 Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Pilih menu, lakukan pembayaran, dan cetak struk pelanggan.")
@@ -191,22 +190,82 @@ with main_col:
             st.session_state.page = "pesan"
             st.rerun()
 
-    # ===== Pesan =====
     elif page=="pesan":
-        # ... (sama seperti sebelumnya, tombol + / - dan subtotal)
-        pass
+        st.header("🍜 Pesan Menu")
+        nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan)
+        st.session_state.nama_pelanggan = nama
+        if not nama.strip():
+            st.warning("Masukkan nama pelanggan sebelum memesan.")
+        else:
+            st.subheader("🍽️ Menu Makanan")
+            for item,harga in menu_makanan.items():
+                col1,col2,col3,col4 = st.columns([3,1,1,2])
+                with col1: st.write(f"**{item}** (Rp {harga:,})")
+                with col2:
+                    if st.button("-", key=f"{item}-minus"): st.session_state.pesanan[item] = max(0, st.session_state.pesanan.get(item,0)-1)
+                with col3: st.write(f"Qty: {st.session_state.pesanan.get(item,0)}")
+                with col4:
+                    if st.button("+", key=f"{item}-plus"): st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
+            st.subheader("🥤 Menu Minuman")
+            for item,harga in menu_minuman.items():
+                col1,col2,col3,col4 = st.columns([3,1,1,2])
+                with col1: st.write(f"**{item}** (Rp {harga:,})")
+                with col2:
+                    if st.button("-", key=f"{item}-minus-minum"): st.session_state.pesanan[item] = max(0, st.session_state.pesanan.get(item,0)-1)
+                with col3: st.write(f"Qty: {st.session_state.pesanan.get(item,0)}")
+                with col4:
+                    if st.button("+", key=f"{item}-plus-minum"): st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
+            pesanan_aktif = {k:v for k,v in st.session_state.pesanan.items() if v>0}
+            if pesanan_aktif:
+                st.markdown("**📋 Pesanan Saat Ini:**")
+                for k,v in pesanan_aktif.items():
+                    harga_satuan = menu_makanan.get(k, menu_minuman.get(k,0))
+                    st.write(f"{k} x {v} = Rp {v*harga_satuan:,}")
+                subtotal = sum(menu_makanan.get(k,0)*v + menu_minuman.get(k,0)*v for k,v in pesanan_aktif.items())
+                st.info(f"Subtotal: Rp {subtotal:,}")
+            else:
+                st.info("Belum ada pesanan.")
 
-    # ===== Bayar =====
     elif page=="bayar":
-        # ... (sama seperti sebelumnya, hitung subtotal, diskon, total, kembalian)
-        pass
+        st.header("💳 Pembayaran")
+        if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
+            st.warning("Belum ada pesanan.")
+        else:
+            pesanan_aktif = {k:v for k,v in st.session_state.pesanan.items() if v>0}
+            subtotal = sum(menu_makanan.get(k,0)*v + menu_minuman.get(k,0)*v for k,v in pesanan_aktif.items())
+            diskon = int(subtotal*0.05) if subtotal>=100000 else 0
+            total_bayar = subtotal - diskon
+            st.write(f"Sub Total: Rp {subtotal:,}")
+            st.write(f"Diskon: Rp {diskon:,}")
+            st.write(f"Total Bayar: Rp {total_bayar:,}")
+            uang = st.number_input("Uang Diterima", min_value=0, value=total_bayar, step=1000)
+            if st.button("Bayar Sekarang"):
+                if uang >= total_bayar:
+                    kembalian = uang - total_bayar
+                    st.success(f"✅ Pembayaran berhasil! Kembalian: Rp {kembalian:,}")
+                    pesanan_subtotal = {k:v*(menu_makanan.get(k, menu_minuman.get(k,0))) for k,v in pesanan_aktif.items()}
+                    struk = build_struk(st.session_state.nama_pelanggan,pesanan_subtotal,subtotal,diskon,total_bayar,uang,kembalian)
+                    st.session_state.struk = struk
+                    save_transaction(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),st.session_state.nama_pelanggan,pesanan_aktif,subtotal,diskon,total_bayar,uang,kembalian)
+                    st.session_state.pesanan = {}
+                    st.session_state.page = "struk"
+                    st.rerun()
+                else:
+                    st.error("Uang diterima kurang!")
 
-    # ===== Struk =====
     elif page=="struk":
-        # ... (sama seperti sebelumnya, tampilkan struk)
-        pass
+        st.header("📄 Struk Pembayaran")
+        if st.session_state.struk:
+            st.markdown('<div class="nota">', unsafe_allow_html=True)
+            st.text(st.session_state.struk)
+            st.markdown('</div>', unsafe_allow_html=True)
+            if st.button("💾 Simpan Struk"):
+                with open("struk_terakhir.txt","w",encoding="utf-8") as f:
+                    f.write(st.session_state.struk)
+                st.success("Struk disimpan.")
+        else:
+            st.warning("Belum ada struk.")
 
-    # ===== Laporan =====
     elif page=="laporan":
         st.header("📈 Laporan Penjualan")
         if os.path.exists(DATA_FILE):
@@ -214,38 +273,30 @@ with main_col:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
-
-            st.subheader("📊 Grafik Pendapatan Harian")
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
 
-            st.subheader("✏️ Update / Hapus Transaksi")
-            for idx,row in df.iterrows():
-                cols = st.columns([3,1,1])
-                with cols[0]:
-                    st.write(f"{row['timestamp']} | {row['nama']} | Total: Rp {row['total']}")
-                with cols[1]:
-                    if st.button("📝 Update", key=f"update-{idx}"):
-                        new_name = st.text_input("Nama baru", value=row['nama'], key=f"nama-{idx}")
-                        if st.button("💾 Simpan Perubahan", key=f"simpan-{idx}"):
-                            df.at[idx,'nama'] = new_name
-                            df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                            st.success("Data berhasil diupdate.")
-                with cols[2]:
-                    if st.button("🗑️ Hapus", key=f"hapus-{idx}"):
-                        df.drop(idx,inplace=True)
-                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                        st.warning("Transaksi dihapus.")
-                        st.experimental_rerun()
+            # -------------------------
+            # Admin Update & Hapus
+            # -------------------------
+            st.subheader("⚙️ Update / Hapus Transaksi")
+            idx = st.number_input("Masukkan indeks baris untuk update/hapus", min_value=0, max_value=len(df)-1 if len(df)>0 else 0, step=1)
+            if st.button("Hapus Transaksi"):
+                df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
+                df.drop(idx, inplace=True)
+                df.to_csv(DATA_FILE, index=False, encoding="utf-8-sig")
+                st.success("Transaksi dihapus.")
+                st.experimental_rerun()
+            st.write("Update belum otomatis (sementara hanya hapus).")
+
         else:
             st.info("Belum ada transaksi.")
 
-    # ===== Tentang =====
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, update & hapus transaksi, serta musik akustik otomatis.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, musik akustik, update/hapus.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Full Final + Modern UI + Musik Autoplay")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Full Final + Musik Autoplay + Update/Hapus")
