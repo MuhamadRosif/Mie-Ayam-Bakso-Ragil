@@ -1,5 +1,5 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Full App Tanpa Musik
+# 🍜 Kasir Mas Ragil — Versi Final + Admin Menu Management
 # =====================================================
 import streamlit as st
 import pandas as pd
@@ -12,6 +12,7 @@ from datetime import datetime
 # -----------------------
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 DATA_FILE = "riwayat_penjualan.csv"
+MENU_FILE = "menu.json"
 
 # -----------------------
 # Login Admin
@@ -32,6 +33,7 @@ if not st.session_state.login:
     .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
     </style>
     """, unsafe_allow_html=True)
+
     st.markdown('<div class="login-card"><h3>🔐 Login Admin — Kasir Mas Ragil</h3>', unsafe_allow_html=True)
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -111,6 +113,7 @@ if side_col is not None:
         if st.button("💳 Pembayaran"): st.session_state.page="bayar"
         if st.button("📄 Struk"): st.session_state.page="struk"
         if st.button("📈 Laporan"): st.session_state.page="laporan"
+        if st.button("🛠️ Admin Menu"): st.session_state.page="admin_menu"
         if st.button("ℹ️ Tentang"): st.session_state.page="tentang"
         st.markdown("<hr>", unsafe_allow_html=True)
         if st.button("♻️ Reset Pesanan"):
@@ -123,10 +126,16 @@ if side_col is not None:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # -----------------------
-# Data Menu
+# Load Menu dari File
 # -----------------------
-menu_makanan = {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000}
-menu_minuman = {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
+if os.path.exists(MENU_FILE):
+    with open(MENU_FILE,"r",encoding="utf-8") as f:
+        menu_data = json.load(f)
+else:
+    menu_data = {
+        "makanan": {"Mie Ayam":15000,"Bakso Urat":18000,"Mie Ayam Bakso":20000,"Bakso Telur":19000},
+        "minuman": {"Es Teh Manis":5000,"Es Jeruk":7000,"Teh Hangat":5000,"Jeruk Hangat":6000}
+    }
 
 # -----------------------
 # Fungsi Pendukung
@@ -158,6 +167,10 @@ def build_struk(nama,pesanan_dict,total_before,diskon,total_bayar,uang_bayar=Non
     t+="Terima kasih! Salam, Mas Ragil 🍜\n"
     return t
 
+def save_menu():
+    with open(MENU_FILE,"w",encoding="utf-8") as f:
+        json.dump(menu_data,f,ensure_ascii=False, indent=2)
+
 # -----------------------
 # Halaman
 # -----------------------
@@ -179,7 +192,7 @@ with main_col:
             st.warning("Masukkan nama pelanggan sebelum memesan.")
         else:
             st.subheader("🍽️ Menu Makanan")
-            for item,harga in menu_makanan.items():
+            for item,harga in menu_data["makanan"].items():
                 col1,col2,col3,col4 = st.columns([3,1,1,2])
                 with col1: st.write(f"**{item}** (Rp {harga:,})")
                 with col2:
@@ -188,7 +201,7 @@ with main_col:
                 with col4:
                     if st.button("+", key=f"{item}-plus"): st.session_state.pesanan[item] = st.session_state.pesanan.get(item,0)+1
             st.subheader("🥤 Menu Minuman")
-            for item,harga in menu_minuman.items():
+            for item,harga in menu_data["minuman"].items():
                 col1,col2,col3,col4 = st.columns([3,1,1,2])
                 with col1: st.write(f"**{item}** (Rp {harga:,})")
                 with col2:
@@ -200,9 +213,9 @@ with main_col:
             if pesanan_aktif:
                 st.markdown("**📋 Pesanan Saat Ini:**")
                 for k,v in pesanan_aktif.items():
-                    harga_satuan = menu_makanan.get(k, menu_minuman.get(k,0))
+                    harga_satuan = menu_data["makanan"].get(k, menu_data["minuman"].get(k,0))
                     st.write(f"{k} x {v} = Rp {v*harga_satuan:,}")
-                subtotal = sum(menu_makanan.get(k,0)*v + menu_minuman.get(k,0)*v for k,v in pesanan_aktif.items())
+                subtotal = sum(menu_data["makanan"].get(k,0)*v + menu_data["minuman"].get(k,0)*v for k,v in pesanan_aktif.items())
                 st.info(f"Subtotal: Rp {subtotal:,}")
             else:
                 st.info("Belum ada pesanan.")
@@ -213,7 +226,7 @@ with main_col:
             st.warning("Belum ada pesanan.")
         else:
             pesanan_aktif = {k:v for k,v in st.session_state.pesanan.items() if v>0}
-            subtotal = sum(menu_makanan.get(k,0)*v + menu_minuman.get(k,0)*v for k,v in pesanan_aktif.items())
+            subtotal = sum(menu_data["makanan"].get(k,0)*v + menu_data["minuman"].get(k,0)*v for k,v in pesanan_aktif.items())
             diskon = int(subtotal*0.05) if subtotal>=100000 else 0
             total_bayar = subtotal - diskon
             st.write(f"Sub Total: Rp {subtotal:,}")
@@ -224,7 +237,7 @@ with main_col:
                 if uang >= total_bayar:
                     kembalian = uang - total_bayar
                     st.success(f"✅ Pembayaran berhasil! Kembalian: Rp {kembalian:,}")
-                    pesanan_subtotal = {k:v*(menu_makanan.get(k, menu_minuman.get(k,0))) for k,v in pesanan_aktif.items()}
+                    pesanan_subtotal = {k:v*(menu_data["makanan"].get(k, menu_data["minuman"].get(k,0))) for k,v in pesanan_aktif.items()}
                     struk = build_struk(st.session_state.nama_pelanggan,pesanan_subtotal,subtotal,diskon,total_bayar,uang,kembalian)
                     st.session_state.struk = struk
                     save_transaction(datetime.now().strftime('%Y-%m-%d %H:%M:%S'),st.session_state.nama_pelanggan,pesanan_aktif,subtotal,diskon,total_bayar,uang,kembalian)
@@ -256,23 +269,31 @@ with main_col:
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
-            # Fitur update & hapus transaksi
-            st.subheader("✏️ Update / Hapus Transaksi")
-            selected_index = st.number_input("Masukkan nomor baris untuk edit/hapus", min_value=0, max_value=len(df)-1, step=1)
-            if st.button("Hapus Transaksi"):
-                df.drop(df.index[selected_index], inplace=True)
-                df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                st.success("Transaksi dihapus!")
-            else:
-                st.write("Pilih baris, lalu klik Hapus untuk menghapus transaksi.")
         else:
             st.info("Belum ada transaksi.")
+
+    elif page=="admin_menu":
+        st.header("🛠️ Admin Menu Management")
+        cat = st.radio("Pilih Kategori", ["Makanan","Minuman"])
+        cat_key = "makanan" if cat=="Makanan" else "minuman"
+
+        # Tabel Menu
+        st.subheader(f"Daftar Menu {cat}")
+        menu_df = pd.DataFrame(menu_data[cat_key].items(), columns=["Nama Menu","Harga"])
+        edited_df = st.data_editor(menu_df, num_rows="dynamic", key="menu_editor")
+
+        # Update menu_data
+        if st.button("Simpan Perubahan Menu"):
+            new_menu = dict(zip(edited_df["Nama Menu"], edited_df["Harga"]))
+            menu_data[cat_key] = new_menu
+            save_menu()
+            st.success("Menu berhasil diperbarui!")
 
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, update & hapus transaksi.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan admin menu management.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Tanpa Musik")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Final + Admin Menu Management")
