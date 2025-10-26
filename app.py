@@ -1,215 +1,87 @@
-# ==========================================================
-# app.py — Entry Point Utama
-# Rumah Makan Mas Ragil 🍜
-# ==========================================================
 import streamlit as st
-from kasir_mas_ragil import admin_app, user_app
 
-# ----------------------------------------------------------
-# Konfigurasi halaman
-# ----------------------------------------------------------
-st.set_page_config(
-    page_title="Rumah Makan Mas Ragil",
-    page_icon="🍜",
-    layout="wide",
-)
+st.set_page_config(page_title="Rumah Makan Mas Ragil 🍜", page_icon="🍜", layout="centered")
 
-# ----------------------------------------------------------
-# Session Defaults
-# ----------------------------------------------------------
-defaults = {
-    "is_logged_in": False,
-    "role": None,        # "Admin" atau "User"
-    "username": "",
-    "sidebar_open": False,
-    "page": "Beranda",
-}
-for k, v in defaults.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
-
-# ----------------------------------------------------------
-# CSS (Global Theme + Login Box)
-# ----------------------------------------------------------
+# ====== CSS Custom Login Style ======
 st.markdown("""
 <style>
-:root {
-  --blue-dark: #0b1e3f;
-  --blue-mid: #1565c0;
-  --white: #ffffff;
-  --muted: #cfddeb;
+body {
+    background: linear-gradient(180deg, #e9eff5, #f6f8fb);
 }
-
-/* page background */
-.stApp {
-  background-color: #f6f8fb;
+.login-container {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 30px 40px;
+    width: 380px;
+    margin: 100px auto;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    text-align: center;
 }
-
-/* top navbar */
-.topbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: var(--blue-dark);
-  color: var(--white);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 18px;
-  z-index: 999;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+.logo {
+    width: 80px;
+    margin-bottom: 15px;
 }
-.topbar .title { font-weight:700; font-size:18px; }
-.topbar .hamb {
-  background: transparent;
-  border: none;
-  color: var(--white);
-  font-size: 22px;
-  cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
+.title {
+    font-weight: 700;
+    color: #0b3d91;
+    font-size: 20px;
 }
-.topbar .hamb:hover { background: rgba(255,255,255,0.06); transform: scale(1.03); }
-
-/* sidebar appearance */
-[data-testid="stSidebar"] {
-  background: linear-gradient(180deg, #0b1e3f, #124b7e);
-  color: white;
+.subtitle {
+    color: #4b6584;
+    font-size: 13px;
+    margin-bottom: 25px;
 }
-
-/* login center box */
-.login-wrap { 
-  display:flex; 
-  justify-content:center; 
-  align-items:center; 
-  min-height:calc(100vh - 60px); 
-  padding-top:60px; 
+.stTextInput > div > div > input {
+    border-radius: 6px;
+    border: 1px solid #ccc;
 }
-.login-box {
-  width:420px;
-  background:var(--blue-dark);
-  color:var(--white);
-  padding:28px;
-  border-radius:12px;
-  box-shadow:0 8px 30px rgba(0,0,0,0.22);
+.stButton > button {
+    background-color: #0b3d91;
+    color: white;
+    border-radius: 6px;
+    padding: 6px 0;
+    width: 100%;
+    font-weight: 600;
+    transition: 0.3s;
 }
-.login-box h2 { margin-bottom:6px; }
-.login-box .muted { color:var(--muted); margin-bottom:16px; }
-
-/* main content spacing */
-.content { padding: 20px; margin-top: 70px; }
+.stButton > button:hover {
+    background-color: #1565c0;
+    transform: scale(1.03);
+}
+.footer {
+    font-size: 13px;
+    margin-top: 10px;
+}
+.footer a {
+    color: #1565c0;
+    text-decoration: none;
+}
+.footer a:hover {
+    text-decoration: underline;
+}
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------------------------------------------------
-# Topbar (navbar atas)
-# ----------------------------------------------------------
-st.markdown("""
-<div class="topbar">
-  <div class="title">🍜 Rumah Makan Mas Ragil</div>
-  <div>
-    <button class="hamb" id="hamb-streamlit">☰</button>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+# ====== UI Login Box ======
+st.markdown('<div class="login-container">', unsafe_allow_html=True)
 
-# ----------------------------------------------------------
-# Sidebar Toggle
-# ----------------------------------------------------------
-def _toggle_sidebar():
-    st.session_state.sidebar_open = not st.session_state.sidebar_open
+st.image("https://upload.wikimedia.org/wikipedia/commons/3/3b/Logo_Institut_Widya_Pratama.png", width=80)
+st.markdown('<div class="title">Rumah Makan Mas Ragil</div>', unsafe_allow_html=True)
+st.markdown('<div class="subtitle">Sistem Pemesanan Digital</div>', unsafe_allow_html=True)
 
-# Tombol Streamlit tersembunyi (buat ditrigger via JS)
-st.button("hidden_toggle_sidebar", on_click=_toggle_sidebar, key="hidden_toggle")
+username = st.text_input("ID Pengguna")
+password = st.text_input("Password", type="password")
+role = st.selectbox("Sebagai", ["User", "Admin"])
 
-# JS listener buat tombol ☰
-st.components.v1.html("""
-<script>
-document.getElementById('hamb-streamlit').addEventListener('click', function(e){
-  e.preventDefault();
-  const btns = window.parent.document.querySelectorAll('button');
-  btns.forEach(b=>{
-    if(b.innerText.includes('hidden_toggle_sidebar')){ b.click(); }
-  });
-});
-</script>
-""", height=0)
-
-# ----------------------------------------------------------
-# Sidebar Navigasi
-# ----------------------------------------------------------
-if st.session_state.sidebar_open:
-    with st.sidebar:
-        st.markdown("### Navigasi")
-
-        if st.session_state.is_logged_in:
-            if st.session_state.role == "Admin":
-                sel = st.radio(
-                    "",
-                    ["Dashboard", "Pesanan", "Pembayaran", "Laporan", "Kelola Menu", "Logout"],
-                    index=0,
-                )
-            else:
-                sel = st.radio(
-                    "",
-                    ["Beranda", "Menu Makanan", "Menu Minuman", "Keranjang", "Riwayat", "Tentang", "Logout"],
-                    index=0,
-                )
-            st.session_state.page = sel
+if st.button("Masuk"):
+    if username and password:
+        if role == "Admin" and username == "admin" and password == "admin123":
+            st.success("Login berhasil sebagai Admin.")
         else:
-            sel = st.radio("", ["Masuk sebagai User", "Masuk sebagai Admin"], index=0)
-            st.session_state.page = "login_user" if sel == "Masuk sebagai User" else "login_admin"
-
-# ----------------------------------------------------------
-# Login UI
-# ----------------------------------------------------------
-def login_ui():
-    st.markdown('<div class="login-wrap"><div class="login-box">', unsafe_allow_html=True)
-    st.markdown("<h2>Rumah Makan Mas Ragil</h2>", unsafe_allow_html=True)
-    st.markdown("<div class='muted'>Silakan masuk untuk melanjutkan</div>", unsafe_allow_html=True)
-
-    username = st.text_input("ID Pengguna", key="login_id")
-    password = st.text_input("Kata Sandi", type="password", key="login_pw")
-    role = st.selectbox("Sebagai", ["User", "Admin"], key="login_role")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("Masuk", key="login_submit"):
-            if not username.strip() or not password.strip():
-                st.error("Isi ID Pengguna dan Kata Sandi.")
-            else:
-                if username == "admin" and password == "admin123":
-                    st.session_state.is_logged_in = True
-                    st.session_state.role = "Admin"
-                    st.session_state.username = username
-                    st.success("Login berhasil sebagai Admin.")
-                    st.rerun()
-                else:
-                    # User login (registrasi dikelola di user_app)
-                    st.session_state.is_logged_in = True
-                    st.session_state.role = "User"
-                    st.session_state.username = username
-                    st.success(f"Login berhasil sebagai {role}.")
-                    st.rerun()
-
-    with col2:
-        st.markdown("<div style='margin-top:6px;'><a style='color:#ffd97a'>Lupa password?</a></div>", unsafe_allow_html=True)
-
-    st.markdown('</div></div>', unsafe_allow_html=True)
-
-# ----------------------------------------------------------
-# Routing Halaman
-# ----------------------------------------------------------
-st.markdown('<div class="content">', unsafe_allow_html=True)
-
-if not st.session_state.is_logged_in:
-    login_ui()
-else:
-    if st.session_state.role == "Admin":
-        admin_app.run_admin(page=st.session_state.page)
+            st.success(f"Selamat datang, {username} ({role})!")
     else:
-        user_app.run_user(page=st.session_state.page)
+        st.error("Masukkan ID Pengguna dan Password.")
+
+st.markdown('<div class="footer"><a href="#">Lupa password?</a></div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
