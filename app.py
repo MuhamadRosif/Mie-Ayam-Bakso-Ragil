@@ -31,7 +31,7 @@ body {
     color: #fff;
 }
 .brand-logo {
-    width: 80px;
+    width: 85px;
     margin-bottom: 10px;
 }
 .brand-name {
@@ -61,14 +61,15 @@ input, .stTextInput>div>div>input {
     border-radius: 10px;
 }
 .stButton>button {
+    display: block;
+    margin: 0 auto;
     border: none;
     color: white;
     border-radius: 10px;
     font-size: 1rem;
     font-weight: 600;
-    padding: 0.6rem 0;
+    padding: 0.7rem 0;
     width: 100%;
-    margin-top: 10px;
     background: linear-gradient(90deg, #ffb300, #ff6b00);
     transition: all 0.3s ease;
 }
@@ -77,14 +78,26 @@ input, .stTextInput>div>div>input {
     background: linear-gradient(90deg, #ff9900, #e64a00);
 }
 .alt {
-    margin-top: 1rem;
+    margin-top: 1.8rem;
     color: #ccc;
     font-size: 0.9rem;
+    text-align: center;
 }
-.alt img {
-    width: 30px;
-    margin: 0 6px;
+.social-icons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 0.5rem;
+}
+.social-icons img {
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+.social-icons img:hover {
+    transform: scale(1.15);
 }
 footer {visibility: hidden;}
 </style>
@@ -96,7 +109,7 @@ st.markdown("<div class='login-card'>", unsafe_allow_html=True)
 
 st.markdown("<img src='https://cdn-icons-png.flaticon.com/512/3075/3075977.png' class='brand-logo'>", unsafe_allow_html=True)
 st.markdown("<div class='brand-name'>Mie Ayam Bakso Mas Ragil</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Silakan pilih role dan masuk untuk melanjutkan 🍜</div>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Pilih peran dan masuk untuk mulai memesan 🍜</div>", unsafe_allow_html=True)
 
 role = st.selectbox("Masuk sebagai", ["Pelanggan", "Admin"])
 username = st.text_input("Email / ID Pengguna")
@@ -110,7 +123,6 @@ if login:
             st.success("Login berhasil sebagai ADMIN 👑")
             st.session_state["role"] = "admin"
             st.session_state["logged_in"] = True
-            # nanti diarahkan ke admin_app.py
         else:
             st.error("ID atau password admin salah!")
     elif role == "Pelanggan":
@@ -118,15 +130,16 @@ if login:
             st.success("Login berhasil sebagai PELANGGAN 🍜")
             st.session_state["role"] = "pelanggan"
             st.session_state["logged_in"] = True
-            # nanti diarahkan ke user_app.py
         else:
             st.error("Email atau password pelanggan salah!")
 
 st.markdown("""
 <div class='alt'>
     <p>Atau masuk dengan</p>
-    <img src='https://cdn-icons-png.flaticon.com/512/281/281764.png'>
-    <img src='https://cdn-icons-png.flaticon.com/512/733/733547.png'>
+    <div class='social-icons'>
+        <img src='https://cdn-icons-png.flaticon.com/512/281/281764.png' title='Google'>
+        <img src='https://cdn-icons-png.flaticon.com/512/733/733547.png' title='Facebook'>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
