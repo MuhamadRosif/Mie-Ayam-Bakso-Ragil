@@ -14,12 +14,20 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # ===============================
-# 🔊 Musik Backsound Auto Play
 # ===============================
+# 🔊 Musik Backsound Auto Play (Tersembunyi)
+# ===============================
+import base64
+
 try:
-    audio_file = open("asek.mp3", "rb")
-    audio_bytes = audio_file.read()
-    st.audio(audio_bytes, format="audio/mp3", start_time=0)
+    with open("asek.mp3", "rb") as f:
+        audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+    st.markdown(f"""
+    <audio autoplay loop hidden>
+        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+    </audio>
+    """, unsafe_allow_html=True)
 except FileNotFoundError:
     st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
 
