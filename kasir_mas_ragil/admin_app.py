@@ -94,7 +94,7 @@ def run_admin():
                     if st.button("Proses Pembayaran", key=f"pay-{idx}"):
                         st.session_state.pay_user = co
                         st.session_state.pay_user_idx = idx
-                        st.experimental_rerun()
+                        st.rerun()
             else:
                 st.info("Belum ada pesanan yang di checkout.")
         else:
@@ -128,7 +128,7 @@ def run_admin():
                 del st.session_state.pay_user
                 del st.session_state.pay_user_idx
                 st.success("Riwayat transaksi tersimpan.")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("Uang kurang!")
 
@@ -150,7 +150,7 @@ def run_admin():
                 menu["makanan"][nama_baru] = harga_baru
                 if nama_baru!=item: del menu["makanan"][item]
                 save_menu(menu)
-                st.experimental_rerun()
+                st.rerun()
         # Minuman
         st.markdown("### 🥤 Menu Minuman")
         for item,harga in menu["minuman"].copy().items():
@@ -161,12 +161,12 @@ def run_admin():
                 if st.button("❌", key=f"delm-{item}"):
                     del menu["minuman"][item]
                     save_menu(menu)
-                    st.experimental_rerun()
+                    st.rerun()
             if st.button("💾 Update", key=f"updm-{item}"):
                 menu["minuman"][nama_baru] = harga_baru
                 if nama_baru!=item: del menu["minuman"][item]
                 save_menu(menu)
-                st.experimental_rerun()
+                st.rerun()
         # Tambah menu baru
         st.markdown("### ➕ Tambah Menu Baru")
         nama_baru = st.text_input("Nama Item Baru", key="new_item")
@@ -177,7 +177,7 @@ def run_admin():
                 menu[kategori][nama_baru] = harga_baru
                 save_menu(menu)
                 st.success(f"{nama_baru} ditambahkan!")
-                st.experimental_rerun()
+                st.rerun()
 
     # ------------------ LAPORAN ------------------
     if page=="Laporan":
@@ -189,7 +189,7 @@ def run_admin():
                 if st.button("❌ Hapus Laporan"):
                     os.remove(DATA_FILE)
                     st.success("Laporan terhapus.")
-                    st.experimental_rerun()
+                    st.rerun()
             else:
                 st.info("Belum ada laporan transaksi.")
         else:
