@@ -21,32 +21,50 @@ body {
     position: relative;
     z-index: 1;
     max-width: 400px;
-    margin: 7rem auto;
+    margin: 5.5rem auto;
     padding: 2.5rem 2rem;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
     backdrop-filter: blur(14px);
     border-radius: 25px;
     box-shadow: 0 0 25px rgba(0,0,0,0.3);
     text-align: center;
     color: #fff;
-}
-.brand-logo {
-    width: 85px;
-    margin-bottom: 10px;
-}
-.brand-name {
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: #ffcc00;
-    margin-bottom: 1rem;
-}
-.subtitle {
-    font-size: 0.9rem;
-    color: #f1f1f1;
-    margin-bottom: 2rem;
+    overflow: hidden;
 }
 
-/* === INPUT FIELD === */
+/* === ANIMATED HEADER === */
+.header {
+    margin-top: -1rem;
+    margin-bottom: 0.5rem;
+    animation: fadeIn 1.5s ease-in-out;
+}
+.header h2 {
+    font-weight: 700;
+    color: #ffcc00;
+    text-shadow: 0 0 15px rgba(255,200,50,0.6);
+}
+.header p {
+    color: #fff8;
+    font-size: 0.9rem;
+}
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(-10px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+/* === LOGO === */
+.brand-logo {
+    width: 90px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+    animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+    0%,100% {transform: translateY(0);}
+    50% {transform: translateY(-5px);}
+}
+
+/* === INPUT === */
 .stTextInput>div>div>input {
     background-color: rgba(255,255,255,0.15) !important;
     color: white !important;
@@ -78,7 +96,7 @@ body {
     text-decoration: underline;
 }
 
-/* === BUTTON MASUK (Super Keren) === */
+/* === BUTTON === */
 .stButton>button {
     display: block;
     width: 100%;
@@ -137,40 +155,42 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# ===== LOGIN UI =====
+# ===== UI START =====
 st.markdown("<div class='overlay'></div>", unsafe_allow_html=True)
 st.markdown("<div class='login-card'>", unsafe_allow_html=True)
 
-st.markdown("<img src='https://cdn-icons-png.flaticon.com/512/3075/3075977.png' class='brand-logo'>", unsafe_allow_html=True)
-st.markdown("<div class='brand-name'>Mie Ayam Bakso Mas Ragil</div>", unsafe_allow_html=True)
-st.markdown("<div class='subtitle'>Pilih peran dan masuk untuk mulai memesan 🍜</div>", unsafe_allow_html=True)
+st.markdown("""
+<div class='header'>
+    <h2>Selamat Datang di Mas Ragil 🍜</h2>
+    <p>Rasakan kelezatan mie ayam & bakso terbaik di kota!</p>
+</div>
+<img src='https://cdn-icons-png.flaticon.com/512/3075/3075977.png' class='brand-logo'>
+""", unsafe_allow_html=True)
+
+st.markdown("<div class='subtitle'>Silakan masuk untuk melanjutkan pesanan Anda</div>", unsafe_allow_html=True)
 
 role = st.selectbox("Masuk sebagai", ["Pelanggan", "Admin"])
 username = st.text_input("Email / ID Pengguna")
 password = st.text_input("Password", type="password")
 
-# ===== Lupa password link =====
 st.markdown("<div class='forgot'>Lupa password?</div>", unsafe_allow_html=True)
 
-# ===== Tombol masuk sejajar =====
 col1, col2, col3 = st.columns([0.07, 0.86, 0.07])
 with col2:
     login = st.button("MASUK")
 
-# ===== LOGIC LOGIN =====
 if login:
     if role == "Admin":
         if username == "admin" and password == "123":
             st.success("Login berhasil sebagai ADMIN 👑")
         else:
             st.error("ID atau password admin salah!")
-    elif role == "Pelanggan":
+    else:
         if username == "user" and password == "123":
             st.success("Login berhasil sebagai PELANGGAN 🍜")
         else:
             st.error("Email atau password pelanggan salah!")
 
-# ===== SOSIAL MEDIA =====
 st.markdown("""
 <div class='alt'>
     <p>Atau masuk dengan</p>
