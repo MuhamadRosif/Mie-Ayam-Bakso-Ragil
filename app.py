@@ -6,7 +6,7 @@ st.set_page_config(page_title="Mie Ayam Bakso Mas Ragil", page_icon="🍜", layo
 st.markdown("""
 <style>
 body {
-    background: url('https://images.unsplash.com/photo-1606755962773-0e2d7efc4b5b') no-repeat center center fixed;
+    background: url('') no-repeat center center fixed;
     background-size: cover;
     font-family: 'Poppins', sans-serif;
 }
