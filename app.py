@@ -10,7 +10,7 @@ if "role" not in st.session_state:
 # ===== Fungsi Logout =====
 def logout():
     st.session_state.role = None
-    st.experimental_rerun()
+    st.rerun()
 
 # ===== Halaman Login (UI dari kamu) =====
 def login_page():
