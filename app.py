@@ -21,9 +21,9 @@ body {
     position: relative;
     z-index: 1;
     max-width: 400px;
-    margin: 4rem auto;
-    padding: 2.5rem 2rem 2rem 2rem;
-    background: rgba(255, 183, 77, 0.18); /* oranye lembut */
+    margin: 5rem auto;
+    padding: 3rem 2rem 2rem 2rem;
+    background: rgba(255, 183, 77, 0.18);
     backdrop-filter: blur(14px);
     border-radius: 25px;
     box-shadow: 0 0 25px rgba(255, 150, 0, 0.3);
@@ -32,10 +32,9 @@ body {
     overflow: hidden;
 }
 
-/* ======= Header Welcome ======= */
+/* ======= Header Tengah ======= */
 .header {
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     background: linear-gradient(to right, rgba(255,200,80,0.25), rgba(255,180,50,0.08));
     border-radius: 14px;
     padding: 12px 0;
@@ -46,10 +45,7 @@ body {
     font-weight: 700;
     color: #ffcc00;
     text-shadow: 0 0 15px rgba(255,200,50,0.6);
-}
-.header p {
-    color: #fff9;
-    font-size: 0.9rem;
+    margin: 0;
 }
 @keyframes fadeIn {
     from {opacity: 0; transform: translateY(-10px);}
@@ -59,8 +55,7 @@ body {
 /* ======= Logo Animasi ======= */
 .brand-logo {
     width: 90px;
-    margin-top: 8px;
-    margin-bottom: 10px;
+    margin: 0 auto 15px auto;
     animation: float 3s ease-in-out infinite;
 }
 @keyframes float {
@@ -163,17 +158,15 @@ footer {visibility: hidden;}
 st.markdown("<div class='overlay'></div>", unsafe_allow_html=True)
 st.markdown("<div class='login-card'>", unsafe_allow_html=True)
 
-# Header lebih hidup
+# Header di tengah & clean
 st.markdown("""
-<div class='header'>
-    <h2>Selamat Datang di Mas Ragil 🍜</h2>
-    <p>Rasakan kelezatan mie ayam & bakso terbaik di kota!</p>
-</div>
 <img src='https://cdn-icons-png.flaticon.com/512/3075/3075977.png' class='brand-logo'>
+<div class='header'>
+    <h2>Selamat Datang di<br>Mie Ayam Bakso Mas Ragil 🍜</h2>
+</div>
 """, unsafe_allow_html=True)
 
-st.markdown("<div class='subtitle'>Silakan masuk untuk melanjutkan pesanan Anda</div>", unsafe_allow_html=True)
-
+# Login form
 role = st.selectbox("Masuk sebagai", ["Pelanggan", "Admin"])
 username = st.text_input("Email / ID Pengguna")
 password = st.text_input("Password", type="password")
@@ -196,6 +189,7 @@ if login:
         else:
             st.error("Email atau password pelanggan salah!")
 
+# Sosial media
 st.markdown("""
 <div class='alt'>
     <p>Atau masuk dengan</p>
