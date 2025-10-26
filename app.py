@@ -1,5 +1,5 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Full Final + Musik Tombol
+# 🍜 Kasir Mas Ragil — Full App + Musik Backsound Tombol
 # =====================================================
 import streamlit as st
 import pandas as pd
@@ -15,40 +15,49 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # ===============================
-# 🔊 Musik dengan Tombol Play di Pojok Kanan Bawah
+# 🔊 Musik Backsound — Tombol Play di pojok kanan bawah
 # ===============================
-try:
-    audio_file = open("asek.mp3", "rb")
-    audio_bytes = audio_file.read()
-    audio_base64 = base64.b64encode(audio_bytes).decode()
-    st.markdown(f"""
-    <style>
-    .play-button {{
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        width: 60px;
-        height: 60px;
-        background-color: red;
-        color:white;
-        font-size:24px;
-        border-radius: 50%;
-        border: none;
-        cursor: pointer;
-        z-index:9999;
-    }}
-    </style>
-    <button class="play-button" onclick="
-        var audio=document.getElementById('audio-back'); 
-        if(audio.paused){{audio.play(); this.innerText='⏸';}}
-        else{{audio.pause(); this.innerText='▶';}}
-    ">▶</button>
-    <audio id="audio-back" loop>
-        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-    </audio>
-    """, unsafe_allow_html=True)
-except FileNotFoundError:
-    st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
+def play_music_ui(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            audio_bytes = f.read()
+        audio_base64 = base64.b64encode(audio_bytes).decode()
+        st.markdown("""
+        <style>
+        .music-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #c62828;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            text-align: center;
+            line-height: 60px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            z-index:9999;
+        }
+        .music-button:hover {
+            background-color: #9c1f1f;
+            transform: scale(1.1);
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        st.markdown(f"""
+        <button class="music-button" onclick="document.getElementById('bg-music').play()">▶️</button>
+        <audio id="bg-music" loop>
+            <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
+        </audio>
+        """, unsafe_allow_html=True)
+    else:
+        st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
+
+# Panggil musik
+play_music_ui("asek.mp3")
 
 # -----------------------
 # Login Admin
@@ -69,7 +78,6 @@ if not st.session_state.login:
     .stButton>button {background-color:#c62828; color:white; border:none; border-radius:6px; padding:8px 20px;}
     </style>
     """, unsafe_allow_html=True)
-
     st.markdown('<div class="login-card"><h3>🔐 Login Admin — Kasir Mas Ragil</h3>', unsafe_allow_html=True)
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
@@ -210,7 +218,7 @@ with main_col:
             st.rerun()
 
     elif page=="pesan":
-        st.header("🍜 Pesan Menu")
+        # Halaman Pesan
         nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan)
         st.session_state.nama_pelanggan = nama
         if not nama.strip():
@@ -246,7 +254,7 @@ with main_col:
                 st.info("Belum ada pesanan.")
 
     elif page=="bayar":
-        st.header("💳 Pembayaran")
+        # Halaman Bayar
         if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
             st.warning("Belum ada pesanan.")
         else:
@@ -292,6 +300,26 @@ with main_col:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
+
+            # Tombol Update & Hapus
+            st.subheader("🔧 Update / Hapus Transaksi")
+            for idx,row in df.iterrows():
+                st.markdown(f"**{row['timestamp']} - {row['nama']}** | Total: Rp {row['total']:,}")
+                col1,col2 = st.columns([1,1])
+                with col1:
+                    if st.button("Update", key=f"update-{idx}"):
+                        # Update Total
+                        new_total = st.number_input(f"Total Baru untuk {row['nama']}", value=int(row['total']), step=1000, key=f"total-{idx}")
+                        df.at[idx,'total'] = new_total
+                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                        st.success("Data transaksi diperbarui.")
+                        st.experimental_rerun()
+                with col2:
+                    if st.button("Hapus", key=f"hapus-{idx}"):
+                        df = df.drop(idx)
+                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                        st.success("Data transaksi dihapus.")
+                        st.experimental_rerun()
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
         else:
@@ -300,8 +328,8 @@ with main_col:
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan backsound musik tombol.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, dan backsound musik interaktif.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Tombol")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Interaktif")
