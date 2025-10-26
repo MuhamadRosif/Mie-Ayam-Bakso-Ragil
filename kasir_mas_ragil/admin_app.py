@@ -1,240 +1,255 @@
 # =====================================================
-# admin_app.py — Admin Kasir Mas Ragil
+# admin_app.py — Admin Kasir Mas Ragil (Final)
 # =====================================================
 import streamlit as st
-import json
-import os
+import json, os
 from datetime import datetime
 
 MENU_FILE = "kasir_mas_ragil/menu.json"
 CHECKOUT_FILE = "kasir_mas_ragil/checkout.json"
-LAPORAN_FILE = "kasir_mas_ragil/laporan.json"
+
+# =============================
+# ADMIN LOGIN
+# =============================
+def admin_login_page():
+    st.markdown("""
+        <style>
+            .login-box {
+                background-color: #0b1e3f;
+                padding: 40px;
+                border-radius: 20px;
+                color: white;
+                width: 380px;
+                margin: 120px auto;
+                text-align: center;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            }
+            input, button {
+                border-radius: 8px !important;
+            }
+            .stButton>button {
+                background-color: #1976d2;
+                color: white;
+                font-weight: bold;
+                width: 100%;
+            }
+            .stButton>button:hover {
+                background-color: #1258a6 !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="login-box"><h2>🔐 Login Admin</h2>', unsafe_allow_html=True)
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Masuk"):
+        if username == "admin" and password == "admin123":
+            st.session_state.admin_login = True
+            st.success("Login berhasil! Selamat datang, Admin 👨‍💼")
+            st.rerun()
+        else:
+            st.error("Username atau password salah.")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
-# =====================================================
-# Fungsi Utama
-# =====================================================
+# =============================
+# DASHBOARD ADMIN
+# =============================
 def run_admin():
-    st.title("🧑‍🍳 Admin - Rumah Makan Mas Ragil")
-
-    # -----------------------
-    # Session defaults
-    # -----------------------
     if "admin_login" not in st.session_state:
         st.session_state.admin_login = False
 
-    # -----------------------
-    # Login Admin
-    # -----------------------
     if not st.session_state.admin_login:
-        st.markdown(
-            """
-            <style>
-            div[data-testid="stForm"] {
-                background-color: #0A2647;
-                padding: 30px;
-                border-radius: 15px;
-                color: white;
-                box-shadow: 0 0 10px rgba(0,0,0,0.3);
-            }
-            input {
-                color: black !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-        with st.form("admin_login_form"):
-            st.markdown("### 🔑 Login Admin")
-            username = st.text_input("Username", placeholder="Masukkan username admin")
-            password = st.text_input("Password", type="password", placeholder="Masukkan password")
-            submit = st.form_submit_button("Login")
-
-            if submit:
-                if username == "admin" and password == "admin123":
-                    st.session_state.admin_login = True
-                    st.success("Login berhasil! Selamat datang, Admin 👨‍💼")
-                    st.rerun()
-                else:
-                    st.error("Username atau password salah.")
+        admin_login_page()
         return
 
-    # -----------------------
-    # Tombol Logout di sidebar toggle
-    # -----------------------
-    with st.sidebar:
-        st.markdown("### 🔧 Menu Admin")
-        menu = st.radio(
-            "Pilih Halaman:",
-            ["Pesanan", "Pembayaran", "Laporan", "Kelola Menu", "Logout"],
-            label_visibility="collapsed"
-        )
+    # ====== Sidebar Toggle ======
+    st.sidebar.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #0b1e3f, #1e88e5);
+            color: white;
+        }
+        [data-testid="stSidebar"] h2, [data-testid="stSidebar"] p, [data-testid="stSidebar"] label {
+            color: white !important;
+        }
+        .stRadio>div>label {
+            color: white !important;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-    # -----------------------
-    # PESANAN
-    # -----------------------
-    if menu == "Pesanan":
-        st.header("🧾 Daftar Pesanan User")
+    menu = ["📦 Pesanan", "💳 Pembayaran", "📊 Laporan", "🍜 Kelola Menu", "🚪 Logout"]
+    page = st.sidebar.radio("Navigasi Admin", menu)
+
+    st.title("👨‍💼 Dashboard Admin — Rumah Makan Mas Ragil")
+    st.divider()
+
+    # =============================
+    # MENU PESANAN
+    # =============================
+    if page == "📦 Pesanan":
+        st.header("📦 Daftar Pesanan Masuk")
         if os.path.exists(CHECKOUT_FILE):
             with open(CHECKOUT_FILE, "r", encoding="utf-8") as f:
                 data_checkout = json.load(f)
 
             if data_checkout:
-                for i, data in enumerate(data_checkout):
-                    with st.expander(f"{data['username']} - {data['timestamp']}"):
-                        st.write("**Items:**")
-                        for item, qty in data["items"].items():
-                            st.write(f"- {item}: {qty}x (Rp {data['subtotal'][item]:,})")
-                        st.info(f"Total Bayar: Rp {data['total_bayar']:,}")
+                for i, pesanan in enumerate(data_checkout):
+                    with st.container():
+                        st.markdown("---")
+                        st.write(f"👤 **User:** {pesanan['username']}")
+                        st.write(f"🕒 **Waktu:** {pesanan['timestamp']}")
+                        st.write("📋 **Detail Pesanan:**")
+                        for item, qty in pesanan["items"].items():
+                            st.write(f"- {item} x{qty} (Rp {pesanan['subtotal'][item]:,})")
+                        st.write(f"💰 **Total:** Rp {pesanan['total_bayar']:,}")
 
-                        if st.button(f"❌ Hapus Pesanan #{i+1}", key=f"hapus_pesanan_{i}"):
+                        if st.button("❌ Hapus Pesanan Ini", key=f"hapus_{i}"):
                             data_checkout.pop(i)
                             with open(CHECKOUT_FILE, "w", encoding="utf-8") as f:
                                 json.dump(data_checkout, f, ensure_ascii=False, indent=2)
                             st.success("Pesanan berhasil dihapus.")
                             st.rerun()
             else:
-                st.info("Belum ada pesanan.")
+                st.info("Belum ada pesanan masuk.")
         else:
-            st.info("Belum ada pesanan.")
+            st.info("Belum ada data pesanan.")
 
-    # -----------------------
+    # =============================
     # PEMBAYARAN
-    # -----------------------
-    elif menu == "Pembayaran":
-        st.header("💰 Pembayaran Pesanan")
+    # =============================
+    elif page == "💳 Pembayaran":
+        st.header("💳 Proses Pembayaran")
         if os.path.exists(CHECKOUT_FILE):
             with open(CHECKOUT_FILE, "r", encoding="utf-8") as f:
                 data_checkout = json.load(f)
-        else:
-            data_checkout = []
-
-        if data_checkout:
-            for i, data in enumerate(data_checkout):
-                with st.expander(f"{data['username']} - Rp {data['total_bayar']:,}"):
-                    st.write(f"Tanggal: {data['timestamp']}")
-                    if "status" not in data:
-                        data["status"] = "Belum Dibayar"
-
-                    st.write(f"Status: **{data['status']}**")
-                    if st.button(f"Tandai Sudah Dibayar #{i+1}", key=f"bayar_{i}"):
-                        data_checkout[i]["status"] = "Sudah Dibayar"
-
-                        # Tambahkan ke laporan
-                        laporan_entry = {
-                            "username": data["username"],
-                            "total": data["total_bayar"],
-                            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        }
-
-                        if os.path.exists(LAPORAN_FILE):
-                            with open(LAPORAN_FILE, "r", encoding="utf-8") as f:
-                                laporan_data = json.load(f)
-                        else:
-                            laporan_data = []
-
-                        laporan_data.append(laporan_entry)
-                        with open(LAPORAN_FILE, "w", encoding="utf-8") as f:
-                            json.dump(laporan_data, f, ensure_ascii=False, indent=2)
-
-                        with open(CHECKOUT_FILE, "w", encoding="utf-8") as f:
-                            json.dump(data_checkout, f, ensure_ascii=False, indent=2)
-                        st.success("Pembayaran berhasil dicatat ke laporan.")
-                        st.rerun()
+            if data_checkout:
+                for i, pesanan in enumerate(data_checkout):
+                    with st.container():
+                        st.markdown("---")
+                        st.write(f"👤 {pesanan['username']} — {pesanan['timestamp']}")
+                        total = pesanan['total_bayar']
+                        uang = st.number_input(f"Uang diterima ({pesanan['username']})", min_value=0, value=total, step=1000, key=f"uang_{i}")
+                        if st.button(f"💰 Bayar ({pesanan['username']})", key=f"bayar_{i}"):
+                            if uang >= total:
+                                kembalian = uang - total
+                                st.success(f"✅ Pembayaran berhasil. Kembalian: Rp {kembalian:,}")
+                                data_checkout.pop(i)
+                                with open(CHECKOUT_FILE, "w", encoding="utf-8") as f:
+                                    json.dump(data_checkout, f, ensure_ascii=False, indent=2)
+                                st.rerun()
+                            else:
+                                st.error("❌ Uang kurang!")
+            else:
+                st.info("Belum ada pesanan yang harus dibayar.")
         else:
             st.info("Belum ada data pembayaran.")
 
-    # -----------------------
+    # =============================
     # LAPORAN
-    # -----------------------
-    elif menu == "Laporan":
+    # =============================
+    elif page == "📊 Laporan":
         st.header("📊 Laporan Penjualan")
-        if os.path.exists(LAPORAN_FILE):
-            with open(LAPORAN_FILE, "r", encoding="utf-8") as f:
-                laporan_data = json.load(f)
-
-            if laporan_data:
-                total_semua = sum(l["total"] for l in laporan_data)
-                st.success(f"Total Pendapatan: Rp {total_semua:,}")
-                for i, lap in enumerate(laporan_data):
-                    with st.expander(f"{lap['username']} - {lap['timestamp']}"):
-                        st.write(f"Total: Rp {lap['total']:,}")
-                        if st.button(f"🗑️ Hapus Laporan #{i+1}", key=f"hapus_laporan_{i}"):
-                            laporan_data.pop(i)
-                            with open(LAPORAN_FILE, "w", encoding="utf-8") as f:
-                                json.dump(laporan_data, f, ensure_ascii=False, indent=2)
-                            st.success("Laporan dihapus.")
-                            st.rerun()
+        if os.path.exists(CHECKOUT_FILE):
+            with open(CHECKOUT_FILE, "r", encoding="utf-8") as f:
+                laporan = json.load(f)
+            if laporan:
+                st.dataframe(laporan)
+                if st.button("🗑️ Hapus Semua Laporan"):
+                    os.remove(CHECKOUT_FILE)
+                    st.success("Laporan dihapus semua.")
+                    st.rerun()
             else:
-                st.info("Belum ada laporan.")
+                st.info("Belum ada data laporan.")
         else:
-            st.info("Belum ada laporan.")
+            st.info("Belum ada laporan penjualan.")
 
-    # -----------------------
+    # =============================
     # KELOLA MENU
-    # -----------------------
-    elif menu == "Kelola Menu":
-        st.header("🍜 Kelola Menu")
+    # =============================
+    elif page == "🍜 Kelola Menu":
+        st.header("🍜 Kelola Menu Makanan & Minuman")
+
         if os.path.exists(MENU_FILE):
             with open(MENU_FILE, "r", encoding="utf-8") as f:
-                menu_data = json.load(f)
+                data = json.load(f)
+                makanan = data.get("makanan", {})
+                minuman = data.get("minuman", {})
         else:
-            menu_data = {"makanan": {}, "minuman": {}}
+            makanan = {"Mie Ayam": 15000, "Bakso": 18000}
+            minuman = {"Es Teh": 5000, "Es Jeruk": 7000}
 
-        tab1, tab2 = st.tabs(["Makanan", "Minuman"])
-
-        # Makanan
-        with tab1:
-            for item, harga in menu_data["makanan"].items():
-                col1, col2, col3 = st.columns([3, 2, 1])
-                with col1: st.write(item)
-                with col2: st.write(f"Rp {harga:,}")
-                with col3:
-                    if st.button("🗑️", key=f"hapus_makanan_{item}"):
-                        menu_data["makanan"].pop(item)
-                        with open(MENU_FILE, "w", encoding="utf-8") as f:
-                            json.dump(menu_data, f, ensure_ascii=False, indent=2)
-                        st.rerun()
-
-            st.subheader("Tambah Menu Makanan")
-            new_food = st.text_input("Nama Makanan Baru")
-            new_price = st.number_input("Harga", min_value=0, step=1000)
-            if st.button("Tambah Makanan"):
-                if new_food.strip():
-                    menu_data["makanan"][new_food] = int(new_price)
+        st.subheader("🍲 Makanan")
+        for item, harga in makanan.copy().items():
+            col1, col2, col3 = st.columns([3, 2, 1])
+            with col1:
+                nama_baru = st.text_input(f"{item}", value=item, key=f"m_{item}")
+            with col2:
+                harga_baru = st.number_input(f"Harga {item}", value=harga, step=1000, key=f"h_{item}")
+            with col3:
+                if st.button("💾 Update", key=f"up_{item}"):
+                    makanan[nama_baru] = harga_baru
+                    if nama_baru != item:
+                        del makanan[item]
                     with open(MENU_FILE, "w", encoding="utf-8") as f:
-                        json.dump(menu_data, f, ensure_ascii=False, indent=2)
-                    st.success("Makanan ditambahkan!")
+                        json.dump({"makanan": makanan, "minuman": minuman}, f, ensure_ascii=False, indent=2)
+                    st.success(f"{nama_baru} diperbarui.")
+                    st.rerun()
+                if st.button("❌ Hapus", key=f"delm_{item}"):
+                    del makanan[item]
+                    with open(MENU_FILE, "w", encoding="utf-8") as f:
+                        json.dump({"makanan": makanan, "minuman": minuman}, f, ensure_ascii=False, indent=2)
+                    st.success(f"{item} dihapus.")
                     st.rerun()
 
-        # Minuman
-        with tab2:
-            for item, harga in menu_data["minuman"].items():
-                col1, col2, col3 = st.columns([3, 2, 1])
-                with col1: st.write(item)
-                with col2: st.write(f"Rp {harga:,}")
-                with col3:
-                    if st.button("🗑️", key=f"hapus_minuman_{item}"):
-                        menu_data["minuman"].pop(item)
-                        with open(MENU_FILE, "w", encoding="utf-8") as f:
-                            json.dump(menu_data, f, ensure_ascii=False, indent=2)
-                        st.rerun()
-
-            st.subheader("Tambah Menu Minuman")
-            new_drink = st.text_input("Nama Minuman Baru")
-            new_price_d = st.number_input("Harga ", min_value=0, step=1000, key="price_d")
-            if st.button("Tambah Minuman"):
-                if new_drink.strip():
-                    menu_data["minuman"][new_drink] = int(new_price_d)
+        st.subheader("🥤 Minuman")
+        for item, harga in minuman.copy().items():
+            col1, col2, col3 = st.columns([3, 2, 1])
+            with col1:
+                nama_baru = st.text_input(f"{item}", value=item, key=f"min_{item}")
+            with col2:
+                harga_baru = st.number_input(f"Harga {item}", value=harga, step=1000, key=f"hm_{item}")
+            with col3:
+                if st.button("💾 Update ", key=f"upm_{item}"):
+                    minuman[nama_baru] = harga_baru
+                    if nama_baru != item:
+                        del minuman[item]
                     with open(MENU_FILE, "w", encoding="utf-8") as f:
-                        json.dump(menu_data, f, ensure_ascii=False, indent=2)
-                    st.success("Minuman ditambahkan!")
+                        json.dump({"makanan": makanan, "minuman": minuman}, f, ensure_ascii=False, indent=2)
+                    st.success(f"{nama_baru} diperbarui.")
+                    st.rerun()
+                if st.button("❌ Hapus ", key=f"delmin_{item}"):
+                    del minuman[item]
+                    with open(MENU_FILE, "w", encoding="utf-8") as f:
+                        json.dump({"makanan": makanan, "minuman": minuman}, f, ensure_ascii=False, indent=2)
+                    st.success(f"{item} dihapus.")
                     st.rerun()
 
-    # -----------------------
+        st.subheader("➕ Tambah Menu Baru")
+        new_name = st.text_input("Nama Menu Baru")
+        new_price = st.number_input("Harga", min_value=0, step=1000)
+        jenis = st.radio("Jenis", ["Makanan", "Minuman"], horizontal=True)
+        if st.button("Tambah Menu"):
+            if new_name.strip():
+                if jenis == "Makanan":
+                    makanan[new_name] = new_price
+                else:
+                    minuman[new_name] = new_price
+                with open(MENU_FILE, "w", encoding="utf-8") as f:
+                    json.dump({"makanan": makanan, "minuman": minuman}, f, ensure_ascii=False, indent=2)
+                st.success("Menu baru ditambahkan.")
+                st.rerun()
+            else:
+                st.warning("Nama menu tidak boleh kosong.")
+
+    # =============================
     # LOGOUT
-    # -----------------------
-    elif menu == "Logout":
+    # =============================
+    elif page == "🚪 Logout":
         st.session_state.admin_login = False
-        st.success("Anda telah logout.")
+        st.success("Logout berhasil.")
         st.rerun()
