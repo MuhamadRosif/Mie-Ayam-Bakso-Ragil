@@ -21,22 +21,26 @@ body {
     position: relative;
     z-index: 1;
     max-width: 400px;
-    margin: 5.5rem auto;
-    padding: 2.5rem 2rem;
-    background: rgba(255,255,255,0.08);
+    margin: 4rem auto;
+    padding: 2.5rem 2rem 2rem 2rem;
+    background: rgba(255, 183, 77, 0.18); /* oranye lembut */
     backdrop-filter: blur(14px);
     border-radius: 25px;
-    box-shadow: 0 0 25px rgba(0,0,0,0.3);
+    box-shadow: 0 0 25px rgba(255, 150, 0, 0.3);
     text-align: center;
     color: #fff;
     overflow: hidden;
 }
 
-/* === ANIMATED HEADER === */
+/* ======= Header Welcome ======= */
 .header {
-    margin-top: -1rem;
-    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(to right, rgba(255,200,80,0.25), rgba(255,180,50,0.08));
+    border-radius: 14px;
+    padding: 12px 0;
     animation: fadeIn 1.5s ease-in-out;
+    box-shadow: 0 0 15px rgba(255,200,80,0.15);
 }
 .header h2 {
     font-weight: 700;
@@ -44,7 +48,7 @@ body {
     text-shadow: 0 0 15px rgba(255,200,50,0.6);
 }
 .header p {
-    color: #fff8;
+    color: #fff9;
     font-size: 0.9rem;
 }
 @keyframes fadeIn {
@@ -52,19 +56,19 @@ body {
     to {opacity: 1; transform: translateY(0);}
 }
 
-/* === LOGO === */
+/* ======= Logo Animasi ======= */
 .brand-logo {
     width: 90px;
-    margin-top: 5px;
+    margin-top: 8px;
     margin-bottom: 10px;
     animation: float 3s ease-in-out infinite;
 }
 @keyframes float {
     0%,100% {transform: translateY(0);}
-    50% {transform: translateY(-5px);}
+    50% {transform: translateY(-6px);}
 }
 
-/* === INPUT === */
+/* ======= Input Style ======= */
 .stTextInput>div>div>input {
     background-color: rgba(255,255,255,0.15) !important;
     color: white !important;
@@ -81,7 +85,7 @@ body {
     border-radius: 10px;
 }
 
-/* === LUPA PASSWORD === */
+/* ======= Lupa Password ======= */
 .forgot {
     text-align: right;
     font-size: 0.85rem;
@@ -96,7 +100,7 @@ body {
     text-decoration: underline;
 }
 
-/* === BUTTON === */
+/* ======= Tombol Masuk ======= */
 .stButton>button {
     display: block;
     width: 100%;
@@ -125,7 +129,7 @@ body {
     box-shadow: 0 2px 8px rgba(255,140,0,0.3);
 }
 
-/* === SOSMED === */
+/* ======= Sosmed ======= */
 .alt {
     margin-top: 1.5rem;
     color: #ccc;
@@ -155,10 +159,11 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-# ===== UI START =====
+# ===== UI =====
 st.markdown("<div class='overlay'></div>", unsafe_allow_html=True)
 st.markdown("<div class='login-card'>", unsafe_allow_html=True)
 
+# Header lebih hidup
 st.markdown("""
 <div class='header'>
     <h2>Selamat Datang di Mas Ragil 🍜</h2>
