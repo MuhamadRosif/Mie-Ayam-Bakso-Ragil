@@ -1,186 +1,95 @@
 import streamlit as st
-from kasir_mas_ragil import admin_app, user_app
 
 # ===============================
-# Konfigurasi halaman
+# PAGE CONFIG
 # ===============================
-st.set_page_config(page_title="Kasir Mas Ragil 🍜", page_icon="🍜", layout="wide")
+st.set_page_config(page_title="Login | Rumah Makan Mas Ragil", page_icon="🍜", layout="centered")
 
 # ===============================
-# Session defaults
-# ===============================
-if "role" not in st.session_state:
-    st.session_state.role = None  # "admin" atau "user"
-if "sidebar_open" not in st.session_state:
-    st.session_state.sidebar_open = False
-if "page" not in st.session_state:
-    st.session_state.page = "home"
-
-# ===============================
-# Gaya CSS (navbar + sidebar)
+# CUSTOM CSS
 # ===============================
 st.markdown("""
-<style>
-/* Navbar */
-.navbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 60px;
-    background-color: #b30000;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    z-index: 100;
-    font-family: 'Poppins', sans-serif;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-.navbar-title {
-    font-size: 22px;
-    font-weight: bold;
-}
-.hamburger {
-    font-size: 28px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-.hamburger:hover {transform: scale(1.2);}
-
-/* Sidebar */
-.sidebar-panel {
-    position: fixed;
-    top: 0;
-    right: -300px;
-    width: 280px;
-    height: 100%;
-    background-color: white;
-    box-shadow: -2px 0 10px rgba(0,0,0,0.2);
-    padding: 20px;
-    transition: right 0.4s ease;
-    z-index: 200;
-    display: flex;
-    flex-direction: column;
-    font-family: 'Poppins', sans-serif;
-}
-.sidebar-panel.open {
-    right: 0;
-}
-.sidebar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #f1f1f1;
-    padding-bottom: 10px;
-}
-.sidebar-header h3 {
-    color: #b30000;
-    margin: 0;
-}
-.sidebar-menu {
-    margin-top: 20px;
-}
-.sidebar-menu button {
-    background: none;
-    border: none;
-    width: 100%;
-    text-align: left;
-    font-size: 16px;
-    padding: 12px 5px;
-    color: #333;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: background 0.3s;
-}
-.sidebar-menu button:hover {
-    background-color: #f8f8f8;
-    color: #b30000;
-    font-weight: 600;
-}
-</style>
+    <style>
+        body {
+            background-color: #f7f9fc;
+        }
+        .login-box {
+            background-color: #0a2a52; /* biru tua elegan */
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            width: 360px;
+            margin: 100px auto;
+            box-shadow: 0px 5px 25px rgba(0,0,0,0.25);
+            text-align: center;
+        }
+        .login-box h2 {
+            font-size: 26px;
+            margin-bottom: 10px;
+        }
+        .login-box label {
+            float: left;
+            color: #c9d6e3;
+            font-size: 15px;
+        }
+        .login-box input {
+            width: 100%;
+            border: none;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 6px;
+            outline: none;
+        }
+        .stSelectbox {
+            text-align: left;
+        }
+        .login-button {
+            background-color: #1d4e89;
+            color: white;
+            border: none;
+            padding: 10px 0;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        .login-button:hover {
+            background-color: #2468b0;
+            cursor: pointer;
+        }
+        .forgot {
+            font-size: 13px;
+            color: #a5b7cc;
+            margin-top: 10px;
+        }
+    </style>
 """, unsafe_allow_html=True)
 
 # ===============================
-# Navbar HTML
+# FORM LOGIN
 # ===============================
-st.markdown(f"""
-<div class="navbar">
-    <div class="navbar-title">🍜 Kasir Mas Ragil</div>
-    <div class="hamburger" onclick="toggleSidebar()">☰</div>
-</div>
+st.markdown('<div class="login-box">', unsafe_allow_html=True)
+st.markdown("<h2>Rumah Makan Mas Ragil</h2>", unsafe_allow_html=True)
+st.markdown("<p style='font-size:14px;color:#c9d6e3;margin-bottom:25px;'>Silakan masuk untuk melanjutkan</p>", unsafe_allow_html=True)
 
-<div id="sidebar" class="sidebar-panel">
-    <div class="sidebar-header">
-        <h3>Menu</h3>
-        <div style="font-size:22px;cursor:pointer;" onclick="toggleSidebar()">✕</div>
-    </div>
-    <div class="sidebar-menu">
-""", unsafe_allow_html=True)
+username = st.text_input("ID Pengguna", placeholder="Masukkan ID Pengguna")
+password = st.text_input("Kata Sandi", type="password", placeholder="Masukkan kata sandi")
+role = st.selectbox("Sebagai", ["User", "Admin"])
 
-# ===============================
-# Sidebar Menu (Dinamis)
-# ===============================
-if st.session_state.role == "admin":
-    menu_list = {
-        "📦 Pesanan": "pesanan",
-        "💳 Pembayaran": "pembayaran",
-        "📊 Laporan": "laporan",
-        "🍴 Kelola Menu": "kelola_menu",
-        "🚪 Logout": "logout"
-    }
-elif st.session_state.role == "user":
-    menu_list = {
-        "🏠 Beranda": "home",
-        "🍜 Menu Makanan & Minuman": "menu",
-        "🛒 Keranjang": "keranjang",
-        "🧾 Riwayat": "riwayat",
-        "ℹ️ Tentang": "tentang",
-        "🚪 Logout": "logout"
-    }
-else:
-    menu_list = {
-        "👤 Login sebagai User": "login_user",
-        "🧑‍💼 Login sebagai Admin": "login_admin"
-    }
+login_btn = st.button("Masuk", key="login_btn")
 
-# Render tombol sidebar
-for name, value in menu_list.items():
-    st.markdown(f"""
-    <button onclick="fetch('/?_page={value}', {{method:'POST'}})">{name}</button>
-    """, unsafe_allow_html=True)
+if login_btn:
+    if username and password:
+        if role == "Admin":
+            st.success("Login berhasil sebagai Admin ✅")
+            st.session_state["page"] = "admin"
+            st.switch_page("kasir_mas_ragil/admin_app.py")
+        else:
+            st.success("Login berhasil sebagai User ✅")
+            st.session_state["page"] = "user"
+            st.switch_page("kasir_mas_ragil/user_app.py")
+    else:
+        st.error("Harap isi semua kolom login!")
 
-st.markdown("</div></div>", unsafe_allow_html=True)
-
-# ===============================
-# Javascript Toggle Sidebar
-# ===============================
-st.markdown("""
-<script>
-function toggleSidebar(){
-    var sb = document.getElementById("sidebar");
-    if(sb.classList.contains("open")){
-        sb.classList.remove("open");
-    } else {
-        sb.classList.add("open");
-    }
-}
-</script>
-""", unsafe_allow_html=True)
-
-# ===============================
-# Konten Utama
-# ===============================
-st.markdown("<div style='margin-top:70px;'></div>", unsafe_allow_html=True)
-
-if st.session_state.page == "home":
-    st.title("Selamat Datang di 🍜 Kasir Mas Ragil")
-    st.write("Pilih menu di kanan atas untuk mulai.")
-elif st.session_state.page == "login_user":
-    user_app.run_user()
-elif st.session_state.page == "login_admin":
-    admin_app.run_admin()
-else:
-    st.write(f"📄 Halaman: {st.session_state.page}")
-
+st.markdown("<p class='forgot'>Lupa password?</p>", unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
