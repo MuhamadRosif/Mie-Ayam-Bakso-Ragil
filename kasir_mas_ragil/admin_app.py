@@ -7,7 +7,7 @@ from datetime import datetime
 DATA_FILE = "riwayat_penjualan.csv"
 MENU_FILE = "menu.json"
 
-ADMIN_USER = "admin"
+ADMIN_USER = "rosip"
 ADMIN_PASS = "1234"
 
 def run_admin():
