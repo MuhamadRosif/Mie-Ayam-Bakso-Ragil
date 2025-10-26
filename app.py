@@ -125,7 +125,7 @@ def navbar():
     with col2:
         if st.button("☰", key="toggle_menu", help="Menu", use_container_width=True):
             st.session_state.show_sidebar = not st.session_state.show_sidebar
-            st.experimental_rerun()
+            st.rerun()
 
 # ===============================
 # LOGIN PAGE
