@@ -8,6 +8,8 @@ MENU_FILE = "menu.json"
 def run_admin():
     if "admin_login" not in st.session_state:
         st.session_state.admin_login=False
+    if "menu_open" not in st.session_state:
+        st.session_state.menu_open=True  # Navbar default open
 
     ADMIN_USER="admin"
     ADMIN_PASS="1234"
@@ -19,17 +21,27 @@ def run_admin():
         if st.button("Masuk"):
             if username==ADMIN_USER and password==ADMIN_PASS:
                 st.session_state.admin_login=True
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("Username atau password salah.")
         return
 
-    if st.sidebar.button("🚪 Logout Admin"):
-        st.session_state.admin_login=False
-        st.rerun()
+    # Toggle sidebar menu
+    toggle_col1, toggle_col2 = st.columns([9,1])
+    with toggle_col2:
+        if st.button("☰"):
+            st.session_state.menu_open = not st.session_state.menu_open
+
+    if st.session_state.menu_open:
+        st.sidebar.title("🛠️ Admin Menu")
+        page = st.sidebar.selectbox("Menu Admin", ["Pesanan User","Pembayaran","Laporan","Kelola Menu"])
+        if st.sidebar.button("🚪 Logout Admin"):
+            st.session_state.admin_login=False
+            st.experimental_rerun()
+    else:
+        page = "Pesanan User"  # Default page kalau sidebar ditutup
 
     st.title("🛠️ Admin Dashboard")
-    page = st.sidebar.selectbox("Menu Admin", ["Pesanan User","Pembayaran","Laporan","Kelola Menu"])
 
     # Load menu
     if os.path.exists(MENU_FILE):
@@ -41,6 +53,7 @@ def run_admin():
         makanan={"Mie Ayam":15000,"Bakso":18000}
         minuman={"Es Teh":5000,"Es Jeruk":7000}
 
+    # --- Halaman Admin ---
     # Pesanan User
     if page=="Pesanan User":
         st.header("📋 Pesanan User")
@@ -112,7 +125,7 @@ def run_admin():
                     with open(MENU_FILE,"w",encoding="utf-8") as f:
                         json.dump({"makanan":makanan,"minuman":minuman},f,ensure_ascii=False,indent=2)
                     st.success(f"{nama_baru} diperbarui")
-                    st.experimental_rerun()
+                    st.rerun()
                 if st.button("❌ Hapus", key=f"delm-{item}"):
                     del makanan[item]
                     with open(MENU_FILE,"w",encoding="utf-8") as f:
