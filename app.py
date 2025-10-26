@@ -1,12 +1,11 @@
 # =====================================================
-# 🍜 Kasir Mas Ragil — Full Final + Musik Autoplay + Update/Hapus
+# 🍜 Kasir Mas Ragil — Full Final + Musik Auto Play
 # =====================================================
 import streamlit as st
 import pandas as pd
 import os
 import json
 from datetime import datetime
-import base64
 
 # -----------------------
 # Konfigurasi Aplikasi
@@ -15,19 +14,12 @@ st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide"
 DATA_FILE = "riwayat_penjualan.csv"
 
 # ===============================
-# 🔊 Musik Backsound (Auto Play Tanpa Kontrol)
+# 🔊 Musik Backsound Auto Play
 # ===============================
 try:
     audio_file = open("asek.mp3", "rb")
     audio_bytes = audio_file.read()
-    audio_base64 = base64.b64encode(audio_bytes).decode()
-
-    st.markdown(f"""
-    <audio autoplay loop hidden>
-        <source src="data:audio/mp3;base64,{audio_base64}" type="audio/mp3">
-    </audio>
-    """, unsafe_allow_html=True)
-
+    st.audio(audio_bytes, format="audio/mp3", start_time=0)
 except FileNotFoundError:
     st.warning("🎵 File 'asek.mp3' belum ditemukan. Letakkan di folder yang sama dengan app.py.")
 
@@ -64,7 +56,7 @@ if not st.session_state.login:
     st.stop()
 
 # -----------------------
-# Default Session
+# Session Defaults
 # -----------------------
 defaults = {
     "menu_open": False,
@@ -85,8 +77,8 @@ st.markdown("""
 <style>
 .stApp {background: linear-gradient(180deg,#071026,#0b1440); color:#e6eef8;}
 .topbar {display:flex; align-items:center; gap:12px; padding:10px 18px; 
-        background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
-        border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
+         background: linear-gradient(90deg,#b71c1c,#9c2a2a); color:white; 
+         border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.3);}
 .right-panel {background: linear-gradient(180deg,#0c0e16,#181b26); padding:14px; border-radius:10px;}
 .menu-item {display:block; width:100%; padding:10px; border-radius:8px; background:#222; color:white; border:none;}
 .menu-item:hover {background:#333;}
@@ -275,28 +267,34 @@ with main_col:
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
             daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
             st.bar_chart(daily_revenue)
-
-            # -------------------------
-            # Admin Update & Hapus
-            # -------------------------
-            st.subheader("⚙️ Update / Hapus Transaksi")
-            idx = st.number_input("Masukkan indeks baris untuk update/hapus", min_value=0, max_value=len(df)-1 if len(df)>0 else 0, step=1)
-            if st.button("Hapus Transaksi"):
-                df = pd.read_csv(DATA_FILE, encoding="utf-8-sig")
-                df.drop(idx, inplace=True)
-                df.to_csv(DATA_FILE, index=False, encoding="utf-8-sig")
-                st.success("Transaksi dihapus.")
-                st.experimental_rerun()
-            st.write("Update belum otomatis (sementara hanya hapus).")
-
+            
+            st.subheader("⚙️ Admin Update/Hapus Transaksi")
+            for idx,row in df.iterrows():
+                col1,col2,col3 = st.columns([6,2,2])
+                with col1:
+                    st.write(f"{row['timestamp']} - {row['nama']} - Rp {row['total']}")
+                with col2:
+                    if st.button("✏️ Update", key=f"upd{idx}"):
+                        new_total = st.number_input(f"Update total {row['nama']}", value=int(row['total']))
+                        df.at[idx,'total']=new_total
+                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                        st.success("Data diupdate!")
+                        st.experimental_rerun()
+                with col3:
+                    if st.button("🗑️ Hapus", key=f"del{idx}"):
+                        df = df.drop(idx)
+                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
+                        st.success("Data dihapus!")
+                        st.experimental_rerun()
+            
         else:
             st.info("Belum ada transaksi.")
 
     elif page=="tentang":
         st.header("ℹ️ Tentang Aplikasi")
         st.write("Aplikasi Kasir Mie Ayam & Bakso Mas Ragil 🍜")
-        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, musik akustik, update/hapus.")
+        st.write("Dilengkapi: Login admin, pembayaran, laporan, struk, reset, update & hapus transaksi, dan musik akustik auto play.")
         st.write("Dibuat dengan ❤️ oleh Mas Ragil.")
 
 st.markdown("---")
-st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Full Final + Musik Autoplay + Update/Hapus")
+st.caption("© 2025 Mas Ragil — Aplikasi Kasir 🍜 | Versi Full + Musik Akustik Auto Play")
