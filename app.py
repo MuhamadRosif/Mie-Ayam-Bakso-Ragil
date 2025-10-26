@@ -75,28 +75,8 @@ st.markdown("""
 .nota {background-color:#141826; padding:18px; border-radius:10px; border:1px solid #2f3340; font-family:"Courier New", monospace;}
 .stButton>button {background: linear-gradient(90deg,#c62828,#9c1f1f); color:white; border:none; border-radius:6px; padding:8px 16px;}
 .stButton>button:hover {transform:scale(1.05);}
-.play-button {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 60px;
-    height: 60px;
-    background-color: #c62828;
-    border-radius: 50%;
-    border: none;
-    cursor: pointer;
-    z-index: 9999;
-}
-.play-button::after {
-    content: '▶';
-    color: white;
-    font-size: 28px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-.play-button.paused::after { content: '❚❚'; }
+.play-button {position:fixed; bottom:20px; right:20px; width:50px; height:50px; border-radius:50%; background-color:red; border:none; cursor:pointer;}
+.play-button.paused {background-color:#ff6666;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -189,13 +169,12 @@ with main_col:
     if page=="home":
         st.header("🏠 Selamat Datang di Mie Ayam & Bakso Mas Ragil 🍜")
         st.write("Pilih menu, lakukan pembayaran, dan cetak struk pelanggan.")
-        st.image("https://via.placeholder.com/800x400/071026/ffffff?text=Mie+Ayam+%26+Bakso+Mas+Ragil", use_container_width=True)
+        st.image("https://via.placeholder.com/800x400/071026/ffffff?text=Mie+Ayam+%26+Bakso+Mas+Ragil", width=None)
         if st.button("🚀 Mulai Transaksi Cepat"):
             st.session_state.page = "pesan"
             st.rerun()
 
     elif page=="pesan":
-        st.header("🍜 Pesan Menu")
         nama = st.text_input("Nama Pelanggan", value=st.session_state.nama_pelanggan)
         st.session_state.nama_pelanggan = nama
         if not nama.strip():
@@ -231,7 +210,6 @@ with main_col:
                 st.info("Belum ada pesanan.")
 
     elif page=="bayar":
-        st.header("💳 Pembayaran")
         if not st.session_state.pesanan or sum(st.session_state.pesanan.values())==0:
             st.warning("Belum ada pesanan.")
         else:
@@ -277,27 +255,8 @@ with main_col:
             df['timestamp'] = pd.to_datetime(df['timestamp'])
             df['total'] = df['total'].astype(int)
             st.dataframe(df[['timestamp','nama','subtotal','diskon','total','bayar','kembalian']])
-
-            # Update / Hapus transaksi
-            st.subheader("✏️ Update / Hapus Transaksi")
-            for idx,row in df.iterrows():
-                col1,col2,col3,col4 = st.columns([3,2,1,1])
-                with col1: st.write(f"{row['timestamp']} - {row['nama']} - Rp {row['total']}")
-                with col2:
-                    nama_edit = st.text_input(f"Nama-{idx}", value=row['nama'])
-                    total_edit = st.number_input(f"Total-{idx}", min_value=0, value=int(row['total']), step=1000)
-                with col3:
-                    if st.button(f"Update-{idx}"):
-                        df.at[idx,'nama'] = nama_edit
-                        df.at[idx,'total'] = total_edit
-                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                        st.success("Transaksi diupdate.")
-                with col4:
-                    if st.button(f"Hapus-{idx}"):
-                        df = df.drop(idx)
-                        df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-                        st.success("Transaksi dihapus.")
-                        st.rerun()
+            daily_revenue = df.groupby(df['timestamp'].dt.date)['total'].sum()
+            st.bar_chart(daily_revenue)
         else:
             st.info("Belum ada transaksi.")
 
