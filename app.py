@@ -6,7 +6,7 @@ st.set_page_config(page_title="Mie Ayam Bakso Mas Ragil", page_icon="🍜", layo
 st.markdown("""
 <style>
 body {
-    background: url('') no-repeat center center fixed;
+    background: url('https://images.unsplash.com/photo-1606755962773-0e2d7efc4b5b') no-repeat center center fixed;
     background-size: cover;
     font-family: 'Poppins', sans-serif;
 }
@@ -50,17 +50,6 @@ body {
 @keyframes fadeIn {
     from {opacity: 0; transform: translateY(-10px);}
     to {opacity: 1; transform: translateY(0);}
-}
-
-/* ======= Logo Animasi ======= */
-.brand-logo {
-    width: 90px;
-    margin: 0 auto 15px auto;
-    animation: float 3s ease-in-out infinite;
-}
-@keyframes float {
-    0%,100% {transform: translateY(0);}
-    50% {transform: translateY(-6px);}
 }
 
 /* ======= Input Style ======= */
@@ -158,15 +147,14 @@ footer {visibility: hidden;}
 st.markdown("<div class='overlay'></div>", unsafe_allow_html=True)
 st.markdown("<div class='login-card'>", unsafe_allow_html=True)
 
-# Header di tengah & clean
+# Header di tengah, tanpa logo
 st.markdown("""
-<img src='https://cdn-icons-png.flaticon.com/512/3075/3075977.png' class='brand-logo'>
 <div class='header'>
     <h2>Selamat Datang di<br>Mie Ayam Bakso Mas Ragil 🍜</h2>
 </div>
 """, unsafe_allow_html=True)
 
-# Login form
+# Form login
 role = st.selectbox("Masuk sebagai", ["Pelanggan", "Admin"])
 username = st.text_input("Email / ID Pengguna")
 password = st.text_input("Password", type="password")
