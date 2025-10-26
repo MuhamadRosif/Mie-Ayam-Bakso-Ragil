@@ -1,27 +1,24 @@
-# app.py
 import streamlit as st
 from kasir_mas_ragil import admin_app, user_app
 
 st.set_page_config(page_title="Kasir Mas Ragil", page_icon="🍜", layout="wide")
 
+# Pilih role
+if "role" not in st.session_state:
+    st.session_state.role = None  # "admin" / "user"
+
 st.title("🍜 Kasir Mas Ragil")
 
-# Pilih role login
-if "role_selected" not in st.session_state:
-    st.session_state.role_selected = False
+col1, col2 = st.columns([2,1])
+with col1:
+    role_select = st.selectbox("Masuk sebagai:", ["Pilih Role","User","Admin"])
+    if role_select != "Pilih Role":
+        st.session_state.role = role_select.lower()
 
-if not st.session_state.role_selected:
-    st.subheader("Login sebagai:")
-    role_choice = st.radio("", ["Admin","User"], key="role_radio")
-    if st.button("Lanjut"):
-        st.session_state.role = role_choice
-        st.session_state.role_selected = True
-        st.rerun()
-else:
-    role_choice = st.session_state.role
-
-# Panggil aplikasi sesuai role
-if role_choice=="Admin":
+# Jalankan modul sesuai role
+if st.session_state.role == "admin":
     admin_app.run_admin()
-else:
+elif st.session_state.role == "user":
     user_app.run_user()
+else:
+    st.info("Silahkan pilih role di atas untuk mulai.")
