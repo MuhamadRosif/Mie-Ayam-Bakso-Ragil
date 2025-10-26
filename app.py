@@ -1,34 +1,45 @@
-# app.py — entry point (login tetap seperti yang kamu suka; global navbar + sidebar navigation)
+# ==========================================================
+# app.py — Entry Point Utama
+# Rumah Makan Mas Ragil 🍜
+# ==========================================================
 import streamlit as st
 from kasir_mas_ragil import admin_app, user_app
 
-st.set_page_config(page_title="Rumah Makan Mas Ragil", page_icon="🍜", layout="wide")
+# ----------------------------------------------------------
+# Konfigurasi halaman
+# ----------------------------------------------------------
+st.set_page_config(
+    page_title="Rumah Makan Mas Ragil",
+    page_icon="🍜",
+    layout="wide",
+)
 
-# -----------------------
-# Session defaults
-# -----------------------
-if "is_logged_in" not in st.session_state:
-    st.session_state.is_logged_in = False
-if "role" not in st.session_state:
-    st.session_state.role = None  # "Admin" or "User"
-if "username" not in st.session_state:
-    st.session_state.username = ""
-if "sidebar_open" not in st.session_state:
-    st.session_state.sidebar_open = False
-if "page" not in st.session_state:
-    st.session_state.page = "Beranda"
+# ----------------------------------------------------------
+# Session Defaults
+# ----------------------------------------------------------
+defaults = {
+    "is_logged_in": False,
+    "role": None,        # "Admin" atau "User"
+    "username": "",
+    "sidebar_open": False,
+    "page": "Beranda",
+}
+for k, v in defaults.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
-# -----------------------
-# Global CSS (login + theme)
-# -----------------------
+# ----------------------------------------------------------
+# CSS (Global Theme + Login Box)
+# ----------------------------------------------------------
 st.markdown("""
 <style>
-:root{
+:root {
   --blue-dark: #0b1e3f;
   --blue-mid: #1565c0;
   --white: #ffffff;
   --muted: #cfddeb;
 }
+
 /* page background */
 .stApp {
   background-color: #f6f8fb;
@@ -62,14 +73,20 @@ st.markdown("""
 }
 .topbar .hamb:hover { background: rgba(255,255,255,0.06); transform: scale(1.03); }
 
-/* sidebar appearance (when used) */
+/* sidebar appearance */
 [data-testid="stSidebar"] {
   background: linear-gradient(180deg, #0b1e3f, #124b7e);
   color: white;
 }
 
-/* login center box (KEEP THIS: your favorite login) */
-.login-wrap { display:flex; justify-content:center; align-items:center; min-height:calc(100vh - 60px); padding-top:60px; }
+/* login center box */
+.login-wrap { 
+  display:flex; 
+  justify-content:center; 
+  align-items:center; 
+  min-height:calc(100vh - 60px); 
+  padding-top:60px; 
+}
 .login-box {
   width:420px;
   background:var(--blue-dark);
@@ -81,82 +98,75 @@ st.markdown("""
 .login-box h2 { margin-bottom:6px; }
 .login-box .muted { color:var(--muted); margin-bottom:16px; }
 
-/* content spacing (main area) */
+/* main content spacing */
 .content { padding: 20px; margin-top: 70px; }
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------
-# Topbar (visual)
-# -----------------------
-st.markdown(
-    f"""
-    <div class="topbar">
-      <div class="title">🍜 Rumah Makan Mas Ragil</div>
-      <div>
-        <form>
-          <button class="hamb" id="hamb-streamlit">☰</button>
-        </form>
-      </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+# ----------------------------------------------------------
+# Topbar (navbar atas)
+# ----------------------------------------------------------
+st.markdown("""
+<div class="topbar">
+  <div class="title">🍜 Rumah Makan Mas Ragil</div>
+  <div>
+    <button class="hamb" id="hamb-streamlit">☰</button>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
-# Provide a real Streamlit button as fallback to toggle sidebar (clicking the JS button will also try to press this)
+# ----------------------------------------------------------
+# Sidebar Toggle
+# ----------------------------------------------------------
 def _toggle_sidebar():
     st.session_state.sidebar_open = not st.session_state.sidebar_open
-st.button("hidden-toggle-sidebar", key="hidden_toggle_sidebar", on_click=_toggle_sidebar, help="hidden toggle")
 
-# Small JS to forward the click on the styled button to the hidden Streamlit button
+# Tombol Streamlit tersembunyi (buat ditrigger via JS)
+st.button("hidden_toggle_sidebar", on_click=_toggle_sidebar, key="hidden_toggle")
+
+# JS listener buat tombol ☰
 st.components.v1.html("""
 <script>
 document.getElementById('hamb-streamlit').addEventListener('click', function(e){
-    e.preventDefault();
-    // Find the hidden Streamlit button and click it
-    const btn = window.parent.document.querySelector('button[kind="primary"], button[data-baseweb="button"]');
-    // As fallback, trigger click on any Streamlit button with label "hidden-toggle-sidebar"
-    // But direct DOM for Streamlit internals is fragile; the hidden streamlit button above will be near top.
-    try {
-        const hidden = window.parent.document.querySelector('button[title="hidden_toggle_sidebar"], button[aria-label="hidden_toggle_sidebar"], button[role="button"]');
-        if(hidden) hidden.click();
-    } catch(e){}
-    // Also dispatch a window message to be safe
-    window.parent.postMessage({type:"TOGGLE_SIDEBAR"}, "*");
+  e.preventDefault();
+  const btns = window.parent.document.querySelectorAll('button');
+  btns.forEach(b=>{
+    if(b.innerText.includes('hidden_toggle_sidebar')){ b.click(); }
+  });
 });
 </script>
 """, height=0)
 
-# -----------------------
-# Sidebar navigation (when open)
-# -----------------------
+# ----------------------------------------------------------
+# Sidebar Navigasi
+# ----------------------------------------------------------
 if st.session_state.sidebar_open:
     with st.sidebar:
         st.markdown("### Navigasi")
-        if st.session_state.is_logged_in and st.session_state.role == "Admin":
-            sel = st.radio("", ["Dashboard", "Pesanan", "Pembayaran", "Laporan", "Kelola Menu", "Logout"], index=0)
-            st.session_state.page = sel
-        elif st.session_state.is_logged_in and st.session_state.role == "User":
-            sel = st.radio("", ["Beranda", "Menu Makanan", "Menu Minuman", "Keranjang", "Riwayat", "Tentang", "Logout"], index=0)
+
+        if st.session_state.is_logged_in:
+            if st.session_state.role == "Admin":
+                sel = st.radio(
+                    "",
+                    ["Dashboard", "Pesanan", "Pembayaran", "Laporan", "Kelola Menu", "Logout"],
+                    index=0,
+                )
+            else:
+                sel = st.radio(
+                    "",
+                    ["Beranda", "Menu Makanan", "Menu Minuman", "Keranjang", "Riwayat", "Tentang", "Logout"],
+                    index=0,
+                )
             st.session_state.page = sel
         else:
             sel = st.radio("", ["Masuk sebagai User", "Masuk sebagai Admin"], index=0)
-            if sel == "Masuk sebagai User":
-                st.session_state.page = "login_user"
-            else:
-                st.session_state.page = "login_admin"
+            st.session_state.page = "login_user" if sel == "Masuk sebagai User" else "login_admin"
 
-# -----------------------
-# Main content area
-# -----------------------
-st.markdown('<div class="content">', unsafe_allow_html=True)
-
-# -----------------------
-# LOGIN UI (kept exactly like you liked)
-# -----------------------
+# ----------------------------------------------------------
+# Login UI
+# ----------------------------------------------------------
 def login_ui():
-    st.markdown('<div class="login-wrap">', unsafe_allow_html=True)
-    st.markdown('<div class="login-box">', unsafe_allow_html=True)
+    st.markdown('<div class="login-wrap"><div class="login-box">', unsafe_allow_html=True)
     st.markdown("<h2>Rumah Makan Mas Ragil</h2>", unsafe_allow_html=True)
     st.markdown("<div class='muted'>Silakan masuk untuk melanjutkan</div>", unsafe_allow_html=True)
 
@@ -164,39 +174,39 @@ def login_ui():
     password = st.text_input("Kata Sandi", type="password", key="login_pw")
     role = st.selectbox("Sebagai", ["User", "Admin"], key="login_role")
 
-    col1, col2 = st.columns([1,1])
+    col1, col2 = st.columns(2)
     with col1:
         if st.button("Masuk", key="login_submit"):
-            if username.strip() == "" or password.strip() == "":
+            if not username.strip() or not password.strip():
                 st.error("Isi ID Pengguna dan Kata Sandi.")
             else:
-                # admin special credential
-                if username.strip() == "admin" and password.strip() == "admin123":
+                if username == "admin" and password == "admin123":
                     st.session_state.is_logged_in = True
                     st.session_state.role = "Admin"
-                    st.session_state.username = username.strip()
+                    st.session_state.username = username
                     st.success("Login berhasil sebagai Admin.")
                     st.rerun()
                 else:
-                    # treat as normal user (user_app will also allow registration if needed)
+                    # User login (registrasi dikelola di user_app)
                     st.session_state.is_logged_in = True
                     st.session_state.role = "User"
-                    st.session_state.username = username.strip()
+                    st.session_state.username = username
                     st.success(f"Login berhasil sebagai {role}.")
                     st.rerun()
+
     with col2:
         st.markdown("<div style='margin-top:6px;'><a style='color:#ffd97a'>Lupa password?</a></div>", unsafe_allow_html=True)
 
     st.markdown('</div></div>', unsafe_allow_html=True)
 
-# -----------------------
-# Route: render login or app pages
-# -----------------------
+# ----------------------------------------------------------
+# Routing Halaman
+# ----------------------------------------------------------
+st.markdown('<div class="content">', unsafe_allow_html=True)
+
 if not st.session_state.is_logged_in:
     login_ui()
 else:
-    # If logged in, forward page rendering to admin/user modules.
-    # They expect a `page` argument (string from sidebar navigation); default provided in admin/user code.
     if st.session_state.role == "Admin":
         admin_app.run_admin(page=st.session_state.page)
     else:
