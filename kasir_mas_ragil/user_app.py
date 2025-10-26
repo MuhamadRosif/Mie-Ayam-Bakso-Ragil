@@ -1,102 +1,106 @@
 import streamlit as st
-import json, os
+import json
+import os
 from datetime import datetime
 
 MENU_FILE = "kasir_mas_ragil/menu.json"
-DATA_FILE = "kasir_mas_ragil/riwayat_penjualan.csv"
+DATA_FILE = "riwayat_penjualan.csv"
 
 def run_user():
-    if "login_user" not in st.session_state:
-        st.session_state.login_user = False
-    if "user_registered" not in st.session_state:
-        st.session_state.user_registered = False
-
-    # Registrasi & Login
-    if not st.session_state.login_user:
-        st.header("📝 Registrasi / Login User")
-        if not st.session_state.user_registered:
-            st.subheader("Registrasi User")
-            username = st.text_input("Username", key="reg_user")
-            password = st.text_input("Password", type="password", key="reg_pass")
-            if st.button("Daftar", key="btn_register"):
-                if username.strip() and password.strip():
-                    st.session_state.user_registered = True
-                    st.session_state.user_credentials = {"username":username,"password":password}
-                    st.success("Registrasi berhasil! Silakan login.")
-                    st.experimental_rerun()
-                else:
-                    st.warning("Isi username dan password.")
-        else:
-            st.subheader("Login User")
-            username = st.text_input("Username", key="login_user_input")
-            password = st.text_input("Password", type="password", key="login_user_pass")
-            if st.button("Login", key="btn_login_user"):
-                creds = st.session_state.user_credentials
-                if username == creds["username"] and password == creds["password"]:
-                    st.session_state.login_user = True
-                    st.experimental_rerun()
-                else:
-                    st.error("Username atau password salah.")
-        return
-
-    # -------------------
-    # Halaman User
-    # -------------------
-    st.header("🏠 Beranda Mie Ayam & Bakso Mas Ragil 🍜")
+    # Session defaults
+    if "user_login" not in st.session_state:
+        st.session_state.user_login = False
+    if "user_nama" not in st.session_state:
+        st.session_state.user_nama = ""
+    if "keranjang" not in st.session_state:
+        st.session_state.keranjang = {}
+    if "menu_makanan" not in st.session_state:
+        st.session_state.menu_makanan = {}
+    if "menu_minuman" not in st.session_state:
+        st.session_state.menu_minuman = {}
 
     # Load menu
     if os.path.exists(MENU_FILE):
         with open(MENU_FILE,"r",encoding="utf-8") as f:
-            menu_data = json.load(f)
-            menu_makanan = menu_data.get("makanan",{})
-            menu_minuman = menu_data.get("minuman",{})
+            data = json.load(f)
+            st.session_state.menu_makanan = data.get("makanan",{})
+            st.session_state.menu_minuman = data.get("minuman",{})
     else:
-        menu_makanan = {"Mie Ayam":15000}
-        menu_minuman = {"Es Teh":5000}
+        st.info("Menu belum tersedia.")
 
-    if "cart" not in st.session_state:
-        st.session_state.cart = {}
-
-    st.subheader("🍽️ Menu Makanan")
-    for item, harga in menu_makanan.items():
-        col1,col2 = st.columns([3,1])
-        with col1: st.write(f"{item} (Rp {harga:,})")
-        with col2:
-            if st.button(f"Tambah {item}", key=f"makanan-{item}"):
-                st.session_state.cart[item] = st.session_state.cart.get(item,0)+1
-
-    st.subheader("🥤 Menu Minuman")
-    for item, harga in menu_minuman.items():
-        col1,col2 = st.columns([3,1])
-        with col1: st.write(f"{item} (Rp {harga:,})")
-        with col2:
-            if st.button(f"Tambah {item}", key=f"minum-{item}"):
-                st.session_state.cart[item] = st.session_state.cart.get(item,0)+1
-
-    # Tampilkan keranjang
-    if st.session_state.cart:
-        st.subheader("🛒 Keranjang")
-        total = 0
-        for k,v in st.session_state.cart.items():
-            harga_satuan = menu_makanan.get(k, menu_minuman.get(k,0))
-            subtotal = harga_satuan*v
-            st.write(f"{k} x {v} = Rp {subtotal:,}")
-            total += subtotal
-        st.info(f"Total Bayar: Rp {total:,}")
-
-        if st.button("🧾 Checkout", key="btn_checkout"):
-            # Simpan ke file penjualan
-            record = {
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "nama": st.session_state.user_credentials["username"],
-                "items": json.dumps(st.session_state.cart,ensure_ascii=False),
-                "total": total
-            }
-            import pandas as pd
-            df = pd.DataFrame([record])
-            if os.path.exists(DATA_FILE):
-                df.to_csv(DATA_FILE,mode="a",header=False,index=False,encoding="utf-8-sig")
+    # Registrasi/Login
+    if not st.session_state.user_login:
+        st.subheader("👤 Registrasi / Login User")
+        nama = st.text_input("Nama Anda", key="user_reg_name")
+        if st.button("Masuk / Daftar"):
+            if nama.strip():
+                st.session_state.user_login = True
+                st.session_state.user_nama = nama
+                st.success(f"Selamat datang, {nama}!")
+                st.rerun()
             else:
-                df.to_csv(DATA_FILE,index=False,encoding="utf-8-sig")
-            st.success("Pesanan berhasil! Admin dapat melihat laporan.")
-            st.session_state.cart = {}
+                st.warning("Masukkan nama Anda.")
+        return
+
+    st.title(f"🍜 Selamat datang {st.session_state.user_nama}!")
+    st.subheader("🍽️ Pesan Menu")
+    for item,harga in st.session_state.menu_makanan.items():
+        col1,col2,col3,col4 = st.columns([3,1,1,2])
+        with col1: st.write(f"**{item}** (Rp {harga:,})")
+        with col2:
+            if st.button("-", key=f"{item}-minus"): 
+                st.session_state.keranjang[item] = max(0, st.session_state.keranjang.get(item,0)-1)
+        with col3: st.write(f"Qty: {st.session_state.keranjang.get(item,0)}")
+        with col4:
+            if st.button("+", key=f"{item}-plus"): 
+                st.session_state.keranjang[item] = st.session_state.keranjang.get(item,0)+1
+
+    for item,harga in st.session_state.menu_minuman.items():
+        col1,col2,col3,col4 = st.columns([3,1,1,2])
+        with col1: st.write(f"**{item}** (Rp {harga:,})")
+        with col2:
+            if st.button("-", key=f"{item}-minus-minum"): 
+                st.session_state.keranjang[item] = max(0, st.session_state.keranjang.get(item,0)-1)
+        with col3: st.write(f"Qty: {st.session_state.keranjang.get(item,0)}")
+        with col4:
+            if st.button("+", key=f"{item}-plus-minum"): 
+                st.session_state.keranjang[item] = st.session_state.keranjang.get(item,0)+1
+
+    # Keranjang
+    st.subheader("🛒 Keranjang")
+    keranjang_aktif = {k:v for k,v in st.session_state.keranjang.items() if v>0}
+    if keranjang_aktif:
+        total = 0
+        for k,v in keranjang_aktif.items():
+            harga_satuan = st.session_state.menu_makanan.get(k, st.session_state.menu_minuman.get(k,0))
+            st.write(f"{k} x {v} = Rp {v*harga_satuan:,}")
+            total += v*harga_satuan
+        st.info(f"Total Bayar: Rp {total:,}")
+        uang = st.number_input("Uang Diterima", min_value=0, value=total, step=1000, key="uang_user")
+        if st.button("💳 Bayar Sekarang"):
+            if uang >= total:
+                kembalian = uang - total
+                st.success(f"✅ Pembayaran berhasil! Kembalian: Rp {kembalian:,}")
+                save_transaksi(keranjang_aktif, total, st.session_state.user_nama, uang, kembalian)
+                st.session_state.keranjang = {}
+                st.rerun()
+            else:
+                st.error("Uang tidak cukup!")
+    else:
+        st.info("Keranjang kosong.")
+
+def save_transaksi(items,total,nama,uang,kembalian):
+    record = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "nama": nama,
+        "items": json.dumps(items, ensure_ascii=False),
+        "total": total,
+        "bayar": uang,
+        "kembalian": kembalian
+    }
+    import pandas as pd
+    df = pd.DataFrame([record])
+    if os.path.exists(DATA_FILE):
+        df.to_csv(DATA_FILE, mode="a", header=False, index=False, encoding="utf-8-sig")
+    else:
+        df.to_csv(DATA_FILE, index=False, encoding="utf-8-sig")
