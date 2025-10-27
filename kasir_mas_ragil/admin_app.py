@@ -2,16 +2,14 @@ import streamlit as st
 import json
 import os
 import pandas as pd
-from io import BytesIO
-from reportlab.lib.pagesizes import A5
-from reportlab.lib.units import cm
+from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
 MENU_FILE = "menu.json"
 CHECKOUT_FILE = "checkout.json"
-PAYMENT_FILE = "payments.json"
+STRUK_FOLDER = "struk"
 
-# ------------------ Helper Functions ------------------
+# ========== Fungsi bantu ==========
 def load_data(file, default):
     if os.path.exists(file):
         try:
@@ -36,80 +34,79 @@ def init_menu():
         ]
         save_data(MENU_FILE, data)
 
-# ------------------ Cetak Struk PDF ------------------
-def generate_receipt(order_list, total):
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A5)
-    width, height = A5
+def generate_struk(pesanan, nama_pembeli="Pelanggan"):
+    """Buat PDF struk pembelian"""
+    if not os.path.exists(STRUK_FOLDER):
+        os.makedirs(STRUK_FOLDER)
+    filename = os.path.join(STRUK_FOLDER, f"struk_{nama_pembeli}.pdf")
+    c = canvas.Canvas(filename, pagesize=A4)
+    width, height = A4
 
-    c.setFont("Helvetica-Bold", 14)
-    c.drawCentredString(width/2, height - 2*cm, "Mie Ayam Bakso Mas Ragil 🍜")
+    y = height - 80
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(200, y, "Mie Ayam Bakso Mas Ragil 🍜")
+    y -= 20
     c.setFont("Helvetica", 10)
-    c.drawCentredString(width/2, height - 2.5*cm, "Jl. Kenikmatan No.88, Kuliner City")
+    c.drawString(230, y, "Jl. Kenikmatan No. 88, Ragil City")
+    y -= 40
 
-    y = height - 3.5*cm
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(2*cm, y, "Daftar Pesanan:")
-    y -= 0.5*cm
-
-    c.setFont("Helvetica", 10)
-    for item in order_list:
-        c.drawString(2*cm, y, f"- {item['nama']} x{item['jumlah']} = Rp {item['subtotal']:,}")
-        y -= 0.4*cm
-
-    y -= 0.5*cm
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(2*cm, y, f"Total: Rp {total:,}")
-    y -= 1*cm
-
-    c.setFont("Helvetica", 9)
-    c.drawCentredString(width/2, y, "Terima kasih telah berkunjung 🙏")
-    c.drawCentredString(width/2, y-0.4*cm, "Selamat menikmati makanan Anda!")
-    c.showPage()
+    c.drawString(50, y, f"Nama Pembeli: {nama_pembeli}")
+    y -= 20
+    c.drawString(50, y, "------------------------------------------")
+    y -= 20
+    c.setFont("Helvetica", 11)
+    total = 0
+    for item in pesanan:
+        nama = item.get("nama", "")
+        harga = item.get("harga", 0)
+        jumlah = item.get("jumlah", 1)
+        subtotal = harga * jumlah
+        total += subtotal
+        c.drawString(50, y, f"{nama} ({jumlah}x) - Rp{subtotal:,}")
+        y -= 18
+    y -= 10
+    c.drawString(50, y, "------------------------------------------")
+    y -= 20
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, f"Total Bayar: Rp{total:,}")
+    y -= 40
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawString(200, y, "Terima kasih atas kunjungan Anda!")
     c.save()
-    buffer.seek(0)
-    return buffer
+    return filename
 
-# ------------------ Main Admin Function ------------------
+# ========== Fungsi utama admin ==========
 def run_admin():
     st.sidebar.title("👑 Admin Panel - Mas Ragil")
-    menu = st.sidebar.selectbox(
-        "Menu", ["Laporan Penjualan", "Kelola Menu", "Data Pesanan", "Pembayaran"]
-    )
+    menu = st.sidebar.selectbox("Menu", ["Laporan Penjualan", "Kelola Menu", "Data Pesanan", "Pembayaran"])
     st.sidebar.markdown("---")
 
     init_menu()
     menu_data = load_data(MENU_FILE, [])
     checkout_data = load_data(CHECKOUT_FILE, [])
-    payment_data = load_data(PAYMENT_FILE, [])
 
-    # =========================
     # LAPORAN PENJUALAN
-    # =========================
     if menu == "Laporan Penjualan":
         st.title("📊 Laporan Penjualan")
-
-        if not payment_data:
+        if not checkout_data:
             st.info("Belum ada transaksi yang tercatat.")
         else:
-            df = pd.DataFrame(payment_data)
-            total = df["total"].sum()
+            df = pd.DataFrame(checkout_data)
+            df["subtotal"] = df["harga"] * df["jumlah"]
+            total = df["subtotal"].sum()
             st.dataframe(df, use_container_width=True)
             st.markdown(f"### 💰 Total Pendapatan: Rp {total:,}")
 
-    # =========================
     # KELOLA MENU
-    # =========================
     elif menu == "Kelola Menu":
         st.title("🍜 Kelola Menu Restoran")
-
         df = pd.DataFrame(menu_data)
         st.dataframe(df, use_container_width=True)
 
         st.subheader("➕ Tambah Menu Baru")
         nama = st.text_input("Nama Menu Baru")
         harga = st.number_input("Harga (Rp)", min_value=0, step=1000)
-
         if st.button("Simpan Menu"):
             if nama and harga > 0:
                 menu_data.append({"nama": nama, "harga": harga})
@@ -117,66 +114,38 @@ def run_admin():
                 st.success(f"Menu '{nama}' berhasil ditambahkan!")
             else:
                 st.warning("Harap isi nama dan harga dengan benar.")
-
         if st.button("🔄 Refresh Data"):
             st.rerun()
 
-    # =========================
     # DATA PESANAN
-    # =========================
     elif menu == "Data Pesanan":
         st.title("🧾 Data Pesanan Pelanggan")
-
         if not checkout_data:
             st.info("Belum ada pesanan dari pelanggan.")
         else:
             df = pd.DataFrame(checkout_data)
             st.dataframe(df, use_container_width=True)
             st.markdown(f"Total pesanan: **{len(df)} item**")
-
             if st.button("🧹 Hapus Semua Data Pesanan"):
                 save_data(CHECKOUT_FILE, [])
                 st.warning("Semua data pesanan telah dihapus!")
                 st.rerun()
 
-    # =========================
     # PEMBAYARAN
-    # =========================
     elif menu == "Pembayaran":
-        st.title("💸 Proses Pembayaran")
-
+        st.title("💵 Proses Pembayaran")
         if not checkout_data:
-            st.info("Belum ada pesanan yang siap dibayar.")
+            st.info("Belum ada pesanan untuk dibayar.")
         else:
             df = pd.DataFrame(checkout_data)
-            df["subtotal"] = df["harga"] * df["jumlah"]
-            total = df["subtotal"].sum()
+            grouped = df.groupby("nama").sum(numeric_only=True).reset_index()
+            grouped["Total"] = grouped["harga"] * grouped["jumlah"]
+            st.dataframe(grouped[["nama", "jumlah", "harga", "Total"]], use_container_width=True)
 
-            st.dataframe(df, use_container_width=True)
-            st.markdown(f"### Total Pembayaran: Rp {total:,}")
-
-            nama_pelanggan = st.text_input("Nama Pelanggan")
-            metode = st.selectbox("Metode Pembayaran", ["Tunai", "QRIS", "Transfer Bank"])
-
-            if st.button("✅ Konfirmasi Pembayaran"):
-                if nama_pelanggan.strip() != "":
-                    payment_data.append({
-                        "pelanggan": nama_pelanggan,
-                        "total": total,
-                        "metode": metode
-                    })
-                    save_data(PAYMENT_FILE, payment_data)
-                    save_data(CHECKOUT_FILE, [])  # Kosongkan pesanan setelah dibayar
-
-                    st.success("Pembayaran berhasil disimpan ✅")
-
-                    # Cetak Struk
-                    buffer = generate_receipt(checkout_data, total)
-                    st.download_button(
-                        label="🧾 Cetak Struk (PDF)",
-                        data=buffer,
-                        file_name=f"Struk_{nama_pelanggan}.pdf",
-                        mime="application/pdf"
-                    )
-                else:
-                    st.warning("Masukkan nama pelanggan terlebih dahulu.")
+            nama_pembeli = st.text_input("Nama Pembeli untuk Struk")
+            if st.button("✅ Tandai Lunas & Cetak Struk"):
+                filename = generate_struk(checkout_data, nama_pembeli or "Pelanggan")
+                save_data(CHECKOUT_FILE, [])  # Kosongkan data setelah pembayaran
+                st.success(f"Pembayaran berhasil dan struk telah dibuat: `{filename}`")
+                with open(filename, "rb") as f:
+                    st.download_button("⬇️ Download Struk PDF", f, file_name=os.path.basename(filename))
