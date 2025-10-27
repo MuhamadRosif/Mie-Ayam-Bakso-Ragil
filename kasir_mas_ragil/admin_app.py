@@ -135,25 +135,45 @@ def run_admin():
                 st.rerun()
 
     # ---------------------------
-    # Pembayaran
-    # ---------------------------
-    elif menu == "Pembayaran":
-        st.title("💵 Proses Pembayaran")
-        if not checkout_data:
-            st.info("Belum ada pesanan untuk dibayar.")
-        else:
-            df = pd.DataFrame(checkout_data)
-            grouped = df.groupby("nama").sum(numeric_only=True).reset_index()
-            grouped["Total"] = grouped["harga"] * grouped["jumlah"]
-            st.dataframe(grouped[["nama", "jumlah", "harga", "Total"]], use_container_width=True)
+# Pembayaran
+# ---------------------------
+elif menu == "Pembayaran":
+    st.title("💵 Proses Pembayaran")
+    if not checkout_data:
+        st.info("Belum ada pesanan untuk dibayar.")
+    else:
+        df = pd.DataFrame(checkout_data)
+        grouped = df.groupby("nama").sum(numeric_only=True).reset_index()
+        grouped["Total"] = grouped["harga"] * grouped["jumlah"]
+        st.dataframe(grouped[["nama", "jumlah", "harga", "Total"]], use_container_width=True)
 
-            nama_pembeli = st.text_input("Nama Pembeli untuk Struk")
-            if st.button("✅ Tandai Lunas & Cetak Struk"):
-                filename = generate_struk(checkout_data, nama_pembeli or "Pelanggan")
-                save_data(CHECKOUT_FILE, [])  # Kosongkan data setelah pembayaran
-                st.success(f"Pembayaran berhasil dan struk telah dibuat: `{filename}`")
-                with open(filename, "rb") as f:
-                    st.download_button("⬇️ Download Struk PDF", f, file_name=os.path.basename(filename))
+        nama_pembeli = st.text_input("Nama Pembeli untuk Struk")
+        if st.button("✅ Tampilkan & Cetak Struk"):
+            # Buat struk sebagai string
+            total = sum(item["harga"] * item["jumlah"] for item in checkout_data)
+            struk_text = f"Struk Pembayaran - {nama_pembeli or 'Pelanggan'}\n"
+            struk_text += "="*40 + "\n"
+            for item in checkout_data:
+                struk_text += f"{item['nama']} x{item['jumlah']} = Rp {item['harga']*item['jumlah']}\n"
+            struk_text += "="*40 + "\n"
+            struk_text += f"Total: Rp {total}\n"
+
+            # Tampilkan struk di aplikasi
+            st.subheader("📄 Struk Pembayaran")
+            st.text(struk_text)
+
+            # Simpan struk ke file untuk diunduh
+            filename = f"struk_{(nama_pembeli or 'Pelanggan').replace(' ', '_')}.txt"
+            with open(filename, "w", encoding="utf-8") as f:
+                f.write(struk_text)
+
+            # Tombol download
+            with open(filename, "rb") as f:
+                st.download_button("⬇️ Download Struk", f, file_name=os.path.basename(filename))
+            
+            # Kosongkan checkout_data setelah pembayaran
+            save_data(CHECKOUT_FILE, [])
+            st.success("Pembayaran berhasil dan data pesanan telah dikosongkan!")
 
 # ---------------------------
 # Jalankan Admin App
