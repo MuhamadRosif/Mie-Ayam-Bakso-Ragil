@@ -1,92 +1,91 @@
-import streamlit as st
-import json
 import os
+import json
 import pandas as pd
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
+import streamlit as st
 
 MENU_FILE = "menu.json"
 CHECKOUT_FILE = "checkout.json"
-STRUK_FOLDER = "struk"
 
-# ========== Fungsi bantu ==========
-def load_data(file, default):
-    if os.path.exists(file):
+# ---------------------------
+# Fungsi untuk load & save JSON
+# ---------------------------
+def save_data(filename, data):
+    """
+    Simpan data ke file JSON dengan aman.
+    Non-serializable objects akan dikonversi ke string.
+    """
+    def safe_serializer(obj):
         try:
-            with open(file, "r") as f:
-                return json.load(f)
-        except:
-            pass
-    return default
+            json.dumps(obj)
+            return obj
+        except TypeError:
+            return str(obj)
 
-def save_data(file, data):
-    with open(file, "w") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(data, f, default=safe_serializer, ensure_ascii=False, indent=4)
 
+def load_data(filename, default=[]):
+    """
+    Load data dari file JSON. Jika file tidak ada, return default.
+    """
+    if not os.path.exists(filename):
+        return default
+    with open(filename, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return default
+
+# ---------------------------
+# Inisialisasi menu default
+# ---------------------------
 def init_menu():
-    if not os.path.exists(MENU_FILE):
-        data = [
-            {"nama": "Mie Ayam Original", "harga": 12000},
-            {"nama": "Mie Ayam Bakso", "harga": 15000},
-            {"nama": "Bakso Campur", "harga": 18000},
-            {"nama": "Es Teh Manis", "harga": 5000},
-            {"nama": "Es Jeruk", "harga": 6000},
+    """
+    Jika menu.json belum ada atau kosong, isi dengan menu default.
+    """
+    menu_data = load_data(MENU_FILE, [])
+    if not menu_data:
+        default_menu = [
+            {"nama": "Mie Ayam", "harga": 15000},
+            {"nama": "Bakso", "harga": 12000},
+            {"nama": "Es Teh", "harga": 5000},
         ]
-        save_data(MENU_FILE, data)
+        save_data(MENU_FILE, default_menu)
 
-def generate_struk(pesanan, nama_pembeli="Pelanggan"):
-    """Buat PDF struk pembelian"""
-    if not os.path.exists(STRUK_FOLDER):
-        os.makedirs(STRUK_FOLDER)
-    filename = os.path.join(STRUK_FOLDER, f"struk_{nama_pembeli}.pdf")
-    c = canvas.Canvas(filename, pagesize=A4)
-    width, height = A4
-
-    y = height - 80
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(200, y, "Mie Ayam Bakso Mas Ragil 🍜")
-    y -= 20
-    c.setFont("Helvetica", 10)
-    c.drawString(230, y, "Jl. Kenikmatan No. 88, Ragil City")
-    y -= 40
-
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, f"Nama Pembeli: {nama_pembeli}")
-    y -= 20
-    c.drawString(50, y, "------------------------------------------")
-    y -= 20
-    c.setFont("Helvetica", 11)
-    total = 0
-    for item in pesanan:
-        nama = item.get("nama", "")
-        harga = item.get("harga", 0)
-        jumlah = item.get("jumlah", 1)
-        subtotal = harga * jumlah
-        total += subtotal
-        c.drawString(50, y, f"{nama} ({jumlah}x) - Rp{subtotal:,}")
-        y -= 18
-    y -= 10
-    c.drawString(50, y, "------------------------------------------")
-    y -= 20
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, f"Total Bayar: Rp{total:,}")
-    y -= 40
-    c.setFont("Helvetica-Oblique", 10)
-    c.drawString(200, y, "Terima kasih atas kunjungan Anda!")
-    c.save()
+# ---------------------------
+# Generate struk (PDF sederhana)
+# ---------------------------
+def generate_struk(checkout_data, nama_pembeli):
+    """
+    Buat file struk sederhana (text-based PDF).
+    """
+    filename = f"struk_{nama_pembeli.replace(' ', '_')}.txt"
+    total = sum(item["harga"] * item["jumlah"] for item in checkout_data)
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(f"Struk Pembayaran - {nama_pembeli}\n")
+        f.write("="*30 + "\n")
+        for item in checkout_data:
+            f.write(f"{item['nama']} x{item['jumlah']} = Rp {item['harga']*item['jumlah']}\n")
+        f.write("="*30 + "\n")
+        f.write(f"Total: Rp {total}\n")
     return filename
 
-# ========== Fungsi utama admin ==========
+# ---------------------------
+# Main Admin App
+# ---------------------------
 def run_admin():
-    st.sidebar.title("👑 Admin Panel - Mas Ragil")
+    st.sidebar.title("Admin Panel")
     menu = st.sidebar.selectbox("Menu", ["Laporan Penjualan", "Kelola Menu", "Data Pesanan", "Pembayaran"])
     st.sidebar.markdown("---")
 
+    # Inisialisasi menu dan load data
     init_menu()
     menu_data = load_data(MENU_FILE, [])
     checkout_data = load_data(CHECKOUT_FILE, [])
 
-    # LAPORAN PENJUALAN
+    # ---------------------------
+    # Laporan Penjualan
+    # ---------------------------
     if menu == "Laporan Penjualan":
         st.title("📊 Laporan Penjualan")
         if not checkout_data:
@@ -98,7 +97,9 @@ def run_admin():
             st.dataframe(df, use_container_width=True)
             st.markdown(f"### 💰 Total Pendapatan: Rp {total:,}")
 
-    # KELOLA MENU
+    # ---------------------------
+    # Kelola Menu
+    # ---------------------------
     elif menu == "Kelola Menu":
         st.title("🍜 Kelola Menu Restoran")
         df = pd.DataFrame(menu_data)
@@ -109,7 +110,7 @@ def run_admin():
         harga = st.number_input("Harga (Rp)", min_value=0, step=1000)
         if st.button("Simpan Menu"):
             if nama and harga > 0:
-                menu_data.append({"nama": nama, "harga": harga})
+                menu_data.append({"nama": nama, "harga": harga})  # Hanya simpan data JSON-friendly
                 save_data(MENU_FILE, menu_data)
                 st.success(f"Menu '{nama}' berhasil ditambahkan!")
             else:
@@ -117,7 +118,9 @@ def run_admin():
         if st.button("🔄 Refresh Data"):
             st.rerun()
 
-    # DATA PESANAN
+    # ---------------------------
+    # Data Pesanan
+    # ---------------------------
     elif menu == "Data Pesanan":
         st.title("🧾 Data Pesanan Pelanggan")
         if not checkout_data:
@@ -131,7 +134,9 @@ def run_admin():
                 st.warning("Semua data pesanan telah dihapus!")
                 st.rerun()
 
-    # PEMBAYARAN
+    # ---------------------------
+    # Pembayaran
+    # ---------------------------
     elif menu == "Pembayaran":
         st.title("💵 Proses Pembayaran")
         if not checkout_data:
@@ -149,3 +154,9 @@ def run_admin():
                 st.success(f"Pembayaran berhasil dan struk telah dibuat: `{filename}`")
                 with open(filename, "rb") as f:
                     st.download_button("⬇️ Download Struk PDF", f, file_name=os.path.basename(filename))
+
+# ---------------------------
+# Jalankan Admin App
+# ---------------------------
+if __name__ == "__main__":
+    run_admin()
