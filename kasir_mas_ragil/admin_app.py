@@ -147,6 +147,7 @@ def run_admin():
             st.dataframe(grouped[["nama", "jumlah", "harga", "Total"]], use_container_width=True)
 
             nama_pembeli = st.text_input("Nama Pembeli untuk Struk")
+
             if st.button("✅ Tampilkan & Cetak Struk"):
                 total = sum(item["harga"] * item["jumlah"] for item in checkout_data)
                 struk_text = f"Struk Pembayaran - {nama_pembeli or 'Pelanggan'}\n"
