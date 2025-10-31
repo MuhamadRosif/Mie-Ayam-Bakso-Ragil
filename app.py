@@ -155,7 +155,7 @@ def admin_page():
     # -------- Laporan --------
     elif menu == "Laporan":
     st.subheader("📊 Laporan Harian")
-    sales_data = load_json(SALES_FILE, [])  # pakai nama baru biar nggak bentrok
+    sales_data = load_json(SALES_FILE, [])
 
     if not sales_data:
         st.info("Belum ada transaksi.")
