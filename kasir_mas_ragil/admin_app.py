@@ -74,9 +74,8 @@ def generate_struk(checkout_data, nama_pembeli):
 # Main Admin App
 # ---------------------------
 def run_admin():
-    st.sidebar.title("Admin Panel")
-    menu = st.sidebar.selectbox("Menu", ["Laporan Penjualan", "Kelola Menu", "Data Pesanan", "Pembayaran"])
-    st.sidebar.markdown("---")
+    st.title("Dashboard Admin 🍜")
+
 
     # Inisialisasi menu dan load data
     init_menu()
