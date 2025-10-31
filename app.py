@@ -154,19 +154,19 @@ def admin_page():
 
     # -------- Laporan --------
     elif menu == "Laporan":
-        st.subheader("📊 Laporan Harian")
-        sales = load_json(SALES_FILE, [])
+    st.subheader("📊 Laporan Harian")
+    sales_data = load_json(SALES_FILE, [])  # pakai nama baru biar nggak bentrok
 
-        if not sales:
-            st.info("Belum ada transaksi.")
-        else:
-            df = pd.DataFrame(sales)
-            df["Tanggal"] = pd.to_datetime(df["tanggal"]).dt.strftime("%d/%m/%Y")
-            df["Pemasukan"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",","."))
-            st.table(df[["Tanggal","Pemasukan"]])
+    if not sales_data:
+        st.info("Belum ada transaksi.")
+    else:
+        df = pd.DataFrame(sales_data)
+        df["Tanggal"] = pd.to_datetime(df["tanggal"]).dt.strftime("%d/%m/%Y")
+        df["Pemasukan"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",","."))
+        st.table(df[["Tanggal","Pemasukan"]])
 
-            total_all = sum(s["total"] for s in sales)
-            st.write(f"### 💰 Total: **Rp {total_all:,}**")
+        total_all = sum(s["total"] for s in sales_data)
+        st.write(f"### 💰 Total: **Rp {total_all:,}**")
 
 # ================== ROUTING ==================
 if st.session_state.role == "admin":
