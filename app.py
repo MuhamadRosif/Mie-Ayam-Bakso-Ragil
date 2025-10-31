@@ -86,7 +86,7 @@ def user_page():
 def admin_page():
     st.title("⚙️ Admin Panel")
 
-    menu = st.sidebar.radio("Menu Admin", ["Data Menu", "Data Pesanan", "Pembayaran"])
+    menu = st.sidebar.radio("Menu Admin", ["Data Menu", "Data Pesanan", "Pembayaran", "Laporan"])
 
     # ====== DATA MENU ======
     if menu == "Data Menu":
