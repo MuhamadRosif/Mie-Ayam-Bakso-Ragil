@@ -167,7 +167,7 @@ def admin_page():
                 st.success("🧹 Semua pesanan dihapus!")
                 st.rerun()
 
-    # ====== PEMBAYARAN ======
+        # ====== PEMBAYARAN ======
     elif menu == "Pembayaran":
         if not checkout:
             st.info("Belum ada transaksi.")
@@ -177,24 +177,54 @@ def admin_page():
             df["Harga"] = df["harga"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
             df["Total"] = df["Total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
             df = df[["nama","jumlah","Harga","Total"]]
-
             st.table(df)
 
-            nama = st.text_input("Nama Pembeli")
-            total = sum(item["harga"] * item["jumlah"] for item in checkout)
+            nama = st.text_input("Nama Pembeli", placeholder="Nama pelanggan")
+            bayar = st.number_input("Jumlah Uang (Tunai)", min_value=0)
+
+            total_belanja = sum(item["harga"] * item["jumlah"] for item in checkout)
+            st.write(f"### Total: **Rp {total_belanja:,}**")
 
             if st.button("Cetak Struk"):
-                txt = f"Struk Pembelian - {nama or 'Pelanggan'}\n" + "="*30 + "\n"
+                kembalian = bayar - total_belanja
+
+                from datetime import datetime
+                now = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+                txt = ""
+                txt += "MIE AYAM & BAKSO MAS RAGIL\n"
+                txt += "Jl. Kenyang No.1, Indonesia\n"
+                txt += "Telp: 0812-0000-0000\n"
+                txt += "-"*40 + "\n"
+                txt += f"Tanggal : {now}\nKasir   : Admin\n"
+                txt += "-"*40 + "\n"
+
                 for d in checkout:
-                    txt += f"{d['nama']} x{d['jumlah']} = Rp{d['harga']*d['jumlah']:,}\n"
-                txt += "="*30 + f"\nTotal: Rp{total:,}\n"
+                    txt += f"{d['nama']:<14} x{d['jumlah']}   {(d['harga']*d['jumlah']):,}\n"
+
+                txt += "-"*40 + "\n"
+                txt += f"TOTAL       Rp {total_belanja:,}\n"
+                txt += f"TUNAI       Rp {bayar:,}\n"
+                txt += f"KEMBALIAN   Rp {kembalian:,}\n"
+                txt += "-"*40 + "\n"
+                txt += "TERIMA KASIH 🙏\n"
+                txt += "Barang yang dibeli tidak\n"
+                txt += "dapat dikembalikan.\n"
+                txt += "-"*40 + "\n"
 
                 with open("struk.txt","w") as f: f.write(txt)
                 st.download_button("Download Struk", open("struk.txt","rb"), "struk.txt")
 
+                # simpan ke sales.json
+                sales = load_json("sales.json", [])
+                from datetime import datetime
+                sales.append({"tanggal": datetime.now().strftime("%Y-%m-%d"), "total": total_belanja})
+                save_json("sales.json", sales)
+
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
                 st.success("✅ Pembayaran selesai!")
+                st.rerun()
 
 # ================== ROUTING ==================
 if st.session_state.role == "admin":
