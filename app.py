@@ -225,6 +225,23 @@ def admin_page():
                 save_json(CHECKOUT_FILE, checkout)
                 st.success("✅ Pembayaran selesai!")
                 st.rerun()
+                
+    # ====== LAPORAN PENJUALAN ======
+    elif menu == "Laporan":
+        st.subheader("📊 Laporan Penjualan Harian")
+
+        sales = load_json("sales.json", [])
+
+        if not sales:
+            st.info("Belum ada transaksi.")
+        else:
+            df = pd.DataFrame(sales)
+            df["Tanggal"] = df["tanggal"]
+            df["Total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
+            st.table(df[["Tanggal","Total"]])
+
+            total_all = sum(s["total"] for s in sales)
+            st.write(f"### 💰 Total Semua Pemasukan: **Rp {total_all:,}**")
 
 # ================== ROUTING ==================
 if st.session_state.role == "admin":
