@@ -81,7 +81,6 @@ def admin_page():
     # -------- Data Menu --------
     if menu == "Data Menu":
         st.subheader("📋 Menu Sekarang")
-
         rows=[]
         for k, items in menu_data.items():
             for i, h in items.items():
@@ -92,7 +91,6 @@ def admin_page():
         kat = st.selectbox("Kategori", list(menu_data.keys()))
         nama = st.text_input("Nama Menu")
         harga = st.number_input("Harga", min_value=0)
-
         if st.button("Simpan Menu"):
             menu_data[kat][nama] = harga
             save_json(MENU_FILE, menu_data)
@@ -146,21 +144,32 @@ def admin_page():
                 txt+= f"Pembeli: {nama or 'Umum'}\n"
                 txt+= "Terima kasih 🙏\n"
 
+                # Simpan struk ke file
                 with open(filename,"w") as f: f.write(txt)
 
-                st.download_button("Download Struk", open(filename,"rb"), filename)
+                # Download struk
+                with open(filename, "rb") as f:
+                    st.download_button("Download Struk", f, filename)
 
-                sales.append({"tanggal": datetime.now().strftime("%Y-%m-%d"),"total": total})
+                # Simpan transaksi lengkap ke sales
+                sales.append({
+                    "tanggal": datetime.now().strftime("%Y-%m-%d"),
+                    "total": total,
+                    "items": checkout.copy()
+                })
                 save_json(SALES_FILE, sales)
+
+                # Kosongkan checkout setelah struk tersimpan
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
 
-                st.success("✅ Pembayaran selesai"); st.rerun()
+                st.success("✅ Pembayaran selesai")
+                st.rerun()
 
     # -------- Laporan --------
     elif menu == "Laporan":
         st.subheader("📊 Laporan Harian")
-        sales_data = load_json(SALES_FILE, [])  # ganti nama biar nggak bentrok
+        sales_data = load_json(SALES_FILE, [])
 
         if not sales_data:
             st.info("Belum ada transaksi.")
@@ -172,6 +181,18 @@ def admin_page():
 
             total_all = sum(s["total"] for s in sales_data)
             st.write(f"### 💰 Total: **Rp {total_all:,}**")
+
+            # -------- Hapus transaksi --------
+            st.subheader("🗑️ Hapus Transaksi")
+            pilih_tanggal = st.selectbox(
+                "Pilih tanggal transaksi yang mau dihapus", 
+                [s["tanggal"] for s in sales_data]
+            )
+            if st.button("Hapus Transaksi"):
+                sales_data = [s for s in sales_data if s["tanggal"] != pilih_tanggal]
+                save_json(SALES_FILE, sales_data)
+                st.success(f"✅ Transaksi tanggal {pilih_tanggal} berhasil dihapus")
+                st.rerun()
 
 # ================== ROUTING ==================
 if st.session_state.role == "admin":
