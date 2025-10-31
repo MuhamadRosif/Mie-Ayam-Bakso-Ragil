@@ -1,3 +1,3 @@
 #puyeng hahaha
-from . import admin_app
-from . import user_app
+# Jangan load module di sini, cukup deklarasikan package saja
+__all__ = ["admin_app", "user_app"]
