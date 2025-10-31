@@ -1,147 +1,174 @@
 import streamlit as st
-import json
-import os
-import pandas as pd
+import json, os, pandas as pd
 
-# ==========================
-#   KONFIG LOGIN
-# ==========================
-USERS = {
-    "admin": "admin123",
-    "kasir": "kasir123"
-}
-
+# File paths
 MENU_FILE = "menu.json"
-ORDER_FILE = "checkout.json"
+CHECKOUT_FILE = "checkout.json"
 
-# ==========================
-#   FUNGSI JSON
-# ==========================
-def load(file):
+# Load/Save JSON
+def load_json(file):
     if not os.path.exists(file):
         return {}
-    with open(file, "r", encoding="utf-8") as f:
+    with open(file, "r") as f:
         return json.load(f)
 
-def save(file, data):
-    with open(file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+def save_json(file, data):
+    with open(file, "w") as f:
+        json.dump(data, f, indent=4)
 
-menu = load(MENU_FILE)
-orders = load(ORDER_FILE)
+menu_data = load_json(MENU_FILE)
+checkout_data = load_json(CHECKOUT_FILE)
 
-# ==========================
-#   LOGIN PAGE
-# ==========================
+# ===== LOGIN CONFIG =====
+USERS = {"admin": "123", "user": "123"}
+
+# ===== LOGIN UI =====
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.role = None
 
 if not st.session_state.logged_in:
-    st.title("🔐 Login Kasir & Admin")
+    st.markdown("""
+        <style>
+        body { background: #0d1117; }
+        .login-box {
+            max-width: 380px; margin: auto; margin-top: 120px; 
+            background: rgba(255,183,77,0.18); padding: 30px;
+            border-radius: 20px; backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,200,100,0.3);
+            box-shadow: 0 0 20px rgba(255,170,0,0.4);
+            text-align:center;
+        }
+        .title { font-size:24px; color:white; font-weight:600; }
+        .emoji { font-size:55px; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="login-box">', unsafe_allow_html=True)
+    st.markdown('<div class="emoji">🍜</div>', unsafe_allow_html=True)
+    st.markdown('<div class="title">Mie Ayam Bakso Mas Ragil</div>', unsafe_allow_html=True)
 
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
-    if st.button("Masuk"):
+    if st.button("Masuk ✅", use_container_width=True):
         if username in USERS and USERS[username] == password:
             st.session_state.logged_in = True
             st.session_state.role = username
-            st.success(f"Selamat datang, {username} 👋")
+            st.success("Login berhasil!")
             st.rerun()
         else:
-            st.error("Username / password salah")
+            st.error("❌ Username atau Password salah!")
 
+    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# Logout
-st.sidebar.button("⏻ Logout", on_click=lambda: st.session_state.update({"logged_in": False}))
+# ===== ROLE ROUTING =====
 
-role = st.session_state.role
+# ---------------------------
+# ADMIN PAGE
+# ---------------------------
+if st.session_state.role == "admin":
+    st.sidebar.success("Login sebagai ADMIN 👑")
+    if st.sidebar.button("Logout 🚪"):
+        st.session_state.logged_in = False
+        st.rerun()
 
-# ==========================
-#   MENU KASIR
-# ==========================
-if role == "kasir":
-    st.title("🍜 Kasir - Mie Ayam Bakso Ragil")
+    menu = st.sidebar.radio("Menu Admin", ["📊 Laporan Penjualan", "🍜 Kelola Menu", "🧾 Data Pesanan", "💵 Pembayaran"])
 
-    for kategori, items in menu.items():
-        st.write(f"### ✅ {kategori.upper()}")
-        for nama, harga in items.items():
-            col1, col2, col3 = st.columns([5,3,2])
-            col1.write(nama)
-            col2.write(f"Rp {harga:,}")
-            if col3.button("Tambah", key=f"{kategori}_{nama}"):
-                orders.append({"nama": nama, "harga": harga, "jumlah": 1})
-                save(ORDER_FILE, orders)
-                st.success(f"{nama} ditambahkan!")
+    # ======= LAPORAN =======
+    if menu == "📊 Laporan Penjualan":
+        st.title("📊 Laporan Penjualan")
+        if not checkout_data:
+            st.info("Belum ada transaksi.")
+        else:
+            df = pd.DataFrame(checkout_data)
+            df["subtotal"] = df["harga"] * df["jumlah"]
+            st.dataframe(df)
+            st.markdown(f"### Total Pendapatan: **Rp {df['subtotal'].sum():,}**")
 
-    st.divider()
-    st.subheader("🛒 Keranjang Pesanan")
+    # ======= KELOLA MENU =======
+    elif menu == "🍜 Kelola Menu":
+        st.title("🍜 Kelola Menu")
 
-    if not orders:
-        st.info("Belum ada pesanan.")
-    else:
-        df = pd.DataFrame(orders)
-        st.table(df)
-        total = sum(i["harga"] * i["jumlah"] for i in orders)
-        st.write(f"### 💰 Total: Rp {total:,}")
+        menu_df = []
+        for kategori, items in menu_data.items():
+            for nama, harga in items.items():
+                menu_df.append({"Kategori": kategori, "Nama": nama, "Harga": harga})
+        st.dataframe(pd.DataFrame(menu_df), use_container_width=True)
 
-        nama = st.text_input("Nama Customer")
+        st.subheader("Tambah Menu")
+        kategori = st.selectbox("Kategori Menu", ["makanan", "minuman"])
+        nama = st.text_input("Nama Menu")
+        harga = st.number_input("Harga", min_value=0, step=1000)
 
-        if st.button("✅ Selesaikan & Cetak"):
-            nota = f"Struk Pesanan - {nama or 'Customer'}\n" + "="*30 + "\n"
-            for item in orders:
-                nota += f"{item['nama']}  x{item['jumlah']}  = Rp {item['harga']}\n"
-            nota += "="*30 + f"\nTOTAL: Rp {total:,}"
-
-            filename = f"struk_{nama or 'customer'}.txt"
-            with open(filename, "w") as f:
-                f.write(nota)
-
-            st.download_button("⬇️ Download Struk", open(filename,"rb"), file_name=filename)
-            save(ORDER_FILE, [])
-            st.success("Pesanan selesai ✅")
-            st.rerun()
-
-# ==========================
-#   MENU ADMIN
-# ==========================
-elif role == "admin":
-    st.title("⚙️ Admin Panel")
-
-    tab1, tab2 = st.tabs(["📦 Kelola Menu", "📑 Data Pesanan"])
-
-    with tab1:
-        st.subheader("Menu Saat Ini")
-        rows = [{"Kategori": k, "Nama": n, "Harga": h}
-                for k, items in menu.items() for n, h in items.items()]
-        st.dataframe(pd.DataFrame(rows), use_container_width=True)
-
-        st.divider()
-        st.subheader("➕ Tambah Menu")
-
-        kategori = st.selectbox("Kategori", ["makanan", "minuman"])
-        nama = st.text_input("Nama Menu Baru")
-        harga = st.number_input("Harga", step=1000)
-
-        if st.button("💾 Simpan Menu"):
+        if st.button("Simpan Menu ✅"):
             if nama and harga > 0:
-                menu[kategori][nama] = harga
-                save(MENU_FILE, menu)
-                st.success("Menu ditambahkan ✅")
+                menu_data[kategori][nama] = harga
+                save_json(MENU_FILE, menu_data)
+                st.success("Menu Berhasil Ditambah!")
                 st.rerun()
             else:
-                st.error("Nama & harga wajib diisi!")
+                st.warning("Nama dan Harga harus diisi!")
 
-    with tab2:
-        st.subheader("🧾 Riwayat Pesanan")
-
-        if not orders:
-            st.info("Belum ada pesanan")
+    # ======= DATA PESANAN =======
+    elif menu == "🧾 Data Pesanan":
+        st.title("🧾 Data Pesanan Pelanggan")
+        if not checkout_data:
+            st.info("Belum ada pesanan.")
         else:
-            st.table(pd.DataFrame(orders))
-            if st.button("🧹 Hapus Semua"):
-                save(ORDER_FILE, [])
-                st.success("Data pesanan dihapus ✅")
+            df = pd.DataFrame(checkout_data)
+            st.dataframe(df)
+            if st.button("Hapus Semua Pesanan 🧹"):
+                save_json(CHECKOUT_FILE, [])
                 st.rerun()
+
+    # ======= PEMBAYARAN =======
+    elif menu == "💵 Pembayaran":
+        st.title("💵 Proses Pembayaran")
+        if not checkout_data:
+            st.info("Belum ada pesanan untuk dibayar.")
+        else:
+            df = pd.DataFrame(checkout_data)
+            df["Total"] = df["harga"] * df["jumlah"]
+            st.dataframe(df)
+
+            nama_pembeli = st.text_input("Nama Pembeli")
+            total = df["Total"].sum()
+
+            if st.button("Cetak Struk ✅"):
+                txt = f"Struk Pembelian - {nama_pembeli or 'Pelanggan'}\n" + "="*40 + "\n"
+                for _, r in df.iterrows():
+                    txt += f"{r['nama']} x{r['jumlah']} = Rp {r['Total']}\n"
+                txt += "="*40 + f"\nTotal: Rp {total}\n"
+
+                file = "struk.txt"
+                with open(file, "w") as f: f.write(txt)
+                st.download_button("Download Struk 📄", open(file,"rb"), file_name=file)
+                save_json(CHECKOUT_FILE, [])
+                st.success("Pembayaran berhasil!")
+
+# ---------------------------
+# USER PAGE
+# ---------------------------
+if st.session_state.role == "user":
+    st.sidebar.success("Login sebagai PELANGGAN 🧑‍🍳")
+    if st.sidebar.button("Logout 🚪"):
+        st.session_state.logged_in = False
+        st.rerun()
+
+    st.title("🍜 Menu Mas Ragil")
+
+    for kategori, daftar in menu_data.items():
+        st.subheader(f"📌 {kategori.upper()}")
+        for nama, harga in daftar.items():
+            col1, col2, col3 = st.columns([3,2,1])
+            col1.write(f"**{nama}**")
+            col2.write(f"Rp {harga:,}")
+            if col3.button("Pesan", key=nama):
+                checkout_data.append({"nama": nama, "harga": harga, "jumlah": 1})
+                save_json(CHECKOUT_FILE, checkout_data)
+                st.success(f"{nama} ditambahkan!")
+
+    if st.button("Checkout 🛒"):
+        st.switch_page("👑 Admin")
