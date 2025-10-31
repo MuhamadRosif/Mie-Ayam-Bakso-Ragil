@@ -96,10 +96,15 @@ def admin_page():
     if menu == "Data Menu":
         st.subheader("📋 Menu Sekarang")
 
+        # Convert dict → table
         menu_list = []
         for kategori, items in menu_data.items():
             for nama, harga in items.items():
-                menu_list.append({"Kategori": kategori, "Nama": nama, "Harga": harga})
+                menu_list.append({
+                    "Kategori": kategori,
+                    "Nama": nama,
+                    "Harga": harga
+                })
 
         st.table(pd.DataFrame(menu_list))
 
@@ -109,16 +114,18 @@ def admin_page():
         harga = st.number_input("Harga", min_value=0)
 
         if st.button("Simpan Menu"):
-            if nama.strip()=="" or harga<=0:
+            if nama.strip()=="" or harga <= 0:
                 st.warning("Isi nama & harga yang benar!")
             else:
-                menu_data[kat][nama]=harga
+                menu_data[kat][nama] = harga
                 save_json(MENU_FILE, menu_data)
                 st.success("Menu ditambahkan!")
+                st.rerun()
 
     # ----- Data Pesanan -----
     elif menu == "Data Pesanan":
         st.subheader("📝 Pesanan Masuk")
+
         if not checkout:
             st.info("Belum ada pesanan.")
         else:
@@ -152,6 +159,7 @@ def admin_page():
                 st.download_button("Download Struk", open("struk.txt","rb"), "struk.txt")
                 save_json(CHECKOUT_FILE, [])
                 st.success("Pembayaran selesai!")
+                st.rerun()
 
 # ================== ROUTING ==================
 if st.session_state.role=="admin":
