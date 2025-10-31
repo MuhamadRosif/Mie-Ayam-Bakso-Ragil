@@ -3,129 +3,116 @@ import pandas as pd
 import os
 import json
 
-# File untuk menyimpan data
-MENU_FILE = "menu.json"
-CHECKOUT_FILE = "checkout.json"
+MENU_FILE = "kasir_mas_ragil/menu.json"
+CHECKOUT_FILE = "kasir_mas_ragil/checkout.json"
 
-# Load data JSON
-def load_data(file):
-    if os.path.exists(file):
+# Load JSON
+def load_json(file):
+    if os.path.exists(file) and os.path.getsize(file) > 0:
         with open(file, "r", encoding="utf-8") as f:
             return json.load(f)
     return []
 
-# Save data JSON
-def save_data(file, data):
+# Save JSON
+def save_json(file, data):
     with open(file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4)
-
-# State global
-menu_data = load_data(MENU_FILE)
-checkout_data = load_data(CHECKOUT_FILE)
-
 
 def run_admin():
 
     st.sidebar.title("Admin Panel")
-    menu = st.sidebar.radio(
-        "Menu",
-        ["Laporan Penjualan", "Kelola Menu", "Data Pesanan", "Pembayaran"]
-    )
+    menu = st.sidebar.radio("Menu", 
+                            ["Laporan Penjualan", "Kelola Menu", "Data Pesanan", "Pembayaran"])
+
+    menu_data = load_json(MENU_FILE)
+    checkout_data = load_json(CHECKOUT_FILE)
 
     # ---------------------------
-    # Laporan Penjualan
+    # LAPORAN PENJUALAN
     # ---------------------------
     if menu == "Laporan Penjualan":
         st.title("📊 Laporan Penjualan")
         if not checkout_data:
-            st.info("Belum ada transaksi yang tercatat.")
+            st.info("Belum ada transaksi.")
         else:
             df = pd.DataFrame(checkout_data)
             df["subtotal"] = df["harga"] * df["jumlah"]
-            total = df["subtotal"].sum()
             st.dataframe(df, use_container_width=True)
-            st.markdown(f"### 💰 Total Pendapatan: Rp {total:,}")
+            st.success(f"💰 Total Pendapatan: Rp {df['subtotal'].sum():,}")
 
     # ---------------------------
-    # Kelola Menu
+    # KELOLA MENU
     # ---------------------------
     elif menu == "Kelola Menu":
-        st.title("🍜 Kelola Menu Restoran")
+        st.title("🍜 Kelola Menu")
+
         df = pd.DataFrame(menu_data)
         st.dataframe(df, use_container_width=True)
 
         st.subheader("➕ Tambah Menu Baru")
-        nama = st.text_input("Nama Menu Baru")
+        nama = st.text_input("Nama Menu")
         harga = st.number_input("Harga (Rp)", min_value=0, step=1000)
-        
+
         if st.button("Simpan Menu"):
             if nama and harga > 0:
-                menu_data.append({"nama": nama, "harga": harga})
-                save_data(MENU_FILE, menu_data)
+                new_id = max([m["id"] for m in menu_data]) + 1 if menu_data else 1
+                menu_data.append({"id": new_id, "nama": nama, "harga": harga})
+                save_json(MENU_FILE, menu_data)
                 st.success(f"Menu '{nama}' berhasil ditambahkan!")
+                st.rerun()
             else:
-                st.warning("Harap isi nama dan harga dengan benar.")
-
-        if st.button("🔄 Refresh Data"):
-            st.rerun()
+                st.warning("Isi nama & harga dengan benar!")
 
     # ---------------------------
-    # Data Pesanan
+    # DATA PESANAN
     # ---------------------------
     elif menu == "Data Pesanan":
-        st.title("🧾 Data Pesanan Pelanggan")
+        st.title("🧾 Data Pesanan")
         if not checkout_data:
-            st.info("Belum ada pesanan dari pelanggan.")
+            st.info("Belum ada pesanan.")
         else:
             df = pd.DataFrame(checkout_data)
             st.dataframe(df, use_container_width=True)
-            st.markdown(f"Total pesanan: **{len(df)} item**")
 
-            if st.button("🧹 Hapus Semua Data Pesanan"):
-                save_data(CHECKOUT_FILE, [])
-                st.warning("Semua data pesanan telah dihapus!")
+            if st.button("🧹 Hapus Semua"):
+                save_json(CHECKOUT_FILE, [])
+                st.warning("Data pesanan dihapus!")
                 st.rerun()
 
     # ---------------------------
-    # Pembayaran
+    # PEMBAYARAN
     # ---------------------------
     elif menu == "Pembayaran":
-        st.title("💵 Proses Pembayaran")
+        st.title("💵 Pembayaran")
+
         if not checkout_data:
-            st.info("Belum ada pesanan untuk dibayar.")
+            st.info("Belum ada pesanan.")
         else:
             df = pd.DataFrame(checkout_data)
-            grouped = df.groupby("nama").sum(numeric_only=True).reset_index()
-            grouped["Total"] = grouped["harga"] * grouped["jumlah"]
-            st.dataframe(grouped[["nama", "jumlah", "harga", "Total"]], use_container_width=True)
+            df["total"] = df["harga"] * df["jumlah"]
+            st.dataframe(df, use_container_width=True)
 
-            nama_pembeli = st.text_input("Nama Pembeli untuk Struk")
+            nama = st.text_input("Nama Pembeli")
 
-            if st.button("✅ Tampilkan & Cetak Struk"):
-                total = sum(item["harga"] * item["jumlah"] for item in checkout_data)
+            if st.button("✅ Cetak Struk"):
+                total = df["total"].sum()
 
-                struk_text = f"Struk Pembayaran - {nama_pembeli or 'Pelanggan'}\n"
-                struk_text += "="*40 + "\n"
-                for item in checkout_data:
-                    struk_text += f"{item['nama']} x{item['jumlah']} = Rp {item['harga']*item['jumlah']}\n"
-                struk_text += "="*40 + "\n"
-                struk_text += f"Total: Rp {total}\n"
+                text = f"Struk Pembayaran - {nama or 'Pelanggan'}\n"
+                text += "="*40 + "\n"
+                for i,row in df.iterrows():
+                    text += f"{row['nama']} x{row['jumlah']} = Rp {row['total']}\n"
+                text += "="*40 + f"\nTOTAL: Rp {total}\n"
 
-                st.subheader("📄 Struk Pembayaran")
-                st.text(struk_text)
+                st.text(text)
 
-                filename = f"struk_{(nama_pembeli or 'Pelanggan').replace(' ', '_')}.txt"
-                with open(filename, "w", encoding="utf-8") as f:
-                    f.write(struk_text)
+                filename = f"struk_{(nama or 'Pelanggan').replace(' ','_')}.txt"
+                with open(filename, "w", encoding="utf-8") as f: f.write(text)
 
                 with open(filename, "rb") as f:
-                    st.download_button("⬇️ Download Struk", f, file_name=os.path.basename(filename))
+                    st.download_button("⬇️ Download Struk", f, filename)
 
-                save_data(CHECKOUT_FILE, [])
-                st.success("Pembayaran berhasil dan data pesanan telah dikosongkan!")
+                save_json(CHECKOUT_FILE, [])
+                st.success("Pembayaran selesai ✅")
 
-# ---------------------------
-# Jalankan Admin App
-# ---------------------------
 if __name__ == "__main__":
     run_admin()
