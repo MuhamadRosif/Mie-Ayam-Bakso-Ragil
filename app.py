@@ -95,11 +95,13 @@ def admin_page():
     # ----- Kelola menu -----
     if menu == "Data Menu":
         st.subheader("📋 Menu Sekarang")
-        st.table(pd.DataFrame({
-            "Kategori":[k for k in menu_data for _ in menu_data[k]],
-            "Nama":[i for k in menu_data for i in menu_data[k]],
-            "Harga":[menu_data[k][i] for k in menu_data for i in menu_data[k]]
-        }))
+
+        menu_list = []
+        for kategori, items in menu_data.items():
+            for nama, harga in items.items():
+                menu_list.append({"Kategori": kategori, "Nama": nama, "Harga": harga})
+
+        st.table(pd.DataFrame(menu_list))
 
         st.subheader("➕ Tambah Menu")
         kat = st.selectbox("Kategori", list(menu_data.keys()))
@@ -107,9 +109,12 @@ def admin_page():
         harga = st.number_input("Harga", min_value=0)
 
         if st.button("Simpan Menu"):
-            menu_data[kat][nama]=harga
-            save_json(MENU_FILE, menu_data)
-            st.success("Menu ditambahkan!")
+            if nama.strip()=="" or harga<=0:
+                st.warning("Isi nama & harga yang benar!")
+            else:
+                menu_data[kat][nama]=harga
+                save_json(MENU_FILE, menu_data)
+                st.success("Menu ditambahkan!")
 
     # ----- Data Pesanan -----
     elif menu == "Data Pesanan":
@@ -122,6 +127,7 @@ def admin_page():
 
             if st.button("Hapus Semua"):
                 save_json(CHECKOUT_FILE, [])
+                st.success("Data pesanan dibersihkan!")
                 st.rerun()
 
     # ----- Pembayaran -----
