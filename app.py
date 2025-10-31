@@ -98,16 +98,41 @@ def admin_page():
                 menu_list.append({"Kategori": kategori, "Nama": nama, "Harga": harga})
         
         if menu_list:
-            st.table(pd.DataFrame(menu_list))
+            df = pd.DataFrame(menu_list)
+            st.table(df)
         else:
             st.info("Belum ada menu.")
 
-        st.subheader("➕ Tambah Menu")
-        kat = st.selectbox("Kategori", list(menu_data.keys()))
+        st.write("---")
+        st.subheader("✏️ Edit / ❌ Hapus Menu")
+
+        kategori_edit = st.selectbox("Pilih Kategori", list(menu_data.keys()))
+        if menu_data[kategori_edit]:
+            nama_edit = st.selectbox("Pilih Menu", list(menu_data[kategori_edit].keys()))
+            harga_baru = st.number_input("Harga Baru", value=menu_data[kategori_edit][nama_edit])
+
+            col1, col2 = st.columns(2)
+            if col1.button("💾 Simpan Perubahan"):
+                menu_data[kategori_edit][nama_edit] = harga_baru
+                save_json(MENU_FILE, menu_data)
+                st.success("Menu berhasil diupdate!")
+                st.rerun()
+
+            if col2.button("🗑️ Hapus Menu"):
+                del menu_data[kategori_edit][nama_edit]
+                save_json(MENU_FILE, menu_data)
+                st.success("Menu berhasil dihapus!")
+                st.rerun()
+        else:
+            st.warning("Kategori ini masih kosong.")
+
+        st.write("---")
+        st.subheader("➕ Tambah Menu Baru")
+        kat = st.selectbox("Kategori Baru", list(menu_data.keys()))
         nama = st.text_input("Nama Menu")
         harga = st.number_input("Harga", min_value=0)
 
-        if st.button("Simpan Menu"):
+        if st.button("Simpan Menu Baru"):
             if nama.strip() == "":
                 st.error("Nama menu tidak boleh kosong")
             else:
