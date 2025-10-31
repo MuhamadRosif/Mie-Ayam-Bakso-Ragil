@@ -33,10 +33,7 @@ def init_menu():
 
 # --- Tampilan utama User ---
 def run_user():
-    st.sidebar.title("🍜 Mie Ayam Bakso Mas Ragil")
-    menu = st.sidebar.radio("Navigasi", ["🏠 Beranda", "📋 Pesan Menu", "🛒 Keranjang", "📖 Riwayat Pesanan"])
-    st.sidebar.markdown("---")
-    st.sidebar.info("Gunakan menu di atas untuk navigasi 👆")
+    st.title("Menu Pelanggan 🍜")
 
     init_menu()
     menu_data = load_data(MENU_FILE, [])
