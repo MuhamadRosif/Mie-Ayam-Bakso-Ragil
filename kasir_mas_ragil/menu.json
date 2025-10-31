@@ -1,14 +1,4 @@
 {
-  "makanan": {
-    "Mie Ayam": 15000,
-    "Bakso Urat": 18000,
-    "Mie Ayam Bakso": 20000,
-    "Bakso Telur": 19000
-  },
-  "minuman": {
-    "Es Teh Manis": 5000,
-    "Es Jeruk": 7000,
-    "Teh Hangat": 5000,
-    "Jeruk Hangat": 6000
-  }
+  "makanan": {},
+  "minuman": {}
 }
