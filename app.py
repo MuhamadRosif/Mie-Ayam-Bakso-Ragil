@@ -95,8 +95,12 @@ def admin_page():
         menu_list = []
         for kategori, items in menu_data.items():
             for nama, harga in items.items():
-                menu_list.append({"Kategori": kategori, "Nama": nama, "Harga": harga})
-        
+                menu_list.append({
+                    "Kategori": kategori,
+                    "Nama": nama,
+                    "Harga": f"Rp {harga:,}".replace(",", ".")
+                })
+
         if menu_list:
             df = pd.DataFrame(menu_list)
             st.table(df)
@@ -109,28 +113,29 @@ def admin_page():
         kategori_edit = st.selectbox("Pilih Kategori", list(menu_data.keys()))
         if menu_data[kategori_edit]:
             nama_edit = st.selectbox("Pilih Menu", list(menu_data[kategori_edit].keys()))
-            harga_baru = st.number_input("Harga Baru", value=menu_data[kategori_edit][nama_edit])
+            harga_sekarang = menu_data[kategori_edit][nama_edit]
+            harga_baru = st.number_input("Harga Baru (Rp)", value=harga_sekarang, min_value=0)
 
             col1, col2 = st.columns(2)
             if col1.button("💾 Simpan Perubahan"):
                 menu_data[kategori_edit][nama_edit] = harga_baru
                 save_json(MENU_FILE, menu_data)
-                st.success("Menu berhasil diupdate!")
+                st.success("✅ Harga menu berhasil diupdate!")
                 st.rerun()
 
             if col2.button("🗑️ Hapus Menu"):
                 del menu_data[kategori_edit][nama_edit]
                 save_json(MENU_FILE, menu_data)
-                st.success("Menu berhasil dihapus!")
+                st.success("🗑️ Menu berhasil dihapus!")
                 st.rerun()
         else:
-            st.warning("Kategori ini masih kosong.")
+            st.warning("Kategori ini kosong.")
 
         st.write("---")
         st.subheader("➕ Tambah Menu Baru")
         kat = st.selectbox("Kategori Baru", list(menu_data.keys()))
         nama = st.text_input("Nama Menu")
-        harga = st.number_input("Harga", min_value=0)
+        harga = st.number_input("Harga (Rp)", min_value=0)
 
         if st.button("Simpan Menu Baru"):
             if nama.strip() == "":
@@ -138,7 +143,7 @@ def admin_page():
             else:
                 menu_data[kat][nama] = harga
                 save_json(MENU_FILE, menu_data)
-                st.success("Menu ditambahkan!")
+                st.success("✅ Menu berhasil ditambahkan!")
                 st.rerun()
 
     # ====== DATA PESANAN ======
@@ -148,12 +153,18 @@ def admin_page():
         if not checkout:
             st.info("Belum ada pesanan.")
         else:
-            st.table(pd.DataFrame(checkout))
+            df = pd.DataFrame(checkout)
+            df["Total"] = df["harga"] * df["jumlah"]
+            df["Harga"] = df["harga"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
+            df["Total"] = df["Total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
+            df = df[["nama","jumlah","Harga","Total"]]
+
+            st.table(df)
 
             if st.button("Hapus Semua Pesanan"):
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
-                st.success("Pesanan dihapus!")
+                st.success("🧹 Semua pesanan dihapus!")
                 st.rerun()
 
     # ====== PEMBAYARAN ======
@@ -162,16 +173,20 @@ def admin_page():
             st.info("Belum ada transaksi.")
         else:
             df = pd.DataFrame(checkout)
-            df["total"] = df["harga"] * df["jumlah"]
+            df["Total"] = df["harga"] * df["jumlah"]
+            df["Harga"] = df["harga"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
+            df["Total"] = df["Total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
+            df = df[["nama","jumlah","Harga","Total"]]
+
             st.table(df)
 
             nama = st.text_input("Nama Pembeli")
-            total = df["total"].sum()
+            total = sum(item["harga"] * item["jumlah"] for item in checkout)
 
             if st.button("Cetak Struk"):
                 txt = f"Struk Pembelian - {nama or 'Pelanggan'}\n" + "="*30 + "\n"
                 for d in checkout:
-                    txt += f"{d['nama']} x{d['jumlah']} = Rp{d['harga'] * d['jumlah']}\n"
+                    txt += f"{d['nama']} x{d['jumlah']} = Rp{d['harga']*d['jumlah']:,}\n"
                 txt += "="*30 + f"\nTotal: Rp{total:,}\n"
 
                 with open("struk.txt","w") as f: f.write(txt)
@@ -179,7 +194,7 @@ def admin_page():
 
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
-                st.success("Pembayaran selesai!")
+                st.success("✅ Pembayaran selesai!")
 
 # ================== ROUTING ==================
 if st.session_state.role == "admin":
