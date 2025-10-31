@@ -6,16 +6,33 @@ MENU_FILE = "menu.json"
 CHECKOUT_FILE = "checkout.json"
 
 # ================== LOAD / SAVE DATA ==================
-def load_json(file, default):
-    if not os.path.exists(file):
-        with open(file, "w") as f: json.dump(default, f)
-    with open(file, "r") as f: return json.load(f)
-
-def save_json(file, data):
-    with open(file, "w") as f: json.dump(data, f, indent=2)
-
-menu_data = load_json(MENU_FILE, {"makanan":{}, "minuman":{}})
-checkout = load_json(CHECKOUT_FILE, [])
+def load_json(file):
+    try:
+        with open(file, "r") as f:
+            data = json.load(f)
+            if not isinstance(data, dict):
+                raise ValueError("menu.json rusak, harus dict")
+            return data
+    except:
+        # Reset default menu kalau file rusak
+        default_menu = {
+            "makanan": {
+                "Mie Ayam": 15000,
+                "Bakso Urat": 18000,
+                "Mie Ayam Bakso": 20000,
+                "Bakso Telur": 19000
+            },
+            "minuman": {
+                "Es Teh Manis": 5000,
+                "Es Jeruk": 7000,
+                "Teh Hangat": 5000,
+                "Jeruk Hangat": 6000
+            }
+        }
+        with open(file, "w") as f:
+            json.dump(default_menu, f, indent=2)
+        return default_menu
+        checkout = load_json(CHECKOUT_FILE, [])
 
 # ================== UI CONFIG ==================
 st.set_page_config(page_title="Mie Ayam Mas Ragil", page_icon="🍜", layout="centered")
