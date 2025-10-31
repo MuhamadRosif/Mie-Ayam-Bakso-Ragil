@@ -132,24 +132,24 @@ def admin_page():
             nama = st.text_input("Nama Pembeli")
             total = sum(item["harga"]*item["jumlah"] for item in checkout)
 
+            # Buat struk ala Alfamart
+            struk_text = "==== MIE AYAM MAS RAGIL ====\n"
+            struk_text+= f"Tanggal : {datetime.now().strftime('%d/%m/%Y %H:%M')}\n"
+            struk_text+= "------------------------------\n"
+            for d in checkout:
+                nama_item = d['nama'][:20].ljust(20)  # max 20 chars
+                harga_item = f"Rp {d['harga']*d['jumlah']:,}".rjust(10)
+                struk_text += f"{nama_item} {harga_item}\n"
+            struk_text+= "------------------------------\n"
+            struk_text+= f"{'TOTAL'.ljust(20)} {f'Rp {total:,}'.rjust(10)}\n"
+            struk_text+= f"Pembeli: {nama or 'Umum'}\n"
+            struk_text+= "==============================\n"
+            struk_text+= "Terima kasih 🙏\n"
+
+            # Tombol Cetak Struk (ditampilkan di aplikasi)
             if st.button("Cetak Struk"):
-                filename = f"struk_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                txt = "==== MIE AYAM MAS RAGIL ====\n"
-                txt+= f"Tanggal : {datetime.now().strftime('%d/%m/%Y %H:%M')}\n"
-                txt+= "==============================\n"
-                for d in checkout:
-                    txt += f"{d['nama']} x{d['jumlah']} = Rp {d['harga']*d['jumlah']:,}\n"
-                txt+= "------------------------------\n"
-                txt+= f"Total : Rp {total:,}\n"
-                txt+= f"Pembeli: {nama or 'Umum'}\n"
-                txt+= "Terima kasih 🙏\n"
-
-                # Simpan struk ke file
-                with open(filename,"w") as f: f.write(txt)
-
-                # Download struk
-                with open(filename, "rb") as f:
-                    st.download_button("Download Struk", f, filename)
+                st.subheader("🖨️ Struk Pembayaran")
+                st.text(struk_text)
 
                 # Simpan transaksi lengkap ke sales
                 sales.append({
@@ -159,12 +159,17 @@ def admin_page():
                 })
                 save_json(SALES_FILE, sales)
 
-                # Kosongkan checkout setelah struk tersimpan
+                # Kosongkan checkout setelah cetak
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
 
-                st.success("✅ Pembayaran selesai")
-                st.rerun()
+                st.success("✅ Transaksi selesai, struk siap dicetak (Ctrl+P)")
+
+            # Tombol Download Struk
+            filename = f"struk_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            with open(filename,"w") as f: f.write(struk_text)
+            with open(filename,"rb") as f:
+                st.download_button("Download Struk", f, filename)
 
     # -------- Laporan --------
     elif menu == "Laporan":
@@ -182,7 +187,7 @@ def admin_page():
             total_all = sum(s["total"] for s in sales_data)
             st.write(f"### 💰 Total: **Rp {total_all:,}**")
 
-            # -------- Hapus transaksi --------
+            # Hapus transaksi berdasarkan tanggal
             st.subheader("🗑️ Hapus Transaksi")
             pilih_tanggal = st.selectbox(
                 "Pilih tanggal transaksi yang mau dihapus", 
