@@ -1,6 +1,11 @@
-# ====== FIX PATH UNTUK SERVER / DEPLOY ======
 import sys, os
-sys.path.append(os.path.dirname(__file__))
+
+# path folder aplikasi
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, BASE_DIR)
+
+# Debug print
+print("PYTHON PATH=", sys.path)
 
 import streamlit as st
 from kasir_mas_ragil.admin_app import run_admin
