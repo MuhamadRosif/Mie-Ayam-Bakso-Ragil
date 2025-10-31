@@ -106,16 +106,19 @@ def admin_page():
             save_json(MENU_FILE, menu_data)
             st.success("✅ Menu dihapus"); st.rerun()
 
-    # -------- Pesanan --------
+    # -------- Data Pesanan --------
     elif menu == "Data Pesanan":
         st.subheader("📝 Pesanan Masuk")
         if not checkout:
             st.info("Belum ada pesanan.")
         else:
             df = pd.DataFrame(checkout)
+            df["total"] = df["harga"] * df["jumlah"]
+            df["total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
             st.table(df)
             if st.button("Hapus Semua"):
-                save_json(CHECKOUT_FILE, [])
+                checkout.clear()
+                save_json(CHECKOUT_FILE, checkout)
                 st.success("✅ Pesanan dibersihkan"); st.rerun()
 
     # -------- Pembayaran --------
@@ -125,10 +128,11 @@ def admin_page():
         else:
             df = pd.DataFrame(checkout)
             df["total"] = df["harga"] * df["jumlah"]
+            df["total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
             st.table(df)
 
             nama = st.text_input("Nama Pembeli")
-            total = df["total"].sum()
+            total = sum(item["harga"]*item["jumlah"] for item in checkout)
 
             if st.button("Cetak Struk"):
                 filename = f"struk_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
@@ -148,25 +152,26 @@ def admin_page():
 
                 sales.append({"tanggal": datetime.now().strftime("%Y-%m-%d"),"total": total})
                 save_json(SALES_FILE, sales)
-                save_json(CHECKOUT_FILE, [])
+                checkout.clear()
+                save_json(CHECKOUT_FILE, checkout)
 
                 st.success("✅ Pembayaran selesai"); st.rerun()
 
     # -------- Laporan --------
     elif menu == "Laporan":
-    st.subheader("📊 Laporan Harian")
-    sales_data = load_json(SALES_FILE, [])
+        st.subheader("📊 Laporan Harian")
+        sales_data = load_json(SALES_FILE, [])  # ganti nama biar nggak bentrok
 
-    if not sales_data:
-        st.info("Belum ada transaksi.")
-    else:
-        df = pd.DataFrame(sales_data)
-        df["Tanggal"] = pd.to_datetime(df["tanggal"]).dt.strftime("%d/%m/%Y")
-        df["Pemasukan"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",","."))
-        st.table(df[["Tanggal","Pemasukan"]])
+        if not sales_data:
+            st.info("Belum ada transaksi.")
+        else:
+            df = pd.DataFrame(sales_data)
+            df["Tanggal"] = pd.to_datetime(df["tanggal"]).dt.strftime("%d/%m/%Y")
+            df["Pemasukan"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",","."))
+            st.table(df[["Tanggal","Pemasukan"]])
 
-        total_all = sum(s["total"] for s in sales_data)
-        st.write(f"### 💰 Total: **Rp {total_all:,}**")
+            total_all = sum(s["total"] for s in sales_data)
+            st.write(f"### 💰 Total: **Rp {total_all:,}**")
 
 # ================== ROUTING ==================
 if st.session_state.role == "admin":
