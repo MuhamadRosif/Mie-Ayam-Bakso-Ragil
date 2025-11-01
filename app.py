@@ -95,7 +95,7 @@ def user_page():
             })
             save_json(CHECKOUT_FILE, checkout)
             st.success("✅ Ditambahkan ke keranjang")
-            st.experimental_rerun()
+            st.rerun()
 
     with col_cart:
         st.subheader("🧾 Keranjang Saat Ini")
@@ -110,7 +110,7 @@ def user_page():
     if not st.session_state.admin_logged:
         if st.sidebar.button("Admin Login"):
             st.session_state.page = "admin_login"
-            st.experimental_rerun()
+            st.rerun()
 
 def admin_login_page():
     st.title("🔒 Admin Login")
@@ -121,12 +121,12 @@ def admin_login_page():
             st.session_state.admin_logged = True
             st.session_state.page = "admin_panel"
             st.success("Login berhasil!")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Username/Password salah")
     if st.button("Kembali ke Menu User"):
         st.session_state.page = "user"
-        st.experimental_rerun()
+        st.rerun()
 
 def admin_page():
     st.sidebar.title("⚙️ Admin Panel")
@@ -154,7 +154,7 @@ def admin_page():
             menu_data[kat][nama] = harga
             save_json(MENU_FILE, menu_data)
             st.success("✅ Menu disimpan")
-            st.experimental_rerun()
+            st.rerun()
 
         st.subheader("🗑️ Hapus Menu")
         del_kat = st.selectbox("Pilih Kategori", list(menu_data.keys()))
@@ -163,7 +163,7 @@ def admin_page():
             del menu_data[del_kat][del_item]
             save_json(MENU_FILE, menu_data)
             st.success("✅ Menu dihapus")
-            st.experimental_rerun()
+            st.rerun()
 
     # Data Pesanan
     elif menu == "Data Pesanan":
@@ -176,7 +176,7 @@ def admin_page():
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
                 st.success("✅ Semua pesanan dibersihkan")
-                st.experimental_rerun()
+                st.rerun()
 
     # Pembayaran
     elif menu == "Pembayaran":
