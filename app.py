@@ -277,11 +277,15 @@ def admin_page():
                 st.rerun()
 
 # ---------------- routing ----------------
+def logout():
+    st.session_state.role = None
+    st.rerun()
+
 if st.session_state.role == "admin":
-    st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"role": None}))
+    st.sidebar.button("Logout", on_click=logout)
     admin_page()
 elif st.session_state.role == "user":
-    st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"role": None}))
+    st.sidebar.button("Logout", on_click=logout)
     user_page()
 else:
     login_page()
