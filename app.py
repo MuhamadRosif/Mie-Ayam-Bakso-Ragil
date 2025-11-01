@@ -1,4 +1,4 @@
-# app.py - FINAL FULL (User + Admin Sidebar + Login/Logout)
+# app.py - FINAL (User/Admin, Pengaturan Toko, Struk ala Alfamart)
 import streamlit as st
 import json, os
 import pandas as pd
@@ -40,17 +40,39 @@ config = load_json(CONFIG_FILE, {
     "footer": "Terima kasih telah berbelanja"
 })
 
+# normalize old sales
+for s in sales:
+    s.setdefault("kode", "-")
+    s.setdefault("cashier", config.get("cashier", "ADMIN RAGIL"))
+    s.setdefault("buyer", "Umum")
+    s.setdefault("items", [])
+
 # ---------------- UI setup ----------------
 st.set_page_config(page_title="Mie Ayam Mas Ragil", page_icon="🍜", layout="centered")
 st.markdown("""<style>body{background:#faf6f0;} footer{visibility:hidden;}</style>""", unsafe_allow_html=True)
 
 # ---------------- session defaults ----------------
-if "admin_logged" not in st.session_state:
-    st.session_state.admin_logged = False
+if "role" not in st.session_state:
+    st.session_state.role = None
 if "buyer_name" not in st.session_state:
     st.session_state.buyer_name = ""
+if "selected_buyer" not in st.session_state:
+    st.session_state.selected_buyer = ""
 
-# ---------------- user page ----------------
+# ---------------- helpers ----------------
+def center32(text):
+    return str(text).center(32)
+
+def lr32(left, right):
+    left_s = str(left)
+    right_s = str(right)
+    space = 32 - len(left_s) - len(right_s)
+    if space < 1:
+        left_s = left_s[:32 - len(right_s) - 1]
+        space = 1
+    return left_s + " " * space + right_s
+
+# ---------------- User page ----------------
 def user_page():
     st.title("🍜 Menu & Pesanan")
     st.subheader("👤 Nama Pembeli (wajib diisi)")
@@ -63,7 +85,7 @@ def user_page():
 
     if st.button("Tambah ke Keranjang"):
         if not st.session_state.buyer_name.strip():
-            st.error("⚠️ Silakan isi nama pembeli sebelum memesan!")
+            st.error("⚠️ Nama pembeli wajib diisi sebelum memesan!")
         else:
             checkout.append({
                 "nama": item,
@@ -83,42 +105,40 @@ def user_page():
     else:
         st.info("Keranjang kosong")
 
-# ---------------- admin page ----------------
+# ---------------- Admin page ----------------
 def admin_page():
     st.title("⚙️ Admin Panel")
     menu = st.sidebar.radio("Menu Admin", ["Data Menu", "Data Pesanan", "Pembayaran", "Laporan", "Pengaturan Toko"])
 
-    # ---------- Pengaturan Toko ----------
+    # ---------------- Pengaturan Toko ----------------
     if menu == "Pengaturan Toko":
         st.subheader("🔧 Pengaturan Toko")
         shop_name = st.text_input("Nama Toko", value=config.get("shop_name"))
         address = st.text_input("Alamat Toko", value=config.get("address"))
-        cashier_name = st.text_input("Nama Kasir Default", value=config.get("cashier"))
-        ppn = st.number_input("PPN (%)", 0, 20, value=config.get("ppn", 11))
-        diskon = st.number_input("Diskon (%)", 0, 100, value=config.get("diskon", 0))
-        footer = st.text_input("Footer Struk", value=config.get("footer", ""))
-
+        cashier = st.text_input("Nama Kasir Default", value=config.get("cashier"))
+        ppn = st.number_input("PPN (%)", 0, 20, config.get("ppn", 0))
+        diskon = st.number_input("Diskon (%)", 0, 50, config.get("diskon", 0))
+        footer = st.text_input("Footer Struk", value=config.get("footer"))
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Simpan Pengaturan Toko"):
                 config.update({
-                    "shop_name": shop_name.strip(),
-                    "address": address.strip(),
-                    "cashier": cashier_name.strip(),
+                    "shop_name": shop_name,
+                    "address": address,
+                    "cashier": cashier,
                     "ppn": ppn,
                     "diskon": diskon,
-                    "footer": footer.strip()
+                    "footer": footer
                 })
                 save_json(CONFIG_FILE, config)
-                st.success("✅ Pengaturan disimpan")
-                st.rerun()
+                st.success("✅ Pengaturan Toko disimpan")
         with col2:
             if st.button("Reset Counter"):
                 config["counter"] = 0
                 save_json(CONFIG_FILE, config)
                 st.success("✅ Counter direset")
 
-    # ---------- Data Menu ----------
+    # ---------------- Data Menu ----------------
     elif menu == "Data Menu":
         st.subheader("📋 Data Menu")
         rows = []
@@ -146,7 +166,7 @@ def admin_page():
             st.success("✅ Menu dihapus")
             st.rerun()
 
-    # ---------- Data Pesanan ----------
+    # ---------------- Data Pesanan ----------------
     elif menu == "Data Pesanan":
         st.subheader("📝 Pesanan Masuk")
         if not checkout:
@@ -162,84 +182,81 @@ def admin_page():
                 st.success("✅ Semua pesanan dibersihkan")
                 st.rerun()
 
-    # ---------- Pembayaran ----------
+    # ---------------- Pembayaran ----------------
     elif menu == "Pembayaran":
         st.header("💳 Pembayaran")
         if not checkout:
-            st.info("Belum ada transaksi")
+            st.info("Belum ada transaksi.")
         else:
-            buyers = list(set([c["buyer"] for c in checkout]))
-            selected_buyer = st.selectbox("Pilih Pembeli yang akan membayar", buyers)
-            buyer_items = [c for c in checkout if c["buyer"] == selected_buyer]
-
-            df = pd.DataFrame(buyer_items)
+            # pilih buyer
+            buyers = list({c["buyer"] for c in checkout})
+            st.session_state.selected_buyer = st.selectbox("Pilih Nama Pembeli", buyers)
+            items = [c for c in checkout if c["buyer"] == st.session_state.selected_buyer]
+            df = pd.DataFrame(items)
             df["subtotal"] = df["harga"] * df["jumlah"]
-            df_display = df[["nama", "jumlah", "harga", "subtotal"]].copy()
+            df_display = df[["nama", "jumlah", "harga", "subtotal"]]
             df_display["harga"] = df_display["harga"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
             df_display["subtotal"] = df_display["subtotal"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
             st.table(df_display)
 
-            subtotal = sum(c["harga"] * c["jumlah"] for c in buyer_items)
-            ppn_amt = int(subtotal * config["ppn"] / 100)
-            diskon_amt = int(subtotal * config["diskon"] / 100)
+            subtotal = sum(i["harga"]*i["jumlah"] for i in items)
+            ppn_amt = int(subtotal * config.get("ppn", 0) / 100)
+            diskon_amt = int(subtotal * config.get("diskon", 0) / 100)
             total_final = subtotal + ppn_amt - diskon_amt
+
+            st.write(f"Subtotal: Rp {subtotal:,}".replace(",", "."))
+            st.write(f"PPN ({config.get('ppn')}%): Rp {ppn_amt:,}".replace(",", "."))
+            st.write(f"Diskon ({config.get('diskon')}%): -Rp {diskon_amt:,}".replace(",", "."))
+            st.write(f"Total: Rp {total_final:,}".replace(",", "."))
 
             tunai = st.number_input("Tunai", min_value=0, value=total_final)
             kembalian = tunai - total_final
-
-            st.write(f"Subtotal: Rp {subtotal:,}".replace(",", "."))
-            st.write(f"PPN ({config['ppn']}%): Rp {ppn_amt:,}".replace(",", "."))
-            st.write(f"Diskon ({config['diskon']}%): -Rp {diskon_amt:,}".replace(",", "."))
-            st.write(f"Total: Rp {total_final:,}".replace(",", "."))
-            st.write(f"Tunai: Rp {tunai:,}".replace(",", "."))
             st.write(f"Kembalian: Rp {kembalian:,}".replace(",", "."))
-            st.write(f"Nama Pembeli: {selected_buyer}")
 
-            if st.button("🖨️ Cetak Struk"):
+            if st.button("🖨️ Cetak Struk (Tampil)"):
                 tz = pytz.timezone("Asia/Jakarta")
                 now = datetime.now(tz)
-                config["counter"] += 1
-                save_json(CONFIG_FILE, config)
+                config["counter"] = config.get("counter",0) + 1
                 kode = f"RG-{now.strftime('%Y%m%d')}-{config['counter']:05d}"
-
-                def center32(txt):
-                    return txt.center(32)
-                def lr32(left, right):
-                    space = 32 - len(left) - len(right)
-                    if space < 0: space = 0
-                    return left + " " * space + right
+                save_json(CONFIG_FILE, config)
 
                 lines = []
-                lines.append(center32(config["shop_name"]))
-                lines.append(center32(config["address"]))
+                lines.append(center32(config.get("shop_name")))
+                lines.append(center32(config.get("address")))
+                lines.append(center32(""))
                 lines.append("-"*32)
                 lines.append(f"No. Transaksi: {kode}")
-                lines.append(f"Kasir: {config['cashier']}")
+                lines.append(f"Kasir: {config.get('cashier')}")
                 lines.append(f"Tgl: {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
                 lines.append("-"*32)
                 total_items = 0
-                for d in buyer_items:
-                    lines.append(d["nama"])
-                    lines.append(lr32(f"{d['jumlah']} x Rp {d['harga']:,}".replace(",", "."), f"Rp {d['jumlah']*d['harga']:,}".replace(",", ".")))
-                    total_items += d["jumlah"]
+                for d in items:
+                    name = d["nama"][:32]
+                    qty = d["jumlah"]
+                    price = d["harga"]
+                    subtotal_item = qty * price
+                    lines.append(name)
+                    lines.append(lr32(f"{qty} x Rp {price:,}".replace(",", "."), f"Rp {subtotal_item:,}".replace(",", ".")))
+                    total_items += qty
                 lines.append("-"*32)
                 lines.append(lr32("Total Item", str(total_items)))
                 lines.append(lr32("Subtotal", f"Rp {subtotal:,}".replace(",", ".")))
-                lines.append(lr32(f"PPN ({config['ppn']}%)", f"Rp {ppn_amt:,}".replace(",", ".")))
-                lines.append(lr32(f"Diskon ({config['diskon']}%)", f"-Rp {diskon_amt:,}".replace(",", ".")))
+                lines.append(lr32(f"PPN ({config.get('ppn')}%)", f"Rp {ppn_amt:,}".replace(",", ".")))
+                lines.append(lr32(f"Diskon ({config.get('diskon')}%)", f"-Rp {diskon_amt:,}".replace(",", ".")))
                 lines.append(lr32("Total", f"Rp {total_final:,}".replace(",", ".")))
                 lines.append(lr32("Tunai", f"Rp {tunai:,}".replace(",", ".")))
                 lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
-                lines.append(f"Pembeli: {selected_buyer}")
-                lines.append(center32(config.get("footer","")))
+                lines.append(f"Pembeli: {st.session_state.selected_buyer}")
+                lines.append("")
+                lines.append(center32(config.get("footer", "")))
+
                 struk_text = "\n".join(lines)
                 st.text(struk_text)
 
-                # generate Code128 barcode
-                CODE = kode
-                code128 = barcode.get('code128', CODE, writer=ImageWriter())
+                # generate barcode
+                code128 = barcode.get('code128', kode, writer=ImageWriter())
                 buf_bar = BytesIO()
-                code128.write(buf_bar, options={"module_width": 0.2, "module_height": 15, "font_size": 10})
+                code128.write(buf_bar, options={"module_width":0.2,"module_height":15,"font_size":10})
                 buf_bar.seek(0)
                 st.image(buf_bar, width=230)
 
@@ -248,27 +265,51 @@ def admin_page():
                     "tanggal": now.strftime("%Y-%m-%d"),
                     "total": total_final,
                     "kode": kode,
-                    "cashier": config["cashier"],
-                    "buyer": selected_buyer,
-                    "items": buyer_items.copy()
+                    "cashier": config.get("cashier"),
+                    "buyer": st.session_state.selected_buyer,
+                    "items": items
                 })
                 save_json(SALES_FILE, sales)
-                # remove items from checkout
-                for c in buyer_items:
-                    checkout.remove(c)
+
+                # remove items from checkout for this buyer
+                checkout[:] = [c for c in checkout if c["buyer"] != st.session_state.selected_buyer]
                 save_json(CHECKOUT_FILE, checkout)
-                st.success("✅ Struk tampil — tekan Ctrl+P untuk cetak")
+                st.success("✅ Transaksi disimpan. Tekan Ctrl+P untuk cetak.")
+
+    # ---------------- Laporan ----------------
+    elif menu == "Laporan":
+        st.subheader("📊 Laporan Harian")
+        if not sales:
+            st.info("Belum ada transaksi.")
+        else:
+            df = pd.DataFrame(sales)
+            df["Tanggal"] = pd.to_datetime(df["tanggal"]).dt.strftime("%d/%m/%Y")
+            df["Pemasukan"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
+            cols = ["Tanggal", "Pemasukan"]
+            for c in ["kode", "cashier", "buyer"]:
+                if c in df.columns:
+                    cols.append(c)
+            st.table(df[cols])
+            total_all = sum(s["total"] for s in sales)
+            st.write(f"### 💰 Total: Rp {total_all:,}".replace(",", "."))
+
+            st.subheader("🗑️ Hapus Transaksi")
+            pilih_kode = st.selectbox("Pilih kode transaksi yang mau dihapus", [s.get("kode", f"no-{i}") for i, s in enumerate(sales)])
+            if st.button("Hapus Transaksi"):
+                sales[:] = [s for s in sales if s.get("kode") != pilih_kode]
+                save_json(SALES_FILE, sales)
+                st.success(f"✅ Transaksi {pilih_kode} dihapus")
+                st.rerun()
 
 # ---------------- routing ----------------
-st.sidebar.title("Mie Ayam & Bakso Mas Ragil")
+st.sidebar.title("Menu")
+if st.sidebar.button("Admin Login"):
+    st.session_state.role = "admin"
 
-if st.session_state.admin_logged:
-    st.sidebar.button("Logout Admin", on_click=lambda: st.session_state.update({"admin_logged": False}))
+if st.session_state.role == "admin":
+    if st.sidebar.button("Logout Admin"):
+        st.session_state.role = None
+        st.rerun()
     admin_page()
 else:
-    if st.sidebar.button("Admin Login"):
-        password = st.text_input("Masukkan Password Admin", type="password")
-        if password == "123":  # ganti sesuai kebutuhan
-            st.session_state.admin_logged = True
-            st.rerun()
     user_page()
