@@ -1,4 +1,4 @@
-# app.py (final version)
+# app.py - FINAL VERSION with QR code
 import streamlit as st
 import json, os
 import pandas as pd
@@ -7,8 +7,7 @@ import pytz
 from io import BytesIO
 from PIL import Image
 import base64
-import barcode
-from barcode.writer import ImageWriter
+import qrcode
 
 # ---------------- file paths ----------------
 MENU_FILE = "menu.json"
@@ -143,8 +142,17 @@ def admin_page():
         st.success("Logout berhasil")
         st.rerun()
 
+    # ---------------- Data Menu ----------------
+    if menu == "Data Menu":
+        st.header("📋 Data Menu")
+        rows = []
+        for k, items in menu_data.items():
+            for n, h in items.items():
+                rows.append({"Kategori": k, "Nama": n, "Harga": f"Rp {h:,}".replace(",", ".")})
+        st.dataframe(pd.DataFrame(rows), width="stretch")
+
     # ---------------- Pembayaran ----------------
-    if menu == "Pembayaran":
+    elif menu == "Pembayaran":
         st.header("💳 Pembayaran")
         if not checkout:
             st.info("Belum ada transaksi")
@@ -197,16 +205,19 @@ def admin_page():
 
             struk_text = "\n".join(lines)
 
-            # ---------------- generate barcode ----------------
-            CODE128 = barcode.get_barcode_class('code128')
-            barcode_image = CODE128(kode, writer=ImageWriter(), add_checksum=False)
-            buffer = BytesIO()
-            barcode_image.write(buffer)
-            buffer.seek(0)
-            img = Image.open(buffer)
+            # ---------------- generate QR code ----------------
+            qr = qrcode.QRCode(box_size=3, border=1)
+            qr.add_data(kode)
+            qr.make(fit=True)
+            img_qr = qr.make_image(fill_color="black", back_color="white")
+            buf = BytesIO()
+            img_qr.save(buf, format="PNG")
+            buf.seek(0)
+            qr_bytes = buf.getvalue()
 
+            # store pending sale in session
             st.session_state.struk_data = struk_text
-            st.session_state.barcode_bytes = buffer.getvalue()
+            st.session_state.barcode_bytes = qr_bytes
             st.session_state.pending_sale = {
                 "tanggal": now.strftime("%Y-%m-%d"),
                 "total": total_final,
@@ -222,7 +233,7 @@ def admin_page():
         if st.session_state.show_struk:
             st.subheader("🧾 Pratinjau Struk")
             st.markdown(f"<pre class='receipt'>{st.session_state.struk_data}</pre>", unsafe_allow_html=True)
-            st.image(Image.open(BytesIO(st.session_state.barcode_bytes)), width=200)
+            st.image(BytesIO(st.session_state.barcode_bytes), width=200)
 
             if st.button("🖨️ Cetak Struk"):
                 st.markdown("<script>window.print();</script>", unsafe_allow_html=True)
