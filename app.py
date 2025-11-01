@@ -1,4 +1,3 @@
-# app.py - FINAL FULL
 import streamlit as st
 import json, os
 import pandas as pd
@@ -72,7 +71,6 @@ def lr32(left, right):
     return left_s + (" " * space) + right_s
 
 # ---------------- pages ----------------
-
 def user_page():
     st.title("🍜 Menu & Pesanan")
     st.subheader("👤 Nama Pembeli (wajib diisi)")
@@ -212,24 +210,27 @@ def admin_page():
             save_json(CONFIG_FILE, config)
             kode = f"RG-{now.strftime('%Y%m%d')}-{config['counter']:05d}"
 
+            # ---------------- STRUK ----------------
             lines=[]
             lines.append(center32(config.get("shop_name")))
             lines.append(center32(config.get("address")))
             lines.append("-"*32)
             lines.append(f"No. Transaksi  : {kode}")
-            lines.append(f"Kasir                 : {config.get('cashier')}")
-            lines.append(f"Tanggal            : {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
+            lines.append(f"Kasir          : {config.get('cashier')}")
+            lines.append(f"Tanggal        : {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
 
+            # DAFTAR PESANAN MASUK
             for i in buyer_checkout:
-                name = i["nama"]
-                qty_harga = f"{i['jumlah']} x Rp {i['harga']:,}".replace(",", ".")
-                total_item = f"Rp {i['jumlah']*i['harga']:,}".replace(",", ".")
-                line = f"{name:<16}{qty_harga:>10} {total_item:>6}"
+                name = i["nama"][:16]  # max 16 char
+                qty = i["jumlah"]
+                harga = i["harga"]
+                total_item = qty*harga
+                line = f"{name:<16}{qty}x{harga:>6} {total_item:>8}"
                 lines.append(line)
 
-            total_items = sum(i["jumlah"] for i in buyer_checkout)
             lines.append("-"*32)
+            total_items = sum(i["jumlah"] for i in buyer_checkout)
             lines.append(lr32("Total Item", str(total_items)))
             lines.append(lr32("Subtotal", f"Rp {subtotal:,}".replace(",", ".")))
             lines.append(lr32(f"PPN ({config['ppn']}%)", f"Rp {ppn_amt:,}".replace(",", ".")))
@@ -238,7 +239,7 @@ def admin_page():
             lines.append(lr32("Total", f"Rp {total_final:,}".replace(",", ".")))
             lines.append(lr32("Tunai", f"Rp {tunai:,}".replace(",", ".")))
             lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
-            lines.append(f"Pembeli                : {selected_buyer}")
+            lines.append(f"Pembeli        : {selected_buyer}")
             lines.append("-"*32)
             lines.append(center32(config.get("footer")))
             lines.append("-"*32)
@@ -246,13 +247,14 @@ def admin_page():
             struk_text = "\n".join(lines)
             st.text(struk_text)
 
-            # QR code statis kecil
-            static_text = "Saya Muhamad Rosif Al Khikam Development Aplikasi ini"
+            # QR statis
+            static_text = "Hikam - Dev"
             qr = qrcode.QRCode(box_size=2, border=1)
             qr.add_data(static_text)
             qr.make(fit=True)
             img = qr.make_image(fill_color="black", back_color="white")
             st.image(img)
+            # ---------------------------------------------
 
             # save sale
             sales.append({
@@ -271,7 +273,7 @@ def admin_page():
 
             st.success("✅ Struk dicetak, transaksi tersimpan, menu user auto-refresh")
             st.session_state.page="user"
-            st.experimental_rerun()
+            st.rerun()
 
     elif menu=="Laporan":
         st.header("📊 Laporan Harian")
@@ -335,4 +337,4 @@ elif st.session_state.page=="admin_panel" and st.session_state.admin_logged:
     admin_page()
 else:
     st.session_state.page="user"
-    st.experimental_rerun()
+    st.rerun()
