@@ -39,7 +39,6 @@ config = load_json(CONFIG_FILE, {
     "footer": "Selalu segar bangsat"
 })
 
-# normalize old sales entries
 for s in sales:
     s.setdefault("kode", "-")
     s.setdefault("cashier", config.get("cashier", "ADMIN RAGIL"))
@@ -47,7 +46,7 @@ for s in sales:
     s.setdefault("items", [])
 
 # ---------------- UI setup ----------------
-st.set_page_config(page_title="Mie Ayam Mas Ragil", page_icon="🍜", layout="centered")
+st.set_page_config(page_title="Mie Ayam Mas Ragil", page_icon="🍜", layout="wide")
 st.markdown("""<style>body{background:#faf6f0;} footer{visibility:hidden;}</style>""", unsafe_allow_html=True)
 
 # ---------------- session defaults ----------------
@@ -58,7 +57,7 @@ if "admin_logged" not in st.session_state:
 if "buyer_name" not in st.session_state:
     st.session_state.buyer_name = ""
 
-# ---------------- helpers: struk formatting ----------------
+# ---------------- helpers struk ----------------
 def center32(text):
     return str(text).center(32)
 
@@ -71,38 +70,39 @@ def lr32(left, right):
         space = 1
     return left_s + (" " * space) + right_s
 
-# ---------------- pages ----------------
+# ---------------- Pages ----------------
 def user_page():
     st.title("🍜 Menu & Pesanan")
     st.subheader("👤 Nama Pembeli (wajib diisi)")
     st.session_state.buyer_name = st.text_input("Nama Pembeli", value=st.session_state.buyer_name)
 
-    if not st.session_state.buyer_name:
+    disable_order = not st.session_state.buyer_name
+    if disable_order:
         st.warning("Nama pembeli wajib diisi sebelum memesan")
-        disable_order = True
-    else:
-        disable_order = False
 
-    st.subheader("📜 Menu")
-    kategori = st.selectbox("Kategori", list(menu_data.keys()))
-    item = st.selectbox("Menu", list(menu_data[kategori].keys()))
-    qty = st.number_input("Jumlah", min_value=1, value=1)
+    # Responsive columns
+    col_menu, col_cart = st.columns([2,1])
+    with col_menu:
+        st.subheader("📜 Menu")
+        kategori = st.selectbox("Kategori", list(menu_data.keys()))
+        item = st.selectbox("Menu", list(menu_data[kategori].keys()))
+        qty = st.number_input("Jumlah", min_value=1, value=1)
+        if st.button("Tambah ke Keranjang", disabled=disable_order):
+            buyer = st.session_state.buyer_name
+            checkout.append({"nama": item, "harga": menu_data[kategori][item], "jumlah": qty, "buyer": buyer})
+            save_json(CHECKOUT_FILE, checkout)
+            st.success("✅ Ditambahkan ke keranjang")
+            st.rerun()
 
-    if st.button("Tambah ke Keranjang", disabled=disable_order):
-        buyer = st.session_state.buyer_name
-        checkout.append({"nama": item, "harga": menu_data[kategori][item], "jumlah": qty, "buyer": buyer})
-        save_json(CHECKOUT_FILE, checkout)
-        st.success("✅ Ditambahkan ke keranjang")
-        st.rerun()
-
-    st.subheader("🧾 Keranjang Saat Ini")
-    if checkout:
-        df = pd.DataFrame(checkout)
-        df["total"] = df["harga"] * df["jumlah"]
-        df["total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
-        st.table(df)
-    else:
-        st.info("Keranjang kosong")
+    with col_cart:
+        st.subheader("🧾 Keranjang Saat Ini")
+        with st.expander("Lihat Keranjang"):
+            if checkout:
+                df = pd.DataFrame(checkout)
+                df["total"] = df["harga"] * df["jumlah"]
+                st.dataframe(df, use_container_width=True)
+            else:
+                st.info("Keranjang kosong")
 
     if not st.session_state.admin_logged:
         if st.sidebar.button("Admin Login"):
@@ -170,8 +170,7 @@ def admin_page():
         else:
             df = pd.DataFrame(checkout)
             df["total"] = df["harga"] * df["jumlah"]
-            df["total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
-            st.table(df)
+            st.dataframe(df, use_container_width=True)
             if st.button("Hapus Semua Pesanan"):
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
@@ -190,8 +189,7 @@ def admin_page():
         buyer_checkout = [c for c in checkout if c["buyer"]==selected_buyer]
         df = pd.DataFrame(buyer_checkout)
         df["total"] = df["harga"] * df["jumlah"]
-        df["total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
-        st.table(df)
+        st.dataframe(df, use_container_width=True)
 
         subtotal = sum(i["harga"]*i["jumlah"] for i in buyer_checkout)
         ppn_amt = int(subtotal * config.get("ppn",11)/100)
@@ -273,6 +271,7 @@ def admin_page():
             save_json(CHECKOUT_FILE, checkout)
 
             st.success("✅ Struk dicetak, transaksi tersimpan")
+            # tetap di admin panel, jangan rerun ke user
 
     # ---------------- Laporan ----------------
     elif menu=="Laporan":
@@ -287,7 +286,7 @@ def admin_page():
             for c in ["kode","cashier","buyer"]:
                 if c in df.columns:
                     cols.append(c)
-            st.table(df[cols])
+            st.dataframe(df[cols], use_container_width=True)
             total_all = sum(s["total"] for s in sales)
             st.write(f"### 💰 Total: Rp {total_all:,}".replace(",", "."))
 
@@ -302,32 +301,32 @@ def admin_page():
     # ---------------- Pengaturan Toko ----------------
     elif menu=="Pengaturan Toko":
         st.header("🛠️ Pengaturan Toko")
-        shop_name = st.text_input("Nama Toko", value=config.get("shop_name"))
-        address = st.text_input("Alamat Toko", value=config.get("address"))
-        cashier = st.text_input("Nama Kasir", value=config.get("cashier"))
-        ppn = st.number_input("PPN (%)", 0, 100, value=config.get("ppn"))
-        diskon = st.number_input("Diskon (%)", 0, 100, value=config.get("diskon"))
-        footer = st.text_input("Footer", value=config.get("footer"))
-        col1,col2 = st.columns(2)
+        col1,col2 = st.columns([2,1])
         with col1:
-            if st.button("Simpan Pengaturan"):
-                config.update({
-                    "shop_name": shop_name,
-                    "address": address,
-                    "cashier": cashier,
-                    "ppn": ppn,
-                    "diskon": diskon,
-                    "footer": footer
-                })
-                save_json(CONFIG_FILE, config)
-                st.success("✅ Pengaturan tersimpan")
-                st.rerun()
+            shop_name = st.text_input("Nama Toko", value=config.get("shop_name"))
+            address = st.text_input("Alamat Toko", value=config.get("address"))
+            cashier = st.text_input("Nama Kasir", value=config.get("cashier"))
         with col2:
-            if st.button("Reset Counter"):
-                config["counter"]=0
-                save_json(CONFIG_FILE, config)
-                st.success("✅ Counter direset")
-                st.rerun()
+            ppn = st.number_input("PPN (%)", 0, 100, value=config.get("ppn"))
+            diskon = st.number_input("Diskon (%)", 0, 100, value=config.get("diskon"))
+            footer = st.text_input("Footer", value=config.get("footer"))
+        if st.button("Simpan Pengaturan"):
+            config.update({
+                "shop_name": shop_name,
+                "address": address,
+                "cashier": cashier,
+                "ppn": ppn,
+                "diskon": diskon,
+                "footer": footer
+            })
+            save_json(CONFIG_FILE, config)
+            st.success("✅ Pengaturan tersimpan")
+            st.rerun()
+        if st.button("Reset Counter"):
+            config["counter"]=0
+            save_json(CONFIG_FILE, config)
+            st.success("✅ Counter direset")
+            st.rerun()
 
 # ---------------- routing ----------------
 if st.session_state.page=="user":
