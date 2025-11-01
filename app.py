@@ -167,7 +167,7 @@ def admin_page():
                 config["discount_percent"] = int(default_disc)
                 save_json(CONFIG_FILE, config)
                 st.success("✅ Pengaturan disimpan")
-                st.experimental_rerun()
+                st.rerun()
         with col2:
             if st.button("Reset Counter"):
                 config["counter"] = 0; save_json(CONFIG_FILE, config); st.success("✅ Counter direset")
