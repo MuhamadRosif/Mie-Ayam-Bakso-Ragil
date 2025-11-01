@@ -3,3 +3,4 @@ pandas
 pytz
 qrcode
 Pillow
+python-barcode
