@@ -137,7 +137,7 @@ def admin_page():
         st.success("Logout berhasil")
         st.rerun()
 
-    # ---------------- Data Menu ----------------
+    # Data Menu
     if menu == "Data Menu":
         st.header("📋 Data Menu")
         rows = []
@@ -165,7 +165,7 @@ def admin_page():
             st.success("✅ Menu dihapus")
             st.rerun()
 
-    # ---------------- Data Pesanan ----------------
+    # Data Pesanan
     elif menu == "Data Pesanan":
         st.header("📝 Pesanan Masuk")
         if not checkout:
@@ -176,9 +176,9 @@ def admin_page():
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
                 st.success("✅ Semua pesanan dibersihkan")
-                st.rerun()
+                st.experimental_rerun()
 
-    # ---------------- Pembayaran ----------------
+    # Pembayaran
     elif menu == "Pembayaran":
         st.header("💳 Pembayaran")
         if not checkout:
@@ -264,9 +264,15 @@ def admin_page():
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
 
-            st.success("✅ Struk dicetak, transaksi tersimpan")
+            # reset nama pembeli di user page
+            st.session_state.buyer_name = ""
 
-    # ---------------- Laporan Harian ----------------
+            st.success("✅ Struk dicetak, transaksi tersimpan")
+            # reload user page jika bukan admin
+            if not st.session_state.admin_logged:
+                st.rerun()
+
+# ---------------- Laporan Harian ----------------
     elif menu == "Laporan":
         st.header("📊 Laporan Harian")
         if not sales:
@@ -287,7 +293,7 @@ def admin_page():
                 st.success(f"✅ Transaksi {pilih_kode} dihapus")
                 st.rerun()
 
-    # ---------------- Pengaturan Toko ----------------
+# ---------------- Pengaturan Toko ----------------
     elif menu == "Pengaturan Toko":
         st.header("🛠️ Pengaturan Toko")
         shop_name = st.text_input("Nama Toko", value=config.get("shop_name"))
