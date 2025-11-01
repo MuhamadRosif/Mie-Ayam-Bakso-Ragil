@@ -272,7 +272,7 @@ def admin_page():
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
             st.success("✅ Struk dicetak dan transaksi disimpan")
-            st.experimental_rerun()  # reload user page otomatis
+            st.rerun()  # reload user page otomatis
 
     elif menu=="Laporan":
         st.header("📊 Laporan Harian")
