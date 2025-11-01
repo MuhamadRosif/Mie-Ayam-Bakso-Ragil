@@ -93,7 +93,7 @@ def user_page():
         checkout.append({"nama": item, "harga": menu_data[kategori][item], "jumlah": qty, "buyer": buyer})
         save_json(CHECKOUT_FILE, checkout)
         st.success("✅ Ditambahkan ke keranjang")
-        st.experimental_rerun()
+        st.rerun()
 
     st.subheader("🧾 Keranjang Saat Ini")
     if checkout:
