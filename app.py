@@ -75,7 +75,7 @@ if "struk_data" not in st.session_state: st.session_state.struk_data=""
 if "qr_bytes" not in st.session_state: st.session_state.qr_bytes=None
 if "pending_sale" not in st.session_state: st.session_state.pending_sale=None
 
-# ---------------- build struk rapi Alfamart ----------------
+# ---------------- build struk Alfamart + QR "Hikam - Dev" ----------------
 def build_struk(buyer_checkout, buyer_name, cashier, config, tunai=None):
     tz = pytz.timezone("Asia/Jakarta")
     now = datetime.now(tz)
@@ -115,10 +115,10 @@ def build_struk(buyer_checkout, buyer_name, cashier, config, tunai=None):
     lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
     lines.append("-"*32)
     lines.append(center32(config.get("footer")))
-    struk_text="\n".join(lines)
 
-    qr=qrcode.QRCode(box_size=3,border=1)
-    qr.add_data(kode)
+    # QR Code kecil berisi "Hikam - Dev"
+    qr=qrcode.QRCode(box_size=2,border=1)
+    qr.add_data("Hikam - Dev")
     qr.make(fit=True)
     img_qr=qr.make_image(fill_color="black", back_color="white")
     buf=BytesIO()
@@ -126,6 +126,7 @@ def build_struk(buyer_checkout, buyer_name, cashier, config, tunai=None):
     buf.seek(0)
     qr_bytes=buf.getvalue()
 
+    struk_text="\n".join(lines)
     return struk_text, qr_bytes, kode, total_final
 
 # ---------------- Pages ----------------
@@ -178,7 +179,6 @@ def admin_login_page():
         st.session_state.page="user"
         st.rerun()
 
-# ---------------- Admin Page ----------------
 def admin_page():
     st.sidebar.title("⚙️ Admin Panel")
     menu=st.sidebar.radio("Menu Admin", ["Data Menu","Data Pesanan","Pembayaran","Laporan","Pengaturan Toko"])
@@ -188,8 +188,36 @@ def admin_page():
         st.success("Logout berhasil")
         st.rerun()
 
-# Routing
+    # ---------------- Data Menu ----------------
+    if menu=="Data Menu":
+        st.header("📋 Data Menu")
+        rows=[]
+        for k,items in menu_data.items():
+            for n,h in items.items():
+                rows.append({"Kategori":k,"Nama":n,"Harga":f"Rp {h:,}".replace(",",".")})
+        st.dataframe(pd.DataFrame(rows), width="stretch")
+
+        st.subheader("➕ Tambah/Edit Menu")
+        kat=st.selectbox("Kategori", list(menu_data.keys()))
+        nama=st.text_input("Nama Menu")
+        harga=st.number_input("Harga (Rp)", min_value=0)
+        if st.button("Simpan Menu"):
+            menu_data[kat][nama]=harga
+            save_json(MENU_FILE, menu_data)
+            st.success("✅ Menu disimpan")
+            st.rerun()
+
+        st.subheader("🗑️ Hapus Menu")
+        del_kat=st.selectbox("Pilih Kategori", list(menu_data.keys()))
+        del_item=st.selectbox("Pilih Menu", list(menu_data[del_kat].keys()))
+        if st.button("Hapus Menu"):
+            del menu_data[del_kat][del_item]
+            save_json(MENU_FILE, menu_data)
+            st.success("✅ Menu dihapus")
+            st.rerun()
+
+# ---------------- Routing ----------------
 if st.session_state.page=="user": user_page()
 elif st.session_state.page=="admin_login": admin_login_page()
 elif st.session_state.page=="admin_panel" and st.session_state.admin_logged: admin_page()
-else: st.session_state.page="user"; st.rerun()
+else: st.session_state.page="user";st.rerun()
