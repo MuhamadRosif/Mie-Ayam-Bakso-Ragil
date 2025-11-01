@@ -219,13 +219,12 @@ def admin_page():
             lines.append(f"Tanggal        : {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
 
+            # DAFTAR PESANAN MASUK (format baru)
             for i in buyer_checkout:
-                name = i["nama"][:16]
-                qty = i["jumlah"]
-                harga = i["harga"]
-                total_item = qty*harga
-                line = f"{name:<16}{qty}x{harga:>6} {total_item:>8}"
-                lines.append(line)
+                name = i["nama"][:20]  # max 20 char agar muat
+                total_item = i["jumlah"] * i["harga"]
+                lines.append(f"{name:<24}Rp {total_item:,}".replace(",", "."))
+                lines.append(f"{i['jumlah']} pesanan")
 
             lines.append("-"*32)
             total_items = sum(i["jumlah"] for i in buyer_checkout)
@@ -255,7 +254,6 @@ def admin_page():
             img_qr.save(buf, format="PNG")
             buf.seek(0)
             st.image(buf)
-            # ---------------------------------------------
 
             # save sale
             sales.append({
@@ -274,7 +272,7 @@ def admin_page():
 
             st.success("✅ Struk dicetak, transaksi tersimpan, menu user auto-refresh")
             st.session_state.page="user"
-            st.rerun()
+            st.experimental_rerun()
 
     elif menu=="Laporan":
         st.header("📊 Laporan Harian")
