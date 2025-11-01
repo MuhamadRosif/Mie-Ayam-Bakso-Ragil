@@ -1,3 +1,5 @@
 streamlit
 pandas
-reportlab
+pytz
+qrcode
+Pillow
