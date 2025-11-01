@@ -1,12 +1,11 @@
-# app.py - FINAL Full Version (Struk Rapi Alfamart)
+# app.py - FINAL Full Version with Statis Barcode
 import streamlit as st
 import json, os
 import pandas as pd
 from datetime import datetime
 import pytz
 from io import BytesIO
-import barcode
-from barcode.writer import ImageWriter
+import qrcode
 
 # ---------------- file paths ----------------
 MENU_FILE = "menu.json"
@@ -26,7 +25,7 @@ def save_json(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-# ---------------- initial data (create defaults) ----------------
+# ---------------- initial data ----------------
 menu_data = load_json(MENU_FILE, {"makanan": {"Mie Ayam": 15000, "Bakso": 18000}, "minuman": {"Es Teh": 5000}})
 checkout = load_json(CHECKOUT_FILE, [])
 sales = load_json(SALES_FILE, [])
@@ -53,7 +52,7 @@ st.markdown("""<style>body{background:#faf6f0;} footer{visibility:hidden;}</styl
 
 # ---------------- session defaults ----------------
 if "page" not in st.session_state:
-    st.session_state.page = "user"  # default user page
+    st.session_state.page = "user"
 if "admin_logged" not in st.session_state:
     st.session_state.admin_logged = False
 if "buyer_name" not in st.session_state:
@@ -73,7 +72,6 @@ def lr32(left, right):
     return left_s + (" " * space) + right_s
 
 # ---------------- pages ----------------
-
 def user_page():
     st.title("🍜 Menu & Pesanan")
     st.subheader("👤 Nama Pembeli (wajib diisi)")
@@ -184,7 +182,6 @@ def admin_page():
             st.info("Belum ada transaksi")
             return
 
-        # pilih buyer
         buyers = list({c["buyer"] for c in checkout})
         selected_buyer = st.selectbox("Pilih Pembeli", buyers)
         buyer_checkout = [c for c in checkout if c["buyer"]==selected_buyer]
@@ -222,7 +219,6 @@ def admin_page():
             lines.append(f"Tgl: {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
 
-            # items
             for item in buyer_checkout:
                 name = item["nama"]
                 qty = item["jumlah"]
@@ -241,18 +237,21 @@ def admin_page():
             lines.append(lr32("Tunai", f"Rp {tunai:,}".replace(",", ".")))
             lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
             lines.append(lr32("Pembeli", selected_buyer))
-            lines.append("")
+            lines.append("-"*32)
             lines.append(center32(config.get("footer")))
+
+            # generate barcode statis
+            buf_bar = BytesIO()
+            qr = qrcode.QRCode(box_size=2, border=1)
+            qr.add_data("HIKAM-DEV")
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            img.save(buf_bar)
+            buf_bar.seek(0)
 
             struk_text = "\n".join(lines)
             st.text(struk_text)
-
-            # generate barcode
-            code128 = barcode.get('code128', kode, writer=ImageWriter())
-            buf_bar = BytesIO()
-            code128.write(buf_bar, options={"module_width":0.2,"module_height":15,"font_size":10})
-            buf_bar.seek(0)
-            st.image(buf_bar, width=230)
+            st.image(buf_bar, width=180)
 
             # save sale
             sales.append({
@@ -265,7 +264,6 @@ def admin_page():
             })
             save_json(SALES_FILE, sales)
 
-            # remove checkout for this buyer
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
             st.success("✅ Struk dicetak dan transaksi disimpan")
