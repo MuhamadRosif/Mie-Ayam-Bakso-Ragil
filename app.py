@@ -1,11 +1,12 @@
-# app.py - FINAL Full Version with QR statis
+# app.py - FULL FINAL
 import streamlit as st
 import json, os
 import pandas as pd
 from datetime import datetime
 import pytz
 from io import BytesIO
-import qrcode
+import barcode
+from barcode.writer import ImageWriter
 
 # ---------------- file paths ----------------
 MENU_FILE = "menu.json"
@@ -25,7 +26,7 @@ def save_json(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-# ---------------- initial data (create defaults) ----------------
+# ---------------- initial data ----------------
 menu_data = load_json(MENU_FILE, {"makanan": {"Mie Ayam": 15000, "Bakso": 18000}, "minuman": {"Es Teh": 5000}})
 checkout = load_json(CHECKOUT_FILE, [])
 sales = load_json(SALES_FILE, [])
@@ -52,7 +53,7 @@ st.markdown("""<style>body{background:#faf6f0;} footer{visibility:hidden;}</styl
 
 # ---------------- session defaults ----------------
 if "page" not in st.session_state:
-    st.session_state.page = "user"  # default user page
+    st.session_state.page = "user"
 if "admin_logged" not in st.session_state:
     st.session_state.admin_logged = False
 if "buyer_name" not in st.session_state:
@@ -93,7 +94,6 @@ def user_page():
         checkout.append({"nama": item, "harga": menu_data[kategori][item], "jumlah": qty, "buyer": buyer})
         save_json(CHECKOUT_FILE, checkout)
         st.success("✅ Ditambahkan ke keranjang")
-        st.rerun()
 
     st.subheader("🧾 Keranjang Saat Ini")
     if checkout:
@@ -189,8 +189,8 @@ def admin_page():
         buyer_checkout = [c for c in checkout if c["buyer"]==selected_buyer]
         df = pd.DataFrame(buyer_checkout)
         df["total"] = df["harga"] * df["jumlah"]
-        df["total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
-        st.table(df)
+        df["total_display"] = df.apply(lambda x: f"{x['jumlah']} x Rp {x['harga']:,}    Rp {x['total']:,}".replace(",", "."), axis=1)
+        st.table(df[["nama","total_display"]].rename(columns={"nama":"Nama","total_display":"Jumlah x Harga"}))
 
         subtotal = sum(i["harga"]*i["jumlah"] for i in buyer_checkout)
         ppn_amt = int(subtotal * config.get("ppn",11)/100)
@@ -221,25 +221,16 @@ def admin_page():
             lines.append(f"Kasir                 : {config.get('cashier')}")
             lines.append(f"Tanggal            : {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
-
-            for i in buyer_checkout:
-                nama = i["nama"]
-                jumlah = i["jumlah"]
-                harga = i["harga"]
-                total = jumlah*harga
-                lines.append(lr32(f"{nama} {jumlah} x Rp {harga:,}".replace(",", "."), f"Rp {total:,}".replace(",", ".")))
-
             total_items = sum(i["jumlah"] for i in buyer_checkout)
-            lines.append("-"*32)
             lines.append(lr32("Total Item", str(total_items)))
             lines.append(lr32("Subtotal", f"Rp {subtotal:,}".replace(",", ".")))
             lines.append(lr32(f"PPN ({config['ppn']}%)", f"Rp {ppn_amt:,}".replace(",", ".")))
-            if config["diskon"]>0:
+            if config.get("diskon",0)>0:
                 lines.append(lr32(f"Diskon ({config['diskon']}%)", f"-Rp {diskon_amt:,}".replace(",", ".")))
             lines.append(lr32("Total", f"Rp {total_final:,}".replace(",", ".")))
             lines.append(lr32("Tunai", f"Rp {tunai:,}".replace(",", ".")))
             lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
-            lines.append(lr32("Pembeli", selected_buyer))
+            lines.append(f"Pembeli                : {selected_buyer}")
             lines.append("-"*32)
             lines.append(center32(config.get("footer")))
             lines.append(center32("Saya Muhamad Rosif Al Khikam Development Aplikasi ini"))
@@ -247,17 +238,15 @@ def admin_page():
             struk_text = "\n".join(lines)
             st.text(struk_text)
 
-            # generate QR statis
-            qr = qrcode.QRCode(box_size=2, border=1)
-            qr.add_data("Saya Muhamad Rosif Al Khikam Development Aplikasi ini")
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            buf.seek(0)
-            st.image(buf, width=230)
+            # barcode statis kecil di bawah struk
+            CODE_STATIC = "HIROBOT-STATIC"
+            code128 = barcode.get('code128', CODE_STATIC, writer=ImageWriter())
+            buf_bar = BytesIO()
+            code128.write(buf_bar, options={"module_width":0.15, "module_height":10,"font_size":8})
+            buf_bar.seek(0)
+            st.image(buf_bar, width=150)
 
-            # save sale
+            # simpan transaksi
             sales.append({
                 "tanggal": now.strftime("%Y-%m-%d"),
                 "total": total_final,
@@ -268,11 +257,14 @@ def admin_page():
             })
             save_json(SALES_FILE, sales)
 
-            # remove checkout for this buyer
+            # hapus checkout buyer
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
             st.success("✅ Struk dicetak dan transaksi disimpan")
-            st.rerun()  # reload user page otomatis
+
+            # reload user page otomatis
+            st.session_state.page = "user"
+            st.rerun()
 
     elif menu=="Laporan":
         st.header("📊 Laporan Harian")
@@ -289,14 +281,6 @@ def admin_page():
             st.table(df[cols])
             total_all = sum(s["total"] for s in sales)
             st.write(f"### 💰 Total: Rp {total_all:,}".replace(",", "."))
-
-            st.subheader("🗑️ Hapus Transaksi")
-            pilih_kode = st.selectbox("Pilih kode transaksi yang mau dihapus", [s.get("kode", f"no-{i}") for i,s in enumerate(sales)])
-            if st.button("Hapus Transaksi"):
-                sales[:] = [s for s in sales if s.get("kode")!=pilih_kode]
-                save_json(SALES_FILE, sales)
-                st.success(f"✅ Transaksi {pilih_kode} dihapus")
-                st.rerun()
 
     elif menu=="Pengaturan Toko":
         st.header("🛠️ Pengaturan Toko")
