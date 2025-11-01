@@ -1,4 +1,4 @@
-# app.py - FINAL Full Version with Statis Barcode
+# app.py - FINAL Full Version with esthetic struk
 import streamlit as st
 import json, os
 import pandas as pd
@@ -39,7 +39,7 @@ config = load_json(CONFIG_FILE, {
     "footer": "Selalu segar bangsat"
 })
 
-# normalize old sales entries
+# normalize old sales
 for s in sales:
     s.setdefault("kode", "-")
     s.setdefault("cashier", config.get("cashier", "ADMIN RAGIL"))
@@ -58,7 +58,7 @@ if "admin_logged" not in st.session_state:
 if "buyer_name" not in st.session_state:
     st.session_state.buyer_name = ""
 
-# ---------------- helpers: thermal struk formatting ----------------
+# ---------------- helpers: struk formatting ----------------
 def center32(text):
     return str(text).center(32)
 
@@ -77,11 +77,9 @@ def user_page():
     st.subheader("👤 Nama Pembeli (wajib diisi)")
     st.session_state.buyer_name = st.text_input("Nama Pembeli", value=st.session_state.buyer_name)
 
-    if not st.session_state.buyer_name:
+    disable_order = not st.session_state.buyer_name
+    if disable_order:
         st.warning("Nama pembeli wajib diisi sebelum memesan")
-        disable_order = True
-    else:
-        disable_order = False
 
     st.subheader("📜 Menu")
     kategori = st.selectbox("Kategori", list(menu_data.keys()))
@@ -103,7 +101,7 @@ def user_page():
     else:
         st.info("Keranjang kosong")
 
-    # Sidebar: Admin Login
+    # Sidebar admin login
     if not st.session_state.admin_logged:
         if st.sidebar.button("Admin Login"):
             st.session_state.page = "admin_login"
@@ -219,13 +217,12 @@ def admin_page():
             lines.append(f"Tgl: {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
 
-            for item in buyer_checkout:
-                name = item["nama"]
-                qty = item["jumlah"]
-                harga = item["harga"]
-                total = qty*harga
-                lines.append(f"{name}")
-                lines.append(f"{qty} x Rp {harga:,}".replace(",", ".") + f"    Rp {total:,}".replace(",", "."))
+            # item list
+            for i in buyer_checkout:
+                lines.append(f"{i['nama']}")
+                qty_price = f"{i['jumlah']} x Rp {i['harga']:,}".replace(",", ".")
+                total_item = f"Rp {i['jumlah']*i['harga']:,}".replace(",", ".")
+                lines.append(lr32(qty_price, total_item))
 
             lines.append("-"*32)
             total_items = sum(i["jumlah"] for i in buyer_checkout)
@@ -236,22 +233,19 @@ def admin_page():
             lines.append(lr32("Total", f"Rp {total_final:,}".replace(",", ".")))
             lines.append(lr32("Tunai", f"Rp {tunai:,}".replace(",", ".")))
             lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
-            lines.append(lr32("Pembeli", selected_buyer))
+            lines.append(f"Pembeli: {selected_buyer}")
             lines.append("-"*32)
             lines.append(center32(config.get("footer")))
+            lines.append(center32("Saya Muhamad Rosif Al Khikam Development Aplikasi ini"))
 
-            # generate barcode statis
-            buf_bar = BytesIO()
+            st.text("\n".join(lines))
+
+            # static QR
             qr = qrcode.QRCode(box_size=2, border=1)
-            qr.add_data("HIKAM-DEV")
+            qr.add_data("Saya Muhamad Rosif Al Khikam Development Aplikasi ini")
             qr.make(fit=True)
             img = qr.make_image(fill_color="black", back_color="white")
-            img.save(buf_bar)
-            buf_bar.seek(0)
-
-            struk_text = "\n".join(lines)
-            st.text(struk_text)
-            st.image(buf_bar, width=180)
+            st.image(img)
 
             # save sale
             sales.append({
@@ -264,9 +258,14 @@ def admin_page():
             })
             save_json(SALES_FILE, sales)
 
+            # remove checkout for this buyer
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
             st.success("✅ Struk dicetak dan transaksi disimpan")
+
+            # reload ke user page
+            st.session_state.page = "user"
+            st.rerun()
 
     elif menu=="Laporan":
         st.header("📊 Laporan Harian")
