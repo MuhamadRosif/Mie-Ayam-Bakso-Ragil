@@ -1,4 +1,4 @@
-# app.py - FINAL Full Version with Static QR
+# app.py - FINAL Full Version
 import streamlit as st
 import json, os
 import pandas as pd
@@ -52,7 +52,7 @@ st.markdown("""<style>body{background:#faf6f0;} footer{visibility:hidden;}</styl
 
 # ---------------- session defaults ----------------
 if "page" not in st.session_state:
-    st.session_state.page = "user"
+    st.session_state.page = "user"  # default user page
 if "admin_logged" not in st.session_state:
     st.session_state.admin_logged = False
 if "buyer_name" not in st.session_state:
@@ -72,15 +72,17 @@ def lr32(left, right):
     return left_s + (" " * space) + right_s
 
 # ---------------- pages ----------------
+
 def user_page():
     st.title("🍜 Menu & Pesanan")
     st.subheader("👤 Nama Pembeli (wajib diisi)")
     st.session_state.buyer_name = st.text_input("Nama Pembeli", value=st.session_state.buyer_name)
 
-    disable_order = False
     if not st.session_state.buyer_name:
         st.warning("Nama pembeli wajib diisi sebelum memesan")
         disable_order = True
+    else:
+        disable_order = False
 
     st.subheader("📜 Menu")
     kategori = st.selectbox("Kategori", list(menu_data.keys()))
@@ -185,11 +187,10 @@ def admin_page():
         buyers = list({c["buyer"] for c in checkout})
         selected_buyer = st.selectbox("Pilih Pembeli", buyers)
         buyer_checkout = [c for c in checkout if c["buyer"]==selected_buyer]
-
         df = pd.DataFrame(buyer_checkout)
         df["total"] = df["harga"] * df["jumlah"]
-        df["total"] = df.apply(lambda row: f"{row['jumlah']} x Rp {row['harga']:,}    Rp {row['total']:,}".replace(",", "."), axis=1)
-        st.text("\n".join(df["total"]))
+        df["total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
+        st.table(df)
 
         subtotal = sum(i["harga"]*i["jumlah"] for i in buyer_checkout)
         ppn_amt = int(subtotal * config.get("ppn",11)/100)
@@ -215,24 +216,33 @@ def admin_page():
             lines.append(center32(config.get("shop_name")))
             lines.append(center32(config.get("address")))
             lines.append("-"*32)
-            lines.append(f"No. Transaksi: {kode}")
-            lines.append(f"Kasir: {config.get('cashier')}")
-            lines.append(f"Tgl: {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
+            lines.append(f"No. Transaksi  : {kode}".ljust(22))
+            lines.append(f"Kasir                 : {config.get('cashier')}".ljust(22))
+            lines.append(f"Tanggal            : {now.strftime('%d-%m-%Y %H:%M:%S')} WIB".ljust(22))
             lines.append("-"*32)
 
-            total_items = sum(i["jumlah"] for i in buyer_checkout)
-            lines.append(lr32("Total Item", total_items))
-            lines.append(lr32("Subtotal", f"Rp {subtotal:,}".replace(",", ".")))
-            lines.append(lr32(f"PPN ({config.get('ppn')}%)", f"Rp {ppn_amt:,}".replace(",", ".")))
-            lines.append(lr32(f"Diskon ({config.get('diskon')}%)", f"-Rp {diskon_amt:,}".replace(",", ".")))
-            lines.append(lr32("Total", f"Rp {total_final:,}".replace(",", ".")))
-            lines.append(lr32("Tunai", f"Rp {tunai:,}".replace(",", ".")))
-            lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
-            lines.append(f"Pembeli: {selected_buyer}")
+            for i in buyer_checkout:
+                name = i["nama"]
+                qty = i["jumlah"]
+                price = i["harga"]
+                total = qty * price
+                lines.append(f"{name}")
+                lines.append(f"{qty} x Rp {price:,}".rjust(16) + f"    Rp {total:,}".rjust(12))
+
+            lines.append("-"*32)
+            lines.append(f"Total Item            : {sum(i['jumlah'] for i in buyer_checkout)}".rjust(32))
+            lines.append(f"Subtotal               : Rp {subtotal:,}".rjust(32))
+            lines.append(f"PPN ({config.get('ppn')}%)           : Rp {ppn_amt:,}".rjust(32))
+            lines.append(f"Diskon ({config.get('diskon')}%)         : -Rp {diskon_amt:,}".rjust(32))
+            lines.append(f"Total                     : Rp {total_final:,}".rjust(32))
+            lines.append(f"Tunai                    : Rp {tunai:,}".rjust(32))
+            lines.append(f"Kembalian           : Rp {kembalian:,}".rjust(32))
+            lines.append(f"Pembeli                : {selected_buyer}".rjust(32))
             lines.append("-"*32)
             lines.append(center32(config.get("footer")))
+            lines.append(center32("Saya Muhamad Rosif Al Khikam Development Aplikasi ini"))
 
-            # static QR
+            # QR statis
             qr = qrcode.QRCode(box_size=2, border=1)
             qr.add_data("Saya Muhamad Rosif Al Khikam Development Aplikasi ini")
             qr.make(fit=True)
@@ -243,9 +253,9 @@ def admin_page():
 
             struk_text = "\n".join(lines)
             st.text(struk_text)
-            st.image(buf)
+            st.image(buf, width=230)
 
-            # save sale
+            # save transaksi
             sales.append({
                 "tanggal": now.strftime("%Y-%m-%d"),
                 "total": total_final,
@@ -256,10 +266,11 @@ def admin_page():
             })
             save_json(SALES_FILE, sales)
 
-            # remove checkout for this buyer
+            # hapus checkout buyer
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
             st.success("✅ Struk dicetak dan transaksi disimpan")
+            st.rerun()  # reload halaman user otomatis
 
     elif menu=="Laporan":
         st.header("📊 Laporan Harian")
