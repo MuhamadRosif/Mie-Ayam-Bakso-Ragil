@@ -58,10 +58,14 @@ if "buyer_name" not in st.session_state:
     st.session_state.buyer_name = ""
 if "last_page" not in st.session_state:
     st.session_state.last_page = None
+
+# Untuk preview struk: kita simpan string (text) + bytes (qr_image_bytes)
 if "show_struk" not in st.session_state:
     st.session_state.show_struk = False
 if "struk_data" not in st.session_state:
     st.session_state.struk_data = ""
+if "qr_image_bytes" not in st.session_state:
+    st.session_state.qr_image_bytes = None
 
 # ---------------- helpers struk ----------------
 def center32(text):
@@ -78,6 +82,7 @@ def lr32(left, right):
 
 # ---------------- Pages ----------------
 def user_page():
+    # supaya user melihat nama kosong setelah admin reset
     if st.session_state.last_page != "user":
         st.session_state.buyer_name = ""
     st.session_state.last_page = "user"
@@ -192,17 +197,37 @@ def admin_page():
     elif menu == "Pembayaran":
         st.header("💳 Pembayaran")
 
-        # tampilkan struk dulu jika sudah dicetak
+        # Jika struk sudah dibuat untuk preview
         if st.session_state.show_struk:
             st.subheader("🧾 Pratinjau Struk")
-            st.text(st.session_state.struk_data)
-            st.image(st.session_state.qr_image)
-            if st.button("✅ Selesai"):
-                st.session_state.buyer_name = ""
-                st.session_state.show_struk = False
-                st.session_state.page = "user"
-                st.success("Transaksi selesai! Kembali ke menu User.")
-                st.rerun()
+            st.text(st.session_state.struk_data or "")
+            # display QR dari bytes -> wrap ke BytesIO saat menampilkan
+            if st.session_state.qr_image_bytes:
+                st.image(BytesIO(st.session_state.qr_image_bytes))
+            st.write("")  # spacer
+
+            col_dl, col_finish = st.columns([1,1])
+            with col_dl:
+                # tombol download (admin bisa download lalu print dari file)
+                if st.session_state.qr_image_bytes:
+                    filename = f"struk_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+                    st.download_button(
+                        label="🖨️ Download Struk (untuk Print)",
+                        data=BytesIO(st.session_state.qr_image_bytes),
+                        file_name=filename,
+                        mime="image/png"
+                    )
+            with col_finish:
+                if st.button("✅ Selesai"):
+                    # Hapus buyer data (agar di User kolom nama kosong + pesanan terhapus)
+                    st.session_state.buyer_name = ""
+                    st.session_state.show_struk = False
+                    st.session_state.struk_data = ""
+                    st.session_state.qr_image_bytes = None
+                    # IMPORTANT: ensure checkout entries for that buyer already removed when we saved sale
+                    st.success("Transaksi selesai! Nama pembeli & pesanan direset.")
+                    # tetap di admin atau bisa set ke user; sesuai permintaan kita tetap di admin
+                    st.rerun()
             return
 
         if not checkout:
@@ -227,7 +252,8 @@ def admin_page():
         kembalian = tunai - total_final
         st.write(f"Kembalian: Rp {kembalian:,}".replace(",", "."))
 
-        if st.button("🖨️ Cetak Struk"):
+        # Tombol: buat preview struk (tapi jangan langsung rerun & clear before admin prints)
+        if st.button("🖨️ Tampilkan Struk"):
             tz = pytz.timezone("Asia/Jakarta")
             now = datetime.now(tz)
             config["counter"] +=1
@@ -262,20 +288,20 @@ def admin_page():
             lines.append(center32(config.get("footer")))
             lines.append("-"*32)
 
-            # simpan teks struk di session
+            # simpan teks struk di session (string aman)
             st.session_state.struk_data = "\n".join(lines)
 
-            # buat QR ke memory
+            # buat gambar QR ke memory (simpan bytes, bukan objek BytesIO)
             qr = qrcode.QRCode(box_size=2, border=1)
-            qr.add_data("Hikam - Dev")
+            qr.add_data(kode)  # gunakan kode transaksi atau info lain
             qr.make(fit=True)
             img_qr = qr.make_image(fill_color="black", back_color="white")
             buf = BytesIO()
             img_qr.save(buf, format="PNG")
             buf.seek(0)
-            st.session_state.qr_image = buf
+            st.session_state.qr_image_bytes = buf.getvalue()  # simpan bytes (aman)
 
-            # simpan penjualan
+            # simpan penjualan (catat dulu, tapi checkout akan dihapus nanti saat admin konfirmasi selesai)
             sales.append({
                 "tanggal": now.strftime("%Y-%m-%d"),
                 "total": total_final,
@@ -286,9 +312,11 @@ def admin_page():
             })
             save_json(SALES_FILE, sales)
 
+            # hapus pesanan buyer dari checkout sekarang (soalnya sudah tercatat di sales)
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
 
+            # tampilkan preview struk di halaman admin
             st.session_state.show_struk = True
             st.rerun()
 
