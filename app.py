@@ -271,10 +271,9 @@ def admin_page():
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
 
-            # ✅ Reset nama pembeli dan kembali ke halaman user
+            # ✅ Reset nama pembeli biar kosong pas user balik, tapi tetap di admin
             st.session_state.buyer_name = ""
-            st.success("✅ Struk dicetak, transaksi tersimpan, dan kembali ke menu user!")
-            st.session_state.page = "user"
+            st.success("✅ Struk dicetak, transaksi tersimpan & nama pembeli direset")
             st.rerun()
 
     elif menu == "Laporan":
