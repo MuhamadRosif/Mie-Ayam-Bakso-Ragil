@@ -1,11 +1,10 @@
-# app.py - FINAL Full Version
+# app.py - FINAL Full Version (Struk Rapi Alfamart)
 import streamlit as st
 import json, os
 import pandas as pd
 from datetime import datetime
 import pytz
 from io import BytesIO
-import qrcode
 import barcode
 from barcode.writer import ImageWriter
 
@@ -223,6 +222,16 @@ def admin_page():
             lines.append(f"Tgl: {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
 
+            # items
+            for item in buyer_checkout:
+                name = item["nama"]
+                qty = item["jumlah"]
+                harga = item["harga"]
+                total = qty*harga
+                lines.append(f"{name}")
+                lines.append(f"{qty} x Rp {harga:,}".replace(",", ".") + f"    Rp {total:,}".replace(",", "."))
+
+            lines.append("-"*32)
             total_items = sum(i["jumlah"] for i in buyer_checkout)
             lines.append(lr32("Total Item", total_items))
             lines.append(lr32("Subtotal", f"Rp {subtotal:,}".replace(",", ".")))
@@ -231,7 +240,7 @@ def admin_page():
             lines.append(lr32("Total", f"Rp {total_final:,}".replace(",", ".")))
             lines.append(lr32("Tunai", f"Rp {tunai:,}".replace(",", ".")))
             lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
-            lines.append(f"Pembeli: {selected_buyer}")
+            lines.append(lr32("Pembeli", selected_buyer))
             lines.append("")
             lines.append(center32(config.get("footer")))
 
