@@ -270,7 +270,7 @@ def admin_page():
             st.success("✅ Struk dicetak, transaksi tersimpan")
             # reload user page jika bukan admin
             if not st.session_state.admin_logged:
-                st.experimental_rerun()
+                st.rerun()
 
 # ---------------- Laporan Harian ----------------
     elif menu == "Laporan":
@@ -291,7 +291,7 @@ def admin_page():
                 sales[:] = [s for s in sales if s.get("kode")!=pilih_kode]
                 save_json(SALES_FILE, sales)
                 st.success(f"✅ Transaksi {pilih_kode} dihapus")
-                st.experimental_rerun()
+                st.rerun()
 
 # ---------------- Pengaturan Toko ----------------
     elif menu == "Pengaturan Toko":
@@ -321,8 +321,7 @@ def admin_page():
                 config["counter"]=0
                 save_json(CONFIG_FILE, config)
                 st.success("✅ Counter direset")
-                st.experimental_rerun()
-
+                st.rerun() 
 # ---------------- routing ----------------
 if st.session_state.page=="user":
     user_page()
