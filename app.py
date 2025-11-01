@@ -1,4 +1,4 @@
-# app.py - FINAL (Struk thermal + Code128 + WIB timezone + Sidebar Pengaturan Toko)
+# app.py - FINAL (Struk thermal + Code128 + WIB timezone + Pengaturan Toko di Sidebar)
 import streamlit as st
 import json, os
 import pandas as pd
@@ -26,7 +26,7 @@ def save_json(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-# ---------------- initial data (create defaults) ----------------
+# ---------------- initial data ----------------
 menu_data = load_json(MENU_FILE, {"makanan": {"Mie Ayam": 15000, "Bakso": 18000}, "minuman": {"Es Teh": 5000}})
 checkout = load_json(CHECKOUT_FILE, [])
 sales = load_json(SALES_FILE, [])
@@ -37,13 +37,13 @@ config = load_json(CONFIG_FILE, {
     "address": "Jl. Rasa Bahagia No.1",
     "ppn": 11,
     "diskon": 0,
-    "footer": "Selalu Segar Bangsat"
+    "footer": "Selalu segar bangsat"
 })
 
-# normalize old sales entries so code won't crash
+# normalize old sales entries
 for s in sales:
     s.setdefault("kode", "-")
-    s.setdefault("cashier", config.get("cashier", "ADMIN RAGIL"))
+    s.setdefault("cashier", config.get("cashier"))
     s.setdefault("buyer", "Umum")
     s.setdefault("items", [])
 
@@ -57,7 +57,7 @@ if "role" not in st.session_state:
 if "buyer_name" not in st.session_state:
     st.session_state.buyer_name = ""
 
-# ---------------- Login page ----------------
+# ---------------- Login Page ----------------
 def login_page():
     st.title("🍜 Mie Ayam Bakso Ragil")
     role = st.selectbox("Masuk sebagai", ["Pelanggan", "Admin"])
@@ -71,7 +71,7 @@ def login_page():
         else:
             st.error("Login salah!")
 
-# ---------------- User page ----------------
+# ---------------- User Page ----------------
 def user_page():
     st.title("🍜 Menu & Pesanan")
     st.subheader("👤 Nama Pembeli (opsional)")
@@ -97,26 +97,39 @@ def user_page():
     else:
         st.info("Keranjang kosong")
 
-# ---------------- Admin page ----------------
+# ---------------- Admin Page ----------------
 def admin_page():
-    # ---- Sidebar Pengaturan Toko ----
-    st.sidebar.title("⚙️ Admin Panel")
-    st.sidebar.subheader("Pengaturan Toko")
-    config["shop_name"] = st.sidebar.text_input("Nama Toko", value=config.get("shop_name"))
-    config["address"] = st.sidebar.text_input("Alamat Toko", value=config.get("address"))
-    config["cashier"] = st.sidebar.text_input("Nama Kasir Default", value=config.get("cashier"))
-    config["ppn"] = st.sidebar.number_input("PPN (%)", 0, 20, config.get("ppn", 11))
-    config["diskon"] = st.sidebar.number_input("Diskon (%)", 0, 100, config.get("diskon", 0))
-    config["footer"] = st.sidebar.text_input("Footer Struk", value=config.get("footer"))
-    if st.sidebar.button("Simpan Pengaturan Toko"):
-        save_json(CONFIG_FILE, config)
-        st.success("✅ Pengaturan Toko Disimpan")
+    st.title("⚙️ Admin Panel")
+    st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"role": None}))
 
-    # ---- Menu Admin ----
-    menu = st.sidebar.radio("Menu Admin", ["Data Menu", "Data Pesanan", "Pembayaran", "Laporan"])
+    # Sidebar menu konsisten
+    menu = st.sidebar.radio("Menu Admin", ["Data Menu", "Data Pesanan", "Pembayaran", "Laporan", "Pengaturan Toko"])
+
+    # ---- Pengaturan Toko ----
+    if menu == "Pengaturan Toko":
+        st.subheader("🔧 Pengaturan Toko")
+        shop_name = st.text_input("Nama Toko", value=config.get("shop_name"))
+        address = st.text_input("Alamat Toko", value=config.get("address"))
+        cashier_name = st.text_input("Nama Kasir Default", value=config.get("cashier"))
+        ppn = st.number_input("PPN (%)", 0, 20, value=config.get("ppn"))
+        diskon = st.number_input("Diskon (%)", 0, 100, value=config.get("diskon"))
+        footer = st.text_input("Footer Struk", value=config.get("footer"))
+
+        if st.button("Simpan Pengaturan"):
+            config.update({
+                "shop_name": shop_name.strip(),
+                "address": address.strip(),
+                "cashier": cashier_name.strip(),
+                "ppn": ppn,
+                "diskon": diskon,
+                "footer": footer
+            })
+            save_json(CONFIG_FILE, config)
+            st.success("✅ Pengaturan disimpan")
+            st.rerun()
 
     # ---- Data Menu ----
-    if menu == "Data Menu":
+    elif menu == "Data Menu":
         st.subheader("📋 Data Menu")
         rows = []
         for k, items in menu_data.items():
@@ -132,7 +145,7 @@ def admin_page():
             menu_data[kat][nama] = harga
             save_json(MENU_FILE, menu_data)
             st.success("✅ Menu disimpan")
-            st.experimental_rerun()
+            st.rerun()
 
         st.subheader("🗑️ Hapus Menu")
         del_kat = st.selectbox("Pilih Kategori", list(menu_data.keys()))
@@ -141,7 +154,7 @@ def admin_page():
             del menu_data[del_kat][del_item]
             save_json(MENU_FILE, menu_data)
             st.success("✅ Menu dihapus")
-            st.experimental_rerun()
+            st.rerun()
 
     # ---- Data Pesanan ----
     elif menu == "Data Pesanan":
@@ -157,7 +170,7 @@ def admin_page():
                 checkout.clear()
                 save_json(CHECKOUT_FILE, checkout)
                 st.success("✅ Semua pesanan dibersihkan")
-                st.experimental_rerun()
+                st.rerun()
 
     # ---- Pembayaran ----
     elif menu == "Pembayaran":
@@ -172,15 +185,14 @@ def admin_page():
 
             buyer_name = checkout[0].get("buyer", "Umum")
             st.markdown(f"**Pembeli**: {buyer_name}")
-
             total = sum(i["harga"] * i["jumlah"] for i in checkout)
 
+            # WIB timezone
             tz = pytz.timezone("Asia/Jakarta")
             now = datetime.now(tz)
 
-            def center32(text):
-                return str(text).center(32)
-
+            # helpers
+            def center32(text): return str(text).center(32)
             def lr32(left, right):
                 left_s = str(left)
                 right_s = str(right)
@@ -190,29 +202,28 @@ def admin_page():
                     space = 1
                 return left_s + " " * space + right_s
 
-            shop = config.get("shop_name", "MIE AYAM MAS RAGIL")
-            addr = config.get("address", "")
-            cashier = config.get("cashier", "ADMIN RAGIL")
-            ppn = config.get("ppn", 11)
-            diskon = config.get("diskon", 0)
-            footer = config.get("footer", "Selalu Segar Bangsat")
+            shop = config.get("shop_name")
+            addr = config.get("address")
+            cashier = config.get("cashier")
+            ppn_val = config.get("ppn")
+            diskon_val = config.get("diskon")
+            footer_text = config.get("footer")
 
             def build_struk(increment_counter=True):
                 if increment_counter:
-                    config["counter"] = config.get("counter", 0) + 1
+                    config["counter"] += 1
                     save_json(CONFIG_FILE, config)
-                counter = config.get("counter", 0)
+                counter = config.get("counter")
                 kode = f"RG-{now.strftime('%Y%m%d')}-{counter:05d}"
-
                 lines = []
                 lines.append(center32(shop))
                 lines.append(center32(addr))
                 lines.append(center32(""))
-                lines.append("-" * 32)
+                lines.append("-"*32)
                 lines.append(f"No. Transaksi: {kode}")
                 lines.append(f"Kasir: {cashier}")
                 lines.append(f"Tgl: {now.strftime('%d-%m-%Y')}  {now.strftime('%H:%M:%S')} WIB")
-                lines.append("-" * 32)
+                lines.append("-"*32)
 
                 total_items = 0
                 subtotal_all = 0
@@ -226,44 +237,38 @@ def admin_page():
                     total_items += qty
                     subtotal_all += subtotal
 
-                lines.append("-" * 32)
+                lines.append("-"*32)
                 lines.append(lr32("Total Item", str(total_items)))
-                total_belanja = subtotal_all
-                ppn_value = int(total_belanja * ppn / 100)
-                diskon_value = int(total_belanja * diskon / 100)
-                grand_total = total_belanja + ppn_value - diskon_value
-
-                lines.append(lr32("Total Belanja", f"Rp {total_belanja:,}".replace(",", ".")))
-                lines.append(lr32(f"PPN ({ppn}%)", f"Rp {ppn_value:,}".replace(",", ".")))
-                lines.append(lr32(f"Diskon ({diskon}%)", f"Rp {diskon_value:,}".replace(",", ".")))
-                lines.append(lr32("Grand Total", f"Rp {grand_total:,}".replace(",", ".")))
-                lines.append(lr32("Tunai", f"Rp {grand_total:,}".replace(",", ".")))
+                total_diskon = int(subtotal_all * diskon_val / 100)
+                total_ppn = int((subtotal_all - total_diskon) * ppn_val / 100)
+                total_bayar = subtotal_all - total_diskon + total_ppn
+                lines.append(lr32("Subtotal", f"Rp {subtotal_all:,}".replace(",", ".")))
+                lines.append(lr32(f"Diskon ({diskon_val}%)", f"- Rp {total_diskon:,}".replace(",", ".")))
+                lines.append(lr32(f"PPN ({ppn_val}%)", f"Rp {total_ppn:,}".replace(",", ".")))
+                lines.append(lr32("Total Bayar", f"Rp {total_bayar:,}".replace(",", ".")))
+                lines.append(lr32("Tunai", f"Rp {total_bayar:,}".replace(",", ".")))
                 lines.append(lr32("Kembalian", "Rp 0"))
-                lines.append("-" * 32)
-                lines.append(f"Pembeli: {buyer_name}")
-                lines.append("")
-                lines.append(center32(footer))
+                lines.append("-"*32)
+                lines.append(center32(footer_text))
                 struk_text = "\n".join(lines)
                 return struk_text, kode
 
             col1, col2 = st.columns(2)
-
             with col1:
-                if st.button("🖨️ Cetak Struk (Tampil)"):
+                if st.button("🖨️ Cetak Struk"):
                     struk_text, kode = build_struk()
-                    # generate Code128 barcode
+                    st.text(struk_text)
+                    # Barcode Code128
                     CODE = kode
                     code128 = barcode.get('code128', CODE, writer=ImageWriter())
                     buf_bar = BytesIO()
-                    code128.write(buf_bar, options={"module_width":0.2,"module_height":15,"font_size":10})
+                    code128.write(buf_bar, options={"module_width": 0.2, "module_height": 15, "font_size": 10})
                     buf_bar.seek(0)
-                    barcode_png = buf_bar.getvalue()
-                    st.text(struk_text)
-                    st.image(barcode_png, width=230)
-                    # save sale
+                    st.image(buf_bar.getvalue(), width=230)
+                    # simpan transaksi
                     sales.append({
                         "tanggal": now.strftime("%Y-%m-%d"),
-                        "total": grand_total,
+                        "total": total_bayar,
                         "kode": kode,
                         "cashier": cashier,
                         "buyer": buyer_name,
@@ -272,23 +277,22 @@ def admin_page():
                     save_json(SALES_FILE, sales)
                     checkout.clear()
                     save_json(CHECKOUT_FILE, checkout)
-                    st.success("✅ Transaksi disimpan. Struk tampil — tekan Ctrl+P untuk cetak.")
+                    st.success("✅ Transaksi disimpan. Struk tampil.")
 
             with col2:
-                if st.button("⬇️ Download Struk (.txt) & Barcode"):
+                if st.button("⬇️ Download Struk & Barcode"):
                     struk_text, kode = build_struk()
-                    # generate barcode PNG
                     CODE = kode
                     code128 = barcode.get('code128', CODE, writer=ImageWriter())
                     buf_bar = BytesIO()
-                    code128.write(buf_bar, options={"module_width":0.2,"module_height":15,"font_size":10})
+                    code128.write(buf_bar, options={"module_width": 0.2, "module_height": 15, "font_size": 10})
                     buf_bar.seek(0)
-                    barcode_png = buf_bar.getvalue()
-                    st.download_button("Download: Struk TXT", data=struk_text.encode("utf-8"), file_name=f"struk_{kode}.txt", mime="text/plain")
-                    st.download_button("Download: Barcode PNG", data=barcode_png, file_name=f"barcode_{kode}.png", mime="image/png")
+                    st.download_button("Download Struk TXT", struk_text, file_name=f"struk_{kode}.txt")
+                    st.download_button("Download Barcode PNG", buf_bar.getvalue(), file_name=f"barcode_{kode}.png", mime="image/png")
+                    # simpan transaksi
                     sales.append({
                         "tanggal": now.strftime("%Y-%m-%d"),
-                        "total": grand_total,
+                        "total": total_bayar,
                         "kode": kode,
                         "cashier": cashier,
                         "buyer": buyer_name,
@@ -297,7 +301,7 @@ def admin_page():
                     save_json(SALES_FILE, sales)
                     checkout.clear()
                     save_json(CHECKOUT_FILE, checkout)
-                    st.success("✅ File disediakan untuk di-download. Transaksi disimpan & checkout dibersihkan.")
+                    st.success("✅ File siap di-download. Transaksi tersimpan.")
 
     # ---- Laporan ----
     elif menu == "Laporan":
@@ -309,27 +313,25 @@ def admin_page():
             df["Tanggal"] = pd.to_datetime(df["tanggal"]).dt.strftime("%d/%m/%Y")
             df["Pemasukan"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
             cols = ["Tanggal", "Pemasukan"]
-            for c in ["kode","cashier","buyer"]:
+            for c in ["kode", "cashier", "buyer"]:
                 if c in df.columns:
                     cols.append(c)
             st.table(df[cols])
             total_all = sum(s["total"] for s in sales)
             st.write(f"### 💰 Total: Rp {total_all:,}".replace(",", "."))
 
-        st.subheader("🗑️ Hapus Transaksi")
-        pilih_kode = st.selectbox("Pilih kode transaksi yang mau dihapus", [s.get("kode", f"no-{i}") for i,s in enumerate(sales)])
-        if st.button("Hapus Transaksi"):
-            sales[:] = [s for s in sales if s.get("kode") != pilih_kode]
-            save_json(SALES_FILE, sales)
-            st.success(f"✅ Transaksi {pilih_kode} dihapus")
-            st.experimental_rerun()
+            st.subheader("🗑️ Hapus Transaksi")
+            pilih_kode = st.selectbox("Pilih kode transaksi yang mau dihapus", [s.get("kode", f"no-{i}") for i, s in enumerate(sales)])
+            if st.button("Hapus Transaksi"):
+                sales[:] = [s for s in sales if s.get("kode") != pilih_kode]
+                save_json(SALES_FILE, sales)
+                st.success(f"✅ Transaksi {pilih_kode} dihapus")
+                st.rerun()
 
 # ---------------- routing ----------------
 if st.session_state.role == "admin":
-    st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"role": None}))
     admin_page()
 elif st.session_state.role == "user":
-    st.sidebar.button("Logout", on_click=lambda: st.session_state.update({"role": None}))
     user_page()
 else:
     login_page()
