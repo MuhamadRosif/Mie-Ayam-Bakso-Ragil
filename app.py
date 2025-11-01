@@ -5,6 +5,7 @@ from datetime import datetime
 import pytz
 from io import BytesIO
 import qrcode
+from PIL import Image
 
 # ---------------- file paths ----------------
 MENU_FILE = "menu.json"
@@ -24,7 +25,7 @@ def save_json(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-# ---------------- initial data (create defaults) ----------------
+# ---------------- initial data ----------------
 menu_data = load_json(MENU_FILE, {"makanan": {"Mie Ayam": 15000, "Bakso": 18000}, "minuman": {"Es Teh": 5000}})
 checkout = load_json(CHECKOUT_FILE, [])
 sales = load_json(SALES_FILE, [])
@@ -57,7 +58,7 @@ if "admin_logged" not in st.session_state:
 if "buyer_name" not in st.session_state:
     st.session_state.buyer_name = ""
 
-# ---------------- helpers: thermal struk formatting ----------------
+# ---------------- helpers: struk formatting ----------------
 def center32(text):
     return str(text).center(32)
 
@@ -102,7 +103,6 @@ def user_page():
     else:
         st.info("Keranjang kosong")
 
-    # Sidebar: Admin Login
     if not st.session_state.admin_logged:
         if st.sidebar.button("Admin Login"):
             st.session_state.page = "admin_login"
@@ -181,7 +181,6 @@ def admin_page():
             st.info("Belum ada transaksi")
             return
 
-        # pilih buyer
         buyers = list({c["buyer"] for c in checkout})
         selected_buyer = st.selectbox("Pilih Pembeli", buyers)
         buyer_checkout = [c for c in checkout if c["buyer"]==selected_buyer]
@@ -220,9 +219,8 @@ def admin_page():
             lines.append(f"Tanggal        : {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
 
-            # DAFTAR PESANAN MASUK
             for i in buyer_checkout:
-                name = i["nama"][:16]  # max 16 char
+                name = i["nama"][:16]
                 qty = i["jumlah"]
                 harga = i["harga"]
                 total_item = qty*harga
@@ -247,13 +245,16 @@ def admin_page():
             struk_text = "\n".join(lines)
             st.text(struk_text)
 
-            # QR statis
+            # ---------------- QR STATIS ----------------
             static_text = "Hikam - Dev"
             qr = qrcode.QRCode(box_size=2, border=1)
             qr.add_data(static_text)
             qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            st.image(img)
+            img_qr = qr.make_image(fill_color="black", back_color="white")
+            buf = BytesIO()
+            img_qr.save(buf, format="PNG")
+            buf.seek(0)
+            st.image(buf)
             # ---------------------------------------------
 
             # save sale
