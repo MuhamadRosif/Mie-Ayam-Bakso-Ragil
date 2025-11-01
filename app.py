@@ -6,6 +6,7 @@ import pytz
 from io import BytesIO
 import qrcode
 from PIL import Image
+import base64
 
 # ---------------- file paths ----------------
 MENU_FILE = "menu.json"
@@ -39,11 +40,13 @@ config = load_json(CONFIG_FILE, {
     "footer": "Selalu segar bangsat"
 })
 
+# normalize existing sales items keys
 for s in sales:
     s.setdefault("kode", "-")
     s.setdefault("cashier", config.get("cashier", "ADMIN RAGIL"))
     s.setdefault("buyer", "Umum")
     s.setdefault("items", [])
+    s.setdefault("tanggal", s.get("tanggal", s.get("datetime", "")))
 
 # ---------------- UI setup ----------------
 st.set_page_config(page_title="Mie Ayam Mas Ragil", page_icon="🍜", layout="wide")
@@ -59,7 +62,7 @@ if "buyer_name" not in st.session_state:
 if "last_page" not in st.session_state:
     st.session_state.last_page = None
 
-# Untuk preview struk: kita simpan string (text) + bytes (qr_image_bytes)
+# preview struk session keys
 if "show_struk" not in st.session_state:
     st.session_state.show_struk = False
 if "struk_data" not in st.session_state:
@@ -80,9 +83,14 @@ def lr32(left, right):
         space = 1
     return left_s + (" " * space) + right_s
 
+def bytes_to_data_uri(img_bytes, mime="image/png"):
+    """Convert image bytes to data URI for inline HTML display (helpful for printing)."""
+    b64 = base64.b64encode(img_bytes).decode("utf-8")
+    return f"data:{mime};base64,{b64}"
+
 # ---------------- Pages ----------------
 def user_page():
-    # supaya user melihat nama kosong setelah admin reset
+    # agar saat user balik dari admin tampil kosong jika memang direset
     if st.session_state.last_page != "user":
         st.session_state.buyer_name = ""
     st.session_state.last_page = "user"
@@ -197,44 +205,53 @@ def admin_page():
     elif menu == "Pembayaran":
         st.header("💳 Pembayaran")
 
-        # Jika struk sudah dibuat untuk preview
+        # Jika struk sudah dibuat untuk preview: tampilkan preview yang siap di-print
         if st.session_state.show_struk:
-            st.subheader("🧾 Pratinjau Struk")
-            st.text(st.session_state.struk_data or "")
-            # display QR dari bytes -> wrap ke BytesIO saat menampilkan
+            st.subheader("🧾 Pratinjau Struk (Siap Cetak)")
+
+            # tampilkan teks struk (preformatted)
+            st.markdown(f"<pre style='font-family:monospace'>{st.session_state.struk_data or ''}</pre>", unsafe_allow_html=True)
+
+            # tampilkan QR (dari bytes)
             if st.session_state.qr_image_bytes:
                 st.image(BytesIO(st.session_state.qr_image_bytes))
+
             st.write("")  # spacer
 
-            col_dl, col_finish = st.columns([1,1])
-            with col_dl:
-                # tombol download (admin bisa download lalu print dari file)
-                if st.session_state.qr_image_bytes:
-                    filename = f"struk_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-                    st.download_button(
-                        label="🖨️ Download Struk (untuk Print)",
-                        data=BytesIO(st.session_state.qr_image_bytes),
-                        file_name=filename,
-                        mime="image/png"
+            # Tombol cetak: memanggil print dialog browser
+            col1, col2 = st.columns([1,1])
+            with col1:
+                if st.button("🖨️ Cetak Struk (Ctrl+P)"):
+                    # gunakan JS untuk memanggil print
+                    st.markdown(
+                        "<script>window.print();</script>",
+                        unsafe_allow_html=True
                     )
-            with col_finish:
-                if st.button("✅ Selesai"):
-                    # Hapus buyer data (agar di User kolom nama kosong + pesanan terhapus)
+                    # langsung reset data yang tampil di UI (catatan: browser print dialog terbuka, tetapi kita reset state agar user page kosong)
                     st.session_state.buyer_name = ""
                     st.session_state.show_struk = False
                     st.session_state.struk_data = ""
                     st.session_state.qr_image_bytes = None
-                    # IMPORTANT: ensure checkout entries for that buyer already removed when we saved sale
-                    st.success("Transaksi selesai! Nama pembeli & pesanan direset.")
-                    # tetap di admin atau bisa set ke user; sesuai permintaan kita tetap di admin
+                    st.success("✅ Perintah cetak dikirim. Data pembeli & keranjang direset.")
                     st.rerun()
-            return
 
+            with col2:
+                if st.button("🔙 Batal / Kembali"):
+                    # batalkan preview (kembali ke halaman pembayaran tanpa reset)
+                    st.session_state.show_struk = False
+                    st.session_state.struk_data = ""
+                    st.session_state.qr_image_bytes = None
+                    st.rerun()
+
+            return  # stop render sisa page saat preview aktif
+
+        # jika belum ada pesanan
         if not checkout:
             st.info("Belum ada transaksi")
             return
 
-        buyers = list({c["buyer"] for c in checkout})
+        # pilih pembeli dari checkout
+        buyers = sorted(set([c["buyer"] for c in checkout if c.get("buyer")]))
         selected_buyer = st.selectbox("Pilih Pembeli", buyers)
         buyer_checkout = [c for c in checkout if c["buyer"]==selected_buyer]
         st.dataframe(pd.DataFrame(buyer_checkout), width="stretch")
@@ -252,28 +269,29 @@ def admin_page():
         kembalian = tunai - total_final
         st.write(f"Kembalian: Rp {kembalian:,}".replace(",", "."))
 
-        # Tombol: buat preview struk (tapi jangan langsung rerun & clear before admin prints)
+        # Tombol: buat preview struk (jangan langsung clear sampai admin cetak)
         if st.button("🖨️ Tampilkan Struk"):
             tz = pytz.timezone("Asia/Jakarta")
             now = datetime.now(tz)
-            config["counter"] +=1
+            config["counter"] += 1
             save_json(CONFIG_FILE, config)
             kode = f"RG-{now.strftime('%Y%m%d')}-{config['counter']:05d}"
 
-            lines=[]
+            # buat teks struk (preformatted)
+            lines = []
             lines.append(center32(config.get("shop_name")))
             lines.append(center32(config.get("address")))
-            lines.append("-"*32)
+            lines.append("-" * 32)
             lines.append(f"No. Transaksi  : {kode}")
             lines.append(f"Kasir          : {config.get('cashier')}")
             lines.append(f"Tanggal        : {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
-            lines.append("-"*32)
+            lines.append("-" * 32)
             for i in buyer_checkout:
                 name = i["nama"][:20]
                 total_item = i["jumlah"] * i["harga"]
                 lines.append(f"{name:<24}Rp {total_item:,}".replace(",", "."))
                 lines.append(f"{i['jumlah']} pesanan")
-            lines.append("-"*32)
+            lines.append("-" * 32)
             total_items = sum(i["jumlah"] for i in buyer_checkout)
             lines.append(lr32("Total Item", str(total_items)))
             lines.append(lr32("Subtotal", f"Rp {subtotal:,}".replace(",", ".")))
@@ -284,24 +302,24 @@ def admin_page():
             lines.append(lr32("Tunai", f"Rp {tunai:,}".replace(",", ".")))
             lines.append(lr32("Kembalian", f"Rp {kembalian:,}".replace(",", ".")))
             lines.append(f"Pembeli        : {selected_buyer}")
-            lines.append("-"*32)
+            lines.append("-" * 32)
             lines.append(center32(config.get("footer")))
-            lines.append("-"*32)
+            lines.append("-" * 32)
 
             # simpan teks struk di session (string aman)
             st.session_state.struk_data = "\n".join(lines)
 
-            # buat gambar QR ke memory (simpan bytes, bukan objek BytesIO)
+            # buat QR ke memory (simpan bytes)
             qr = qrcode.QRCode(box_size=2, border=1)
-            qr.add_data(kode)  # gunakan kode transaksi atau info lain
+            qr.add_data(kode)
             qr.make(fit=True)
             img_qr = qr.make_image(fill_color="black", back_color="white")
             buf = BytesIO()
             img_qr.save(buf, format="PNG")
             buf.seek(0)
-            st.session_state.qr_image_bytes = buf.getvalue()  # simpan bytes (aman)
+            st.session_state.qr_image_bytes = buf.getvalue()
 
-            # simpan penjualan (catat dulu, tapi checkout akan dihapus nanti saat admin konfirmasi selesai)
+            # simpan penjualan (catat dulu)
             sales.append({
                 "tanggal": now.strftime("%Y-%m-%d"),
                 "total": total_final,
@@ -312,11 +330,11 @@ def admin_page():
             })
             save_json(SALES_FILE, sales)
 
-            # hapus pesanan buyer dari checkout sekarang (soalnya sudah tercatat di sales)
-            checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
+            # hapus pesanan buyer dari checkout sekarang (sudah tercatat di sales)
+            checkout[:] = [c for c in checkout if c["buyer"] != selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
 
-            # tampilkan preview struk di halaman admin
+            # tampilkan preview struk
             st.session_state.show_struk = True
             st.rerun()
 
@@ -344,40 +362,25 @@ def admin_page():
     # ---------------- Pengaturan ----------------
     elif menu == "Pengaturan Toko":
         st.header("🛠️ Pengaturan Toko")
-        shop_name = st.text_input("Nama Toko", value=config.get("shop_name"))
-        address = st.text_input("Alamat Toko", value=config.get("address"))
-        cashier = st.text_input("Nama Kasir", value=config.get("cashier"))
-        ppn = st.number_input("PPN (%)", 0, 100, value=config.get("ppn"))
-        diskon = st.number_input("Diskon (%)", 0, 100, value=config.get("diskon"))
-        footer = st.text_input("Footer", value=config.get("footer"))
-        col1,col2 = st.columns(2)
-        with col1:
-            if st.button("Simpan Pengaturan"):
-                config.update({
-                    "shop_name": shop_name,
-                    "address": address,
-                    "cashier": cashier,
-                    "ppn": ppn,
-                    "diskon": diskon,
-                    "footer": footer
-                })
+        with st.form("configform"):
+            config["shop_name"] = st.text_input("Nama Toko", value=config["shop_name"])
+            config["address"] = st.text_input("Alamat", value=config["address"])
+            config["cashier"] = st.text_input("Nama Kasir", value=config["cashier"])
+            config["ppn"] = st.number_input("PPN (%)", value=config["ppn"], min_value=0, max_value=100)
+            config["diskon"] = st.number_input("Diskon (%)", value=config["diskon"], min_value=0, max_value=100)
+            config["footer"] = st.text_input("Teks Footer Struk", value=config["footer"])
+            if st.form_submit_button("💾 Simpan Pengaturan"):
                 save_json(CONFIG_FILE, config)
-                st.success("✅ Pengaturan tersimpan")
-                st.rerun()
-        with col2:
-            if st.button("Reset Counter"):
-                config["counter"]=0
-                save_json(CONFIG_FILE, config)
-                st.success("✅ Counter direset")
+                st.success("✅ Pengaturan disimpan.")
                 st.rerun()
 
-# ---------------- routing ----------------
-if st.session_state.page=="user":
+# ---------------- Routing ----------------
+if st.session_state.page == "user":
     user_page()
-elif st.session_state.page=="admin_login":
+elif st.session_state.page == "admin_login":
     admin_login_page()
-elif st.session_state.page=="admin_panel" and st.session_state.admin_logged:
+elif st.session_state.page == "admin_panel" and st.session_state.admin_logged:
     admin_page()
 else:
-    st.session_state.page="user"
+    st.session_state.page = "user"
     st.rerun()
