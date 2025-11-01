@@ -63,7 +63,7 @@ for key, default in [("page","user"),("admin_logged",False),("buyer_name",""),("
                      ("show_struk",False),("struk_data",""),("qr_bytes",None),("pending_sale",None)]:
     if key not in st.session_state: st.session_state[key]=default
 
-# ---------------- build struk Alfamart + QR "Hikam - Dev" ----------------
+# ---------------- build struk Alfamart + QR ----------------
 def build_struk(buyer_checkout,buyer_name,cashier,config,tunai=None):
     tz=pytz.timezone("Asia/Jakarta")
     now=datetime.now(tz)
@@ -104,6 +104,7 @@ def build_struk(buyer_checkout,buyer_name,cashier,config,tunai=None):
     lines.append("-"*32)
     lines.append(center32(config.get("footer")))
 
+    # QR "Hikam - Dev"
     qr=qrcode.QRCode(box_size=2,border=1)
     qr.add_data("Hikam - Dev")
     qr.make(fit=True)
@@ -150,6 +151,7 @@ def user_page():
             st.session_state.page="admin_login"
             st.rerun()
 
+# ---------------- ADMIN ----------------
 def admin_login_page():
     st.title("🔒 Admin Login")
     username=st.text_input("Username")
@@ -165,6 +167,7 @@ def admin_login_page():
         st.session_state.page="user"
         st.rerun()
 
+# ---------------- ADMIN PANEL ----------------
 def admin_page():
     st.sidebar.title("⚙️ Admin Panel")
     menu=st.sidebar.radio("Menu Admin", ["Data Menu","Data Pesanan","Pembayaran","Laporan","Pengaturan Toko"])
@@ -173,6 +176,7 @@ def admin_page():
         st.session_state.page="user"
         st.rerun()
 
+    # --- Data Menu ---
     if menu=="Data Menu":
         st.header("📋 Data Menu")
         rows=[]
@@ -198,95 +202,13 @@ def admin_page():
             st.success("✅ Menu dihapus")
             st.rerun()
 
-    elif menu=="Data Pesanan":
-        st.header("📝 Pesanan Masuk")
-        if not checkout: st.info("Belum ada pesanan.")
-        else:
-            st.dataframe(pd.DataFrame(checkout),width="stretch")
-            if st.button("Hapus Semua Pesanan"):
-                checkout.clear()
-                save_json(CHECKOUT_FILE,checkout)
-                st.success("✅ Semua pesanan dibersihkan")
-                st.rerun()
-
-    elif menu=="Pembayaran":
-        st.header("💳 Pembayaran")
-        if not checkout: st.info("Belum ada transaksi"); return
-        buyers=sorted(set([c["buyer"] for c in checkout if c.get("buyer")]))
-        selected_buyer=st.selectbox("Pilih Pembeli",buyers)
-        buyer_checkout=[c for c in checkout if c["buyer"]==selected_buyer]
-        st.dataframe(pd.DataFrame(buyer_checkout),width="stretch")
-        if st.button("🖨️ Tampilkan Struk"):
-            struk_text,qr_bytes,kode,total_final=build_struk(buyer_checkout,selected_buyer,config.get("cashier"),config)
-            st.session_state.struk_data=struk_text
-            st.session_state.qr_bytes=qr_bytes
-            st.session_state.pending_sale={"kode":kode,"buyer":selected_buyer,"items":buyer_checkout,"total":total_final,"cashier":config.get("cashier"),"tanggal":datetime.now().strftime("%Y-%m-%d")}
-            st.session_state.show_struk=True
-            st.rerun()
-        if st.session_state.show_struk:
-            st.subheader("🧾 Pratinjau Struk")
-            st.markdown(f"<pre class='receipt'>{st.session_state.struk_data}</pre>",unsafe_allow_html=True)
-            st.image(BytesIO(st.session_state.qr_bytes),width=120)
-            c1,c2=st.columns([1,1])
-            with c1:
-                if st.button("🖨️ Cetak Struk (Ctrl+P)"):
-                    st.markdown("<script>window.print();</script>",unsafe_allow_html=True)
-                    pending=st.session_state.pending_sale
-                    if pending:
-                        sales.append(pending)
-                        save_json(SALES_FILE,sales)
-                        buyer=pending.get("buyer")
-                        if buyer:
-                            checkout[:] = [c for c in checkout if c.get("buyer")!=buyer]
-                            save_json(CHECKOUT_FILE,checkout)
-                        st.session_state.pending_sale=None
-                    st.session_state.show_struk=False
-                    st.session_state.struk_data=""
-                    st.session_state.qr_bytes=None
-                    st.success("✅ Struk dicetak. Data pembeli & pesanan direset.")
-                    st.rerun()
-            with c2:
-                if st.button("🔙 Batal"):
-                    st.session_state.show_struk=False
-                    st.session_state.struk_data=""
-                    st.session_state.qr_bytes=None
-                    st.session_state.pending_sale=None
-                    st.rerun()
-
-    elif menu=="Laporan":
-        st.header("📊 Laporan Harian")
-        if not sales: st.info("Belum ada transaksi.")
-        else:
-            df=pd.DataFrame(sales)
-            df["Tanggal"]=pd.to_datetime(df["tanggal"]).dt.strftime("%d/%m/%Y")
-            df["Pemasukan"]=df["total"].apply(lambda x:f"Rp {x:,}".replace(",","."))
-            cols=["Tanggal","Pemasukan","kode","cashier","buyer"]
-            st.dataframe(df[cols],width="stretch")
-            total_all=sum(s["total"] for s in sales)
-            st.write(f"### 💰 Total: Rp {total_all:,}".replace(",","."))
-            pilih_kode=st.selectbox("Pilih kode transaksi yang mau dihapus",[s.get("kode") for s in sales])
-            if st.button("Hapus Transaksi"):
-                sales[:] = [s for s in sales if s.get("kode")!=pilih_kode]
-                save_json(SALES_FILE,sales)
-                st.success(f"✅ Transaksi {pilih_kode} dihapus")
-                st.rerun()
-
-    elif menu=="Pengaturan Toko":
-        st.header("🛠️ Pengaturan Toko")
-        with st.form("configform"):
-            config["shop_name"]=st.text_input("Nama Toko",value=config["shop_name"])
-            config["address"]=st.text_input("Alamat",value=config["address"])
-            config["cashier"]=st.text_input("Nama Kasir",value=config["cashier"])
-            config["ppn"]=st.number_input("PPN (%)",value=config["ppn"],min_value=0,max_value=100)
-            config["diskon"]=st.number_input("Diskon (%)",value=config["diskon"],min_value=0,max_value=100)
-            config["footer"]=st.text_input("Teks Footer Struk",value=config["footer"])
-            if st.form_submit_button("💾 Simpan Pengaturan"):
-                save_json(CONFIG_FILE,config)
-                st.success("✅ Pengaturan disimpan")
-                st.rerun()
-
-# ---------------- Routing ----------------
-if st.session_state.page=="user": user_page()
-elif st.session_state.page=="admin_login": admin_login_page()
-elif st.session_state.page=="admin_panel" and st.session_state.admin_logged: admin_page()
-else: st.session_state.page="user"; st.rerun()
+# ---------------- ROUTING ----------------
+if st.session_state.page=="user":
+    user_page()
+elif st.session_state.page=="admin_login":
+    admin_login_page()
+elif st.session_state.page=="admin_panel" and st.session_state.admin_logged:
+    admin_page()
+else:
+    st.session_state.page="user"
+    st.rerun()
