@@ -1,12 +1,11 @@
-# app.py - FULL FINAL VERSION
+# app.py - FINAL FULL
 import streamlit as st
 import json, os
 import pandas as pd
 from datetime import datetime
 import pytz
 from io import BytesIO
-import barcode
-from barcode.writer import ImageWriter
+import qrcode
 
 # ---------------- file paths ----------------
 MENU_FILE = "menu.json"
@@ -26,7 +25,7 @@ def save_json(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-# ---------------- initial data ----------------
+# ---------------- initial data (create defaults) ----------------
 menu_data = load_json(MENU_FILE, {"makanan": {"Mie Ayam": 15000, "Bakso": 18000}, "minuman": {"Es Teh": 5000}})
 checkout = load_json(CHECKOUT_FILE, [])
 sales = load_json(SALES_FILE, [])
@@ -40,7 +39,7 @@ config = load_json(CONFIG_FILE, {
     "footer": "Selalu segar bangsat"
 })
 
-# ---------------- normalize old sales ----------------
+# normalize old sales entries
 for s in sales:
     s.setdefault("kode", "-")
     s.setdefault("cashier", config.get("cashier", "ADMIN RAGIL"))
@@ -59,7 +58,7 @@ if "admin_logged" not in st.session_state:
 if "buyer_name" not in st.session_state:
     st.session_state.buyer_name = ""
 
-# ---------------- helpers: struk ----------------
+# ---------------- helpers: thermal struk formatting ----------------
 def center32(text):
     return str(text).center(32)
 
@@ -73,10 +72,12 @@ def lr32(left, right):
     return left_s + (" " * space) + right_s
 
 # ---------------- pages ----------------
+
 def user_page():
     st.title("🍜 Menu & Pesanan")
     st.subheader("👤 Nama Pembeli (wajib diisi)")
     st.session_state.buyer_name = st.text_input("Nama Pembeli", value=st.session_state.buyer_name)
+
     if not st.session_state.buyer_name:
         st.warning("Nama pembeli wajib diisi sebelum memesan")
         disable_order = True
@@ -93,7 +94,6 @@ def user_page():
         checkout.append({"nama": item, "harga": menu_data[kategori][item], "jumlah": qty, "buyer": buyer})
         save_json(CHECKOUT_FILE, checkout)
         st.success("✅ Ditambahkan ke keranjang")
-        st.rerun()
 
     st.subheader("🧾 Keranjang Saat Ini")
     if checkout:
@@ -119,7 +119,7 @@ def admin_login_page():
             st.session_state.admin_logged = True
             st.session_state.page = "admin_panel"
             st.success("Login berhasil!")
-            st.experimental_rerun()
+            st.rerun()
         else:
             st.error("Username/Password salah")
     if st.button("Kembali ke Menu User"):
@@ -160,7 +160,7 @@ def admin_page():
             del menu_data[del_kat][del_item]
             save_json(MENU_FILE, menu_data)
             st.success("✅ Menu dihapus")
-            st.experimental_rerun()
+            st.rerun()
 
     elif menu == "Data Pesanan":
         st.header("📝 Pesanan Masuk")
@@ -183,6 +183,7 @@ def admin_page():
             st.info("Belum ada transaksi")
             return
 
+        # pilih buyer
         buyers = list({c["buyer"] for c in checkout})
         selected_buyer = st.selectbox("Pilih Pembeli", buyers)
         buyer_checkout = [c for c in checkout if c["buyer"]==selected_buyer]
@@ -221,7 +222,11 @@ def admin_page():
             lines.append("-"*32)
 
             for i in buyer_checkout:
-                lines.append(lr32(i["nama"], f"{i['jumlah']} x Rp {i['harga']:,}".replace(",", ".") + f"    Rp {i['jumlah']*i['harga']:,}".replace(",", ".")))
+                name = i["nama"]
+                qty_harga = f"{i['jumlah']} x Rp {i['harga']:,}".replace(",", ".")
+                total_item = f"Rp {i['jumlah']*i['harga']:,}".replace(",", ".")
+                line = f"{name:<16}{qty_harga:>10} {total_item:>6}"
+                lines.append(line)
 
             total_items = sum(i["jumlah"] for i in buyer_checkout)
             lines.append("-"*32)
@@ -236,17 +241,18 @@ def admin_page():
             lines.append(f"Pembeli                : {selected_buyer}")
             lines.append("-"*32)
             lines.append(center32(config.get("footer")))
-
-            # barcode statis
-            static_code = "Saya Muhamad Rosif Al Khikam Development Aplikasi ini"
-            code128 = barcode.get('code128', static_code, writer=ImageWriter())
-            buf_bar = BytesIO()
-            code128.write(buf_bar, options={"module_width":0.2,"module_height":15,"font_size":10})
-            buf_bar.seek(0)
-            st.image(buf_bar, width=150)
+            lines.append("-"*32)
 
             struk_text = "\n".join(lines)
             st.text(struk_text)
+
+            # QR code statis kecil
+            static_text = "Saya Muhamad Rosif Al Khikam Development Aplikasi ini"
+            qr = qrcode.QRCode(box_size=2, border=1)
+            qr.add_data(static_text)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            st.image(img)
 
             # save sale
             sales.append({
@@ -264,9 +270,8 @@ def admin_page():
             save_json(CHECKOUT_FILE, checkout)
 
             st.success("✅ Struk dicetak, transaksi tersimpan, menu user auto-refresh")
-            # auto-refresh user menu
             st.session_state.page="user"
-            st.rerun()
+            st.experimental_rerun()
 
     elif menu=="Laporan":
         st.header("📊 Laporan Harian")
@@ -316,18 +321,18 @@ def admin_page():
                 st.rerun()
         with col2:
             if st.button("Reset Counter"):
-                config["counter"] = 0
+                config["counter"]=0
                 save_json(CONFIG_FILE, config)
                 st.success("✅ Counter direset")
                 st.rerun()
 
 # ---------------- routing ----------------
-if st.session_state.page == "user":
+if st.session_state.page=="user":
     user_page()
-elif st.session_state.page == "admin_login":
+elif st.session_state.page=="admin_login":
     admin_login_page()
-elif st.session_state.page == "admin_panel" and st.session_state.admin_logged:
+elif st.session_state.page=="admin_panel" and st.session_state.admin_logged:
     admin_page()
 else:
-    st.session_state.page = "user"
-    st.rerun()
+    st.session_state.page="user"
+    st.experimental_rerun()
