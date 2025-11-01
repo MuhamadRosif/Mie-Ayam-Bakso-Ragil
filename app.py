@@ -244,8 +244,7 @@ def admin_page():
             lines.append(center32(config.get("footer")))
             lines.append("-"*32)
 
-            struk_text = "\n".join(lines)
-            st.text(struk_text)
+            st.text("\n".join(lines))
 
             # ---------------- QR STATIS ----------------
             static_text = "Hikam - Dev"
@@ -258,7 +257,7 @@ def admin_page():
             buf.seek(0)
             st.image(buf)
 
-            # save transaksi
+            # simpan transaksi
             sales.append({
                 "tanggal": now.strftime("%Y-%m-%d"),
                 "total": total_final,
@@ -274,7 +273,6 @@ def admin_page():
             save_json(CHECKOUT_FILE, checkout)
 
             st.success("✅ Struk dicetak, transaksi tersimpan")
-            # ❌ admin tetap di panel, user page diupdate secara otomatis saat dicekout berikutnya
 
     # ---------------- Laporan ----------------
     elif menu=="Laporan":
