@@ -135,7 +135,7 @@ def admin_page():
         st.session_state.admin_logged = False
         st.session_state.page = "user"
         st.success("Logout berhasil")
-        st.experimental_rerun()
+        st.rerun()
 
     # Data Menu
     if menu == "Data Menu":
