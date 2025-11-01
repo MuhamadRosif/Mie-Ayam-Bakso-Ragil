@@ -1,4 +1,4 @@
-# app.py - FINAL Full Version with esthetic struk
+# app.py - FINAL Full Version with Static QR
 import streamlit as st
 import json, os
 import pandas as pd
@@ -39,7 +39,7 @@ config = load_json(CONFIG_FILE, {
     "footer": "Selalu segar bangsat"
 })
 
-# normalize old sales
+# normalize old sales entries
 for s in sales:
     s.setdefault("kode", "-")
     s.setdefault("cashier", config.get("cashier", "ADMIN RAGIL"))
@@ -58,7 +58,7 @@ if "admin_logged" not in st.session_state:
 if "buyer_name" not in st.session_state:
     st.session_state.buyer_name = ""
 
-# ---------------- helpers: struk formatting ----------------
+# ---------------- helpers: thermal struk formatting ----------------
 def center32(text):
     return str(text).center(32)
 
@@ -77,9 +77,10 @@ def user_page():
     st.subheader("👤 Nama Pembeli (wajib diisi)")
     st.session_state.buyer_name = st.text_input("Nama Pembeli", value=st.session_state.buyer_name)
 
-    disable_order = not st.session_state.buyer_name
-    if disable_order:
+    disable_order = False
+    if not st.session_state.buyer_name:
         st.warning("Nama pembeli wajib diisi sebelum memesan")
+        disable_order = True
 
     st.subheader("📜 Menu")
     kategori = st.selectbox("Kategori", list(menu_data.keys()))
@@ -101,7 +102,7 @@ def user_page():
     else:
         st.info("Keranjang kosong")
 
-    # Sidebar admin login
+    # Sidebar: Admin Login
     if not st.session_state.admin_logged:
         if st.sidebar.button("Admin Login"):
             st.session_state.page = "admin_login"
@@ -180,13 +181,15 @@ def admin_page():
             st.info("Belum ada transaksi")
             return
 
+        # pilih buyer
         buyers = list({c["buyer"] for c in checkout})
         selected_buyer = st.selectbox("Pilih Pembeli", buyers)
         buyer_checkout = [c for c in checkout if c["buyer"]==selected_buyer]
+
         df = pd.DataFrame(buyer_checkout)
         df["total"] = df["harga"] * df["jumlah"]
-        df["total"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
-        st.table(df)
+        df["total"] = df.apply(lambda row: f"{row['jumlah']} x Rp {row['harga']:,}    Rp {row['total']:,}".replace(",", "."), axis=1)
+        st.text("\n".join(df["total"]))
 
         subtotal = sum(i["harga"]*i["jumlah"] for i in buyer_checkout)
         ppn_amt = int(subtotal * config.get("ppn",11)/100)
@@ -217,14 +220,6 @@ def admin_page():
             lines.append(f"Tgl: {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
 
-            # item list
-            for i in buyer_checkout:
-                lines.append(f"{i['nama']}")
-                qty_price = f"{i['jumlah']} x Rp {i['harga']:,}".replace(",", ".")
-                total_item = f"Rp {i['jumlah']*i['harga']:,}".replace(",", ".")
-                lines.append(lr32(qty_price, total_item))
-
-            lines.append("-"*32)
             total_items = sum(i["jumlah"] for i in buyer_checkout)
             lines.append(lr32("Total Item", total_items))
             lines.append(lr32("Subtotal", f"Rp {subtotal:,}".replace(",", ".")))
@@ -236,16 +231,19 @@ def admin_page():
             lines.append(f"Pembeli: {selected_buyer}")
             lines.append("-"*32)
             lines.append(center32(config.get("footer")))
-            lines.append(center32("Saya Muhamad Rosif Al Khikam Development Aplikasi ini"))
-
-            st.text("\n".join(lines))
 
             # static QR
             qr = qrcode.QRCode(box_size=2, border=1)
             qr.add_data("Saya Muhamad Rosif Al Khikam Development Aplikasi ini")
             qr.make(fit=True)
             img = qr.make_image(fill_color="black", back_color="white")
-            st.image(img)
+            buf = BytesIO()
+            img.save(buf, format="PNG")
+            buf.seek(0)
+
+            struk_text = "\n".join(lines)
+            st.text(struk_text)
+            st.image(buf)
 
             # save sale
             sales.append({
@@ -262,10 +260,6 @@ def admin_page():
             checkout[:] = [c for c in checkout if c["buyer"]!=selected_buyer]
             save_json(CHECKOUT_FILE, checkout)
             st.success("✅ Struk dicetak dan transaksi disimpan")
-
-            # reload ke user page
-            st.session_state.page = "user"
-            st.rerun()
 
     elif menu=="Laporan":
         st.header("📊 Laporan Harian")
