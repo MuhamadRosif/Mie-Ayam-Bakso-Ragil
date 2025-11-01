@@ -134,6 +134,7 @@ def admin_page():
         st.success("Logout berhasil")
         st.rerun()
 
+    # ---------------- Data Menu ----------------
     if menu == "Data Menu":
         st.header("📋 Data Menu")
         rows = []
@@ -161,6 +162,7 @@ def admin_page():
             st.success("✅ Menu dihapus")
             st.rerun()
 
+    # ---------------- Data Pesanan ----------------
     elif menu == "Data Pesanan":
         st.header("📝 Pesanan Masuk")
         if not checkout:
@@ -176,6 +178,7 @@ def admin_page():
                 st.success("✅ Semua pesanan dibersihkan")
                 st.rerun()
 
+    # ---------------- Pembayaran ----------------
     elif menu == "Pembayaran":
         st.header("💳 Pembayaran")
         if not checkout:
@@ -220,7 +223,6 @@ def admin_page():
             lines.append(f"Tanggal        : {now.strftime('%d-%m-%Y %H:%M:%S')} WIB")
             lines.append("-"*32)
 
-            # DAFTAR PESANAN MASUK (format baru)
             for i in buyer_checkout:
                 name = i["nama"][:20]
                 total_item = i["jumlah"] * i["harga"]
@@ -272,7 +274,62 @@ def admin_page():
             save_json(CHECKOUT_FILE, checkout)
 
             st.success("✅ Struk dicetak, transaksi tersimpan")
-            # ❌ jangan rerun global admin, hanya rerun user page jika perlu
+            # ❌ admin tetap di panel, user page diupdate secara otomatis saat dicekout berikutnya
+
+    # ---------------- Laporan ----------------
+    elif menu=="Laporan":
+        st.header("📊 Laporan Harian")
+        if not sales:
+            st.info("Belum ada transaksi.")
+        else:
+            df = pd.DataFrame(sales)
+            df["Tanggal"] = pd.to_datetime(df["tanggal"]).dt.strftime("%d/%m/%Y")
+            df["Pemasukan"] = df["total"].apply(lambda x: f"Rp {x:,}".replace(",", "."))
+            cols = ["Tanggal","Pemasukan"]
+            for c in ["kode","cashier","buyer"]:
+                if c in df.columns:
+                    cols.append(c)
+            st.table(df[cols])
+            total_all = sum(s["total"] for s in sales)
+            st.write(f"### 💰 Total: Rp {total_all:,}".replace(",", "."))
+
+            st.subheader("🗑️ Hapus Transaksi")
+            pilih_kode = st.selectbox("Pilih kode transaksi yang mau dihapus", [s.get("kode", f"no-{i}") for i,s in enumerate(sales)])
+            if st.button("Hapus Transaksi"):
+                sales[:] = [s for s in sales if s.get("kode")!=pilih_kode]
+                save_json(SALES_FILE, sales)
+                st.success(f"✅ Transaksi {pilih_kode} dihapus")
+                st.rerun()
+
+    # ---------------- Pengaturan Toko ----------------
+    elif menu=="Pengaturan Toko":
+        st.header("🛠️ Pengaturan Toko")
+        shop_name = st.text_input("Nama Toko", value=config.get("shop_name"))
+        address = st.text_input("Alamat Toko", value=config.get("address"))
+        cashier = st.text_input("Nama Kasir", value=config.get("cashier"))
+        ppn = st.number_input("PPN (%)", 0, 100, value=config.get("ppn"))
+        diskon = st.number_input("Diskon (%)", 0, 100, value=config.get("diskon"))
+        footer = st.text_input("Footer", value=config.get("footer"))
+        col1,col2 = st.columns(2)
+        with col1:
+            if st.button("Simpan Pengaturan"):
+                config.update({
+                    "shop_name": shop_name,
+                    "address": address,
+                    "cashier": cashier,
+                    "ppn": ppn,
+                    "diskon": diskon,
+                    "footer": footer
+                })
+                save_json(CONFIG_FILE, config)
+                st.success("✅ Pengaturan tersimpan")
+                st.rerun()
+        with col2:
+            if st.button("Reset Counter"):
+                config["counter"]=0
+                save_json(CONFIG_FILE, config)
+                st.success("✅ Counter direset")
+                st.rerun()
 
 # ---------------- routing ----------------
 if st.session_state.page=="user":
