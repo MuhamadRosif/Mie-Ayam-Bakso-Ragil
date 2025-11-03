@@ -1,4 +1,4 @@
-# 🥢 Mie Ayam + Bakso Ragil
+# 🥢 Mie Ayam Bakso Mas Ragil
 *Aplikasi web untuk pemesanan mie ayam & bakso berbasis Streamlit — simple, cepat, dan modern.*
 
 
