@@ -16,7 +16,7 @@
   </a>
 </p>
 
- 🧾 Deskripsi
+## 🧾 Deskripsi
 Mie Ayam + Bakso Ragil adalah aplikasi pemesanan makanan berbasis Streamlit yang memudahkan pelanggan memilih menu mie ayam, bakso, topping, dan melakukan order secara cepat melalui web.
 
 Dibuat untuk UMKM kuliner agar bisa _go-digital_ dengan cara sederhana namun efektif.
