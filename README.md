@@ -91,7 +91,5 @@ Licensi: **MIT**
 
 ## 🙏 Terima Kasih
 
-Terima kasih sudah menggunakan aplikasi **Mie Ayam + Bakso Ragil**!
+Terima kasih sudah menggunakan aplikasi Mie Ayam + Bakso Ragil!
 Dukung dengan ⭐ di GitHub ya 😄🍜🔥
-
-```
